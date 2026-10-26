@@ -671,21 +671,31 @@ So that distillation doesn't silently degrade quality (FR11).
 
 Divers upload and watch the investigation live. Managers explore the reef map and case files.
 
+Every Epic 6 story follows the UI contract in `docs/agents/ui.md`. The stories build against `web/src/api/openapi.snapshot.json` and the mock fixtures in `web/src/mocks/` (shaped exactly like architecture §4 and §6.3), so they don't wait for the backend. When the real `web/openapi.json` lands, the next web story regenerates the types and fixes any drift.
+
 ### Story 6.1: Web scaffold, typed client and event reducer
 
 As a frontend developer,
 I want a typed client generated from OpenAPI and a reducer for events,
 So that the UI can't drift from the API.
 
-- Owner: C · Priority: P0 · Depends on: 1.2
-- Files: `web/**` scaffold, `web/src/api/{schema.d.ts,client.ts}`, `web/src/live/reducer.ts`, `web/src/live/reducer.test.ts`, `web/src/mocks/events.json`
-- Done when: `pnpm typecheck && pnpm lint && pnpm test && pnpm build`
+- Owner: C · Priority: P0 · Depends on: none
+- Files: `web/**` scaffold, `web/src/api/{openapi.snapshot.json,schema.d.ts,client.ts}`, `web/src/live/reducer.ts`, `web/src/live/reducer.test.ts`, `web/src/mocks/{events.json,handlers.ts,browser.ts}`, `web/public/mockServiceWorker.js`, `web/src/styles/{theme.css,palette.ts}`, `web/src/config.ts`, `web/src/components/{AppShell,CoverStrip}.tsx`, `web/src/components/arc/**` (via `scripts/agents/arc_add.py`)
+- Done when: `pnpm -C web run gate` passes. `gate` runs typecheck, lint, vitest, `playwright test` and `python ../scripts/agents/ui_check.py`
 
 **Acceptance Criteria:**
 
-**Given** `web/openapi.json`
+**Given** `web/openapi.json` (or, until Story 2.1 lands, `web/src/api/openapi.snapshot.json`)
 **When** `pnpm gen:api` runs
 **Then** `schema.d.ts` is regenerated, and the build fails if the code uses a field that doesn't exist
+
+**Given** `VITE_MOCK_API=1 pnpm dev`
+**When** any route is opened
+**Then** it renders inside the `AppShell` from MSW mock data with no backend running, using the tokens, fonts and shell described in `docs/agents/ui.md`
+
+**Given** a cover dict with all six `SegClass` values
+**When** `CoverStrip` renders
+**Then** it draws one segment per class in §4.2 order, with widths equal to the fractions and an accessible label listing each percentage
 
 **Given** the mock event sequence
 **When** fed to the reducer
@@ -697,7 +707,7 @@ As a diver,
 I want to drop a clip and pin my dive site,
 So that I can start an investigation in seconds (FR15).
 
-- Owner: C · Priority: P0 · Depends on: 6.1, 2.1
+- Owner: C · Priority: P0 · Depends on: 6.1
 - Files: `web/src/routes/upload.tsx`, `web/src/components/SitePicker.tsx`
 - Done when: web gate passes
 
@@ -717,7 +727,7 @@ As a diver,
 I want to watch frames, masks and the agent's tool calls appear live,
 So that I trust what it concludes (FR16, UX2, UX3).
 
-- Owner: C · Priority: P0 · Depends on: 6.1, 2.2
+- Owner: C · Priority: P0 · Depends on: 6.1
 - Files: `web/src/routes/surveys.$id.tsx`, `web/src/live/useEventStream.ts`, `web/src/components/{FrameGrid,TracePanel}.tsx`
 - Done when: web gate passes
 
@@ -737,7 +747,7 @@ As a park manager,
 I want sites coloured by health trend with evidence layers,
 So that I can see where reefs are declining and what is nearby (FR17).
 
-- Owner: C · Priority: P0 · Depends on: 6.1, 4.6
+- Owner: C · Priority: P0 · Depends on: 6.1
 - Files: `web/src/routes/index.tsx`, `web/src/map/{ReefMap,layers}.tsx`
 - Done when: web gate passes
 
@@ -761,7 +771,7 @@ As a park manager,
 I want to click any claim and see its evidence,
 So that I can act on the report with confidence (FR18, UX4).
 
-- Owner: C · Priority: P0 · Depends on: 6.3, 5.4
+- Owner: C · Priority: P0 · Depends on: 6.3
 - Files: `web/src/components/{CaseFile,EvidenceDrawer}.tsx`
 - Done when: web gate passes, plus one Playwright happy-path test
 
@@ -785,7 +795,7 @@ As a park manager,
 I want a site's cover trend over time,
 So that I can see decline (FR13).
 
-- Owner: C · Priority: P1 · Depends on: 6.4, 8.1
+- Owner: C · Priority: P1 · Depends on: 6.4
 - Files: `web/src/routes/sites.$id.tsx`, `web/src/components/CoverChart.tsx`
 - Done when: web gate passes
 

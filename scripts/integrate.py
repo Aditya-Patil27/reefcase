@@ -90,6 +90,8 @@ def run_gate(root: Path) -> None:
         pnpm = shutil.which("pnpm")
         if pnpm is None:
             fail(4, "web/ exists but pnpm is not on PATH")
+        # Worktrees that never touched web/ have no node_modules after merging main.
+        cmds.append([pnpm, "-C", "web", "install", "--frozen-lockfile"])
         cmds.append([pnpm, "-C", "web", "run", "gate"])
     for cmd in cmds:
         print("gate:", " ".join(cmd), flush=True)
