@@ -1,0 +1,25 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.pyright/
+
+# web
+node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
+
+# runtime and scratch
+var/
+*.duckdb
+*.duckdb.wal
+.scratch/
+.playwright-mcp/

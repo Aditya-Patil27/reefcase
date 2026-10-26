@@ -1,0 +1,90 @@
+# generated: 2026-10-26
+# last_updated: 2026-10-26
+# project: met (ReefCase)
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: planning/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# Epic: backlog -> in-progress -> done
+# Story: backlog -> ready-for-dev -> in-progress -> review -> done
+# Retrospective: optional <-> done
+#
+# Owners: A = vision ML, B = agent/backend (Aditya), C = frontend/demo, Opus = orchestrator
+# Priority: P0 by Sat Oct 31, P1 by Mon Nov 2, P2 by Tue Nov 3; freeze Wed Nov 4
+
+generated: 2026-10-26
+last_updated: 2026-10-26
+project: met
+project_key: NOKEY
+tracking_system: file-system
+story_location: planning/implementation-artifacts
+
+development_status:
+  epic-1: backlog
+  1-1-repository-scaffold-and-quality-gates: backlog # Opus P0
+  1-2-core-schemas-ids-and-events: backlog # Opus P0
+  1-3-settings-and-model-provider-factory: backlog # Opus P0
+  1-4-store-foundation: backlog # Opus P0
+  1-5-test-fixtures-and-fakes: backlog # Opus P0
+  epic-1-retrospective: optional
+
+  epic-2: backlog
+  2-1-survey-upload-endpoint: backlog # B P0
+  2-2-job-runner-event-bus-and-sse: backlog # B P0
+  2-3-frame-extraction: backlog # B P0
+  2-4-quality-scoring-and-fail-fast: backlog # B P0
+  2-5-site-matching: backlog # B P0
+  epic-2-retrospective: optional
+
+  epic-3: backlog
+  3-1-segmenter-interface-and-cover-computation: backlog # A P0
+  3-2-sam3-local-backend: backlog # A P0
+  3-3-bleached-vs-live-coral-split: backlog # A P0
+  3-4-sam3-on-modal: backlog # A P0
+  3-5-segmentation-stage: backlog # A P0
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-tool-framework-and-result-cache: backlog # B P0
+  4-2-heat-stress-noaa-crw: backlog # B P0
+  4-3-vessel-activity-gfw: backlog # B P0
+  4-4-reef-map-and-mpa-boundary: backlog # B P0
+  4-5-site-history: backlog # B P0
+  4-6-map-layer-endpoints: backlog # B P0
+  epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-frame-assessor: backlog # B P0
+  5-2-investigator-agent: backlog # B P0
+  5-3-citation-validator-and-repair-loop: backlog # B P0
+  5-4-investigate-stage-and-report-persistence: backlog # B P0
+  5-5-teacher-student-disagreement: backlog # B P1
+  epic-5-retrospective: optional
+
+  epic-6: backlog
+  6-1-web-scaffold-typed-client-and-event-reducer: backlog # C P0
+  6-2-upload-page: backlog # C P0
+  6-3-live-investigation-view: backlog # C P0
+  6-4-reef-map: backlog # C P0
+  6-5-case-file-with-evidence-drawer: backlog # C P0
+  6-6-site-timeline: backlog # C P1
+  epic-6-retrospective: optional
+
+  epic-7: backlog
+  7-1-training-corpus-and-sam3-pseudo-labels: backlog # A P1
+  7-2-train-reefstudent: backlog # A P1
+  7-3-evaluate-against-human-labels: backlog # A P1
+  7-4-reefstudent-backend-in-the-app: backlog # A P1
+  7-5-teacher-assessment-dataset: backlog # B P2
+  7-6-glimmer-reef-lora-fine-tune: backlog # B P2
+  7-7-serve-glimmer-reef: backlog # B P2
+  epic-7-retrospective: optional
+
+  epic-8: backlog
+  8-1-historical-survey-import: backlog # B P1
+  8-2-telegram-bot: backlog # C P2
+  8-3-deployment: backlog # B P1
+  8-4-demo-dataset-and-rehearsal: backlog # C P1
+  8-5-readme-and-submission: backlog # B P0
+  epic-8-retrospective: optional
