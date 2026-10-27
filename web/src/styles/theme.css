@@ -92,3 +92,13 @@ body {
   line-height: 20px;
   -webkit-font-smoothing: antialiased;
 }
+
+.maplibregl-popup-content {
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.maplibregl-popup-tip {
+  display: none !important;
+}
