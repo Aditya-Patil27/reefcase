@@ -1,4 +1,39 @@
-﻿import { describe, it, expect, vi, beforeEach } from "vitest";
+vi.mock("../api/client", () => ({
+  api: {
+    GET: vi.fn((path: string) => {
+      if (path.includes("/api/surveys/") && path.includes("/investigation")) {
+        return Promise.resolve({
+          data: {
+            id: "inv_01JA7Z6M0B2D4F6H8K0N2Q4S6V",
+            survey_id: "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+            verdict: "Thermal stress drove most of the bleaching; vessel pressure is a secondary signal.",
+            findings: [
+              {
+                statement: "Bleaching detected across transect frames.",
+                evidence: [{ kind: "frame", id: "frm_06" }],
+              },
+            ],
+            hypotheses: [
+              {
+                cause: "heat_stress",
+                confidence: 0.62,
+                supporting: [{ kind: "frame", id: "frm_06" }],
+                contradicting: [],
+                rationale: "DHW sat above 4 C-weeks for five weeks.",
+              },
+            ],
+            actions: ["Re-survey the same transect in February 2027."],
+            uncertain_frames: [],
+            model: "Muse Spark Open",
+          },
+        });
+      }
+      return Promise.resolve({ data: null });
+    }),
+  },
+}));
+
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { UseEventStreamResult } from "../live/useEventStream";
@@ -104,5 +139,53 @@ describe("SurveyRoute", () => {
     expect(
       screen.getAllByText(/Bleaching detected across transect frames./i).length,
     ).toBeGreaterThan(0);
+  });
+  it("replaces frames panel with CaseFile when reportReady is true", async () => {
+    mocks.useEventStream.mockReturnValue({
+      state: {
+        surveyId: "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+        lastSeq: 42,
+        frames: [
+          {
+            id: "frm_06",
+            thumbUrl: "/media/frames/06.jpg",
+            maskUrl: "/media/masks/06.png",
+            cover: {
+              live_coral: 0.26,
+              bleached_coral: 0.38,
+              algae: 0.12,
+              rubble: 0.14,
+              sand: 0.08,
+              other: 0.02,
+            },
+          },
+        ],
+        toolCalls: [],
+        findings: [
+          {
+            statement: "Bleaching detected across transect frames.",
+            evidence: [{ kind: "frame", id: "frm_06" }],
+          },
+        ],
+        investigationId: "inv_01JA7Z6M0B2D4F6H8K0N2Q4S6V",
+        reportReady: true,
+        failed: null,
+      },
+      status: "connected",
+      reconnectSeq: null,
+    } as UseEventStreamResult);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SurveyRouteComponent />
+      </QueryClientProvider>,
+    );
+
+    // CaseFile replaces FrameGrid
+    expect(
+      await screen.findByText(/Thermal stress drove most of the bleaching/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /02.*HYPOTHESES/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /03.*ACTIONS/i })).toBeInTheDocument();
   });
 });

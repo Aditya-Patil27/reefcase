@@ -44,7 +44,7 @@ test("the mock survey and site resolve by their real ids", async ({ page }) => {
 
   await page.goto(`/surveys/${SURVEY_ID}`);
   await expect(page.getByRole("main")).toContainText(SURVEY_ID);
-  await expect(page.getByRole("main")).toContainText("FRAMES");
+  await expect(page.getByRole("main")).toContainText("FINDINGS");
 
   await page.goto(`/sites/${SITE_ID}`);
   await expect(page.getByRole("main")).toContainText(SITE_ID);
