@@ -5,6 +5,8 @@ description = "Turn a diver's reef video into a cited investigation."
 requires-python = ">=3.14,<3.15"
 dependencies = [
     "pydantic>=2.14.1",
+    "pydantic-ai>=2.61.0",
+    "pydantic-settings>=2.16.1",
 ]
 
 [build-system]
