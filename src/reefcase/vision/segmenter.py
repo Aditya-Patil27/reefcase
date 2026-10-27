@@ -12,7 +12,8 @@ __all__ = ["Segmenter", "build_segmenter", "cover_from_mask"]
 
 @runtime_checkable
 class Segmenter(Protocol):
-    name: Literal["sam3", "student", "fake"]
+    @property
+    def name(self) -> Literal["sam3", "student", "fake"]: ...
 
     def segment(self, image: np.ndarray) -> np.ndarray:
         """Map an HxWx3 RGB image to an HxW class map."""
