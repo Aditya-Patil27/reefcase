@@ -65,7 +65,7 @@ development_status:
   epic-6: in-progress
   6-1-web-scaffold-typed-client-and-event-reducer: done # C P0
   6-2-upload-page: done # C P0
-  6-3-live-investigation-view: backlog # C P0
+  6-3-live-investigation-view: done # C P0
   6-4-reef-map: backlog # C P0
   6-5-case-file-with-evidence-drawer: backlog # C P0
   6-6-site-timeline: backlog # C P1
