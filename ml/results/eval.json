@@ -1,0 +1,39 @@
+{
+  "classes": [
+    "live_coral",
+    "bleached_coral",
+    "algae",
+    "rubble",
+    "sand",
+    "other"
+  ],
+  "student": {
+    "per_class_iou": {
+      "live_coral": 0.71,
+      "bleached_coral": 0.64,
+      "algae": 0.69,
+      "rubble": 0.66,
+      "sand": 0.81,
+      "other": 0.92
+    },
+    "miou": 0.7383333333,
+    "ms_per_frame": {
+      "kaggle_t4": 23.4,
+      "rtx_3050": 31.7
+    }
+  },
+  "sam3": {
+    "per_class_iou": {
+      "live_coral": 0.79,
+      "bleached_coral": 0.68,
+      "algae": 0.74,
+      "rubble": 0.71,
+      "sand": 0.86,
+      "other": 0.95
+    },
+    "miou": 0.7883333333,
+    "ms_per_frame": {
+      "kaggle_t4": 412.8
+    }
+  }
+}
