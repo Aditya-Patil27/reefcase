@@ -1,0 +1,14 @@
+# pnpm settings for the web app.
+#
+# `openapi-gen` is a tiny workspace member that owns the OpenAPI generator.
+# openapi-typescript 7.13.0 prints its output through the TypeScript compiler API,
+# and TypeScript 7 (the project compiler, pinned by architecture §10) ships the
+# native compiler with no JS API. The member pins typescript 5.9.3 so the generator
+# has a compiler it can call, while `tsc` for the app stays on TypeScript 7.
+# Delete the member when openapi-typescript supports TypeScript 7.
+packages:
+  - openapi-gen
+
+minimumReleaseAgeExclude:
+  - '@tanstack/query-core@5.105.0'
+  - '@tanstack/react-query@5.105.0'

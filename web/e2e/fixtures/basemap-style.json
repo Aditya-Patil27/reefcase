@@ -1,0 +1,16 @@
+{
+  "version": 8,
+  "name": "ReefCase offline basemap",
+  "metadata": {
+    "source": "fixture: web/e2e/fixtures/basemap-style.json",
+    "note": "Empty style so no basemap tile or glyph request leaves the test machine."
+  },
+  "sources": {},
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": { "background-color": "#0e1417" }
+    }
+  ]
+}

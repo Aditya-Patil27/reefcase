@@ -1,0 +1,613 @@
+[
+  {
+    "type": "survey_started",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 1,
+    "ts": "2026-10-21T09:14:02Z",
+    "site_id": "site_lizard_island"
+  },
+  {
+    "type": "frames_extracted",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 2,
+    "ts": "2026-10-21T09:14:08Z",
+    "count": 8
+  },
+  {
+    "type": "frame_scored",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 3,
+    "ts": "2026-10-21T09:14:11Z",
+    "frame_id": "frm_01JA7Z4C0Q6M2T8V4X0Z6B2D8F",
+    "quality": {
+      "blur": 0.12,
+      "color_cast": 0.04,
+      "turbidity": 0.08,
+      "passed": true,
+      "reason": null
+    },
+    "thumb_url": "/media/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/frames/frm_01JA7Z4C0Q6M2T8V4X0Z6B2D8F.jpg"
+  },
+  {
+    "type": "frame_scored",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 4,
+    "ts": "2026-10-21T09:14:14Z",
+    "frame_id": "frm_01JA7Z4C2R7N3V9W5Y1A7C3E9G",
+    "quality": {
+      "blur": 0.09,
+      "color_cast": 0.03,
+      "turbidity": 0.06,
+      "passed": true,
+      "reason": null
+    },
+    "thumb_url": "/media/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/frames/frm_01JA7Z4C2R7N3V9W5Y1A7C3E9G.jpg"
+  },
+  {
+    "type": "frame_scored",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 5,
+    "ts": "2026-10-21T09:14:17Z",
+    "frame_id": "frm_01JA7Z4C4S8P4X0Y6Z2B8D4F0H",
+    "quality": {
+      "blur": 0.34,
+      "color_cast": 0.11,
+      "turbidity": 0.19,
+      "passed": true,
+      "reason": null
+    },
+    "thumb_url": "/media/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/frames/frm_01JA7Z4C4S8P4X0Y6Z2B8D4F0H.jpg"
+  },
+  {
+    "type": "frame_scored",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 6,
+    "ts": "2026-10-21T09:14:20Z",
+    "frame_id": "frm_01JA7Z4C6T9Q5Y1Z7A3C9E5G1J",
+    "quality": {
+      "blur": 0.21,
+      "color_cast": 0.06,
+      "turbidity": 0.12,
+      "passed": true,
+      "reason": null
+    },
+    "thumb_url": "/media/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/frames/frm_01JA7Z4C6T9Q5Y1Z7A3C9E5G1J.jpg"
+  },
+  {
+    "type": "frame_scored",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 7,
+    "ts": "2026-10-21T09:14:23Z",
+    "frame_id": "frm_01JA7Z4C8V0R6Z2A8B4D0F6H2K",
+    "quality": {
+      "blur": 0.15,
+      "color_cast": 0.05,
+      "turbidity": 0.09,
+      "passed": true,
+      "reason": null
+    },
+    "thumb_url": "/media/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/frames/frm_01JA7Z4C8V0R6Z2A8B4D0F6H2K.jpg"
+  },
+  {
+    "type": "frame_scored",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 8,
+    "ts": "2026-10-21T09:14:26Z",
+    "frame_id": "frm_01JA7Z4CBW1S7A3B9C5E1G7J3M",
+    "quality": {
+      "blur": 0.18,
+      "color_cast": 0.07,
+      "turbidity": 0.14,
+      "passed": true,
+      "reason": null
+    },
+    "thumb_url": "/media/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/frames/frm_01JA7Z4CBW1S7A3B9C5E1G7J3M.jpg"
+  },
+  {
+    "type": "frame_scored",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 9,
+    "ts": "2026-10-21T09:14:29Z",
+    "frame_id": "frm_01JA7Z4CDX2T8B4C0D6F2H8K4N",
+    "quality": {
+      "blur": 0.41,
+      "color_cast": 0.14,
+      "turbidity": 0.28,
+      "passed": false,
+      "reason": "Fast pan: motion blur across the transect."
+    },
+    "thumb_url": "/media/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/frames/frm_01JA7Z4CDX2T8B4C0D6F2H8K4N.jpg"
+  },
+  {
+    "type": "frame_scored",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 10,
+    "ts": "2026-10-21T09:14:32Z",
+    "frame_id": "frm_01JA7Z4CFY3V9C5D1E7G3J9M5P",
+    "quality": {
+      "blur": 0.11,
+      "color_cast": 0.02,
+      "turbidity": 0.05,
+      "passed": true,
+      "reason": null
+    },
+    "thumb_url": "/media/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/frames/frm_01JA7Z4CFY3V9C5D1E7G3J9M5P.jpg"
+  },
+  {
+    "type": "segmented",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 11,
+    "ts": "2026-10-21T09:14:36Z",
+    "frame_id": "frm_01JA7Z4C0Q6M2T8V4X0Z6B2D8F",
+    "backend": "sam3",
+    "cover": {
+      "live_coral": 0.42,
+      "bleached_coral": 0.12,
+      "algae": 0.08,
+      "rubble": 0.14,
+      "sand": 0.22,
+      "other": 0.02
+    },
+    "mask_url": "/media/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/masks/frm_01JA7Z4C0Q6M2T8V4X0Z6B2D8F.png"
+  },
+  {
+    "type": "segmented",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 12,
+    "ts": "2026-10-21T09:14:40Z",
+    "frame_id": "frm_01JA7Z4C2R7N3V9W5Y1A7C3E9G",
+    "backend": "sam3",
+    "cover": {
+      "live_coral": 0.38,
+      "bleached_coral": 0.1,
+      "algae": 0.11,
+      "rubble": 0.16,
+      "sand": 0.23,
+      "other": 0.02
+    },
+    "mask_url": "/media/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/masks/frm_01JA7Z4C2R7N3V9W5Y1A7C3E9G.png"
+  },
+  {
+    "type": "segmented",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 13,
+    "ts": "2026-10-21T09:14:44Z",
+    "frame_id": "frm_01JA7Z4C4S8P4X0Y6Z2B8D4F0H",
+    "backend": "sam3",
+    "cover": {
+      "live_coral": 0.45,
+      "bleached_coral": 0.09,
+      "algae": 0.07,
+      "rubble": 0.12,
+      "sand": 0.25,
+      "other": 0.02
+    },
+    "mask_url": "/media/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/masks/frm_01JA7Z4C4S8P4X0Y6Z2B8D4F0H.png"
+  },
+  {
+    "type": "segmented",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 14,
+    "ts": "2026-10-21T09:14:48Z",
+    "frame_id": "frm_01JA7Z4C6T9Q5Y1Z7A3C9E5G1J",
+    "backend": "sam3",
+    "cover": {
+      "live_coral": 0.31,
+      "bleached_coral": 0.22,
+      "algae": 0.09,
+      "rubble": 0.15,
+      "sand": 0.21,
+      "other": 0.02
+    },
+    "mask_url": "/media/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/masks/frm_01JA7Z4C6T9Q5Y1Z7A3C9E5G1J.png"
+  },
+  {
+    "type": "segmented",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 15,
+    "ts": "2026-10-21T09:14:52Z",
+    "frame_id": "frm_01JA7Z4C8V0R6Z2A8B4D0F6H2K",
+    "backend": "sam3",
+    "cover": {
+      "live_coral": 0.36,
+      "bleached_coral": 0.16,
+      "algae": 0.1,
+      "rubble": 0.13,
+      "sand": 0.23,
+      "other": 0.02
+    },
+    "mask_url": "/media/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/masks/frm_01JA7Z4C8V0R6Z2A8B4D0F6H2K.png"
+  },
+  {
+    "type": "segmented",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 16,
+    "ts": "2026-10-21T09:14:56Z",
+    "frame_id": "frm_01JA7Z4CBW1S7A3B9C5E1G7J3M",
+    "backend": "sam3",
+    "cover": {
+      "live_coral": 0.28,
+      "bleached_coral": 0.31,
+      "algae": 0.08,
+      "rubble": 0.14,
+      "sand": 0.17,
+      "other": 0.02
+    },
+    "mask_url": "/media/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/masks/frm_01JA7Z4CBW1S7A3B9C5E1G7J3M.png"
+  },
+  {
+    "type": "segmented",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 17,
+    "ts": "2026-10-21T09:15:00Z",
+    "frame_id": "frm_01JA7Z4CDX2T8B4C0D6F2H8K4N",
+    "backend": "sam3",
+    "cover": {
+      "live_coral": 0.33,
+      "bleached_coral": 0.18,
+      "algae": 0.12,
+      "rubble": 0.15,
+      "sand": 0.2,
+      "other": 0.02
+    },
+    "mask_url": "/media/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/masks/frm_01JA7Z4CDX2T8B4C0D6F2H8K4N.png"
+  },
+  {
+    "type": "segmented",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 18,
+    "ts": "2026-10-21T09:15:04Z",
+    "frame_id": "frm_01JA7Z4CFY3V9C5D1E7G3J9M5P",
+    "backend": "sam3",
+    "cover": {
+      "live_coral": 0.4,
+      "bleached_coral": 0.11,
+      "algae": 0.06,
+      "rubble": 0.13,
+      "sand": 0.28,
+      "other": 0.02
+    },
+    "mask_url": "/media/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/masks/frm_01JA7Z4CFY3V9C5D1E7G3J9M5P.png"
+  },
+  {
+    "type": "assessed",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 19,
+    "ts": "2026-10-21T09:15:07Z",
+    "assessment": {
+      "id": "asm_01JA7Z4G1A5C7E9G1J3M5P7R9T",
+      "frame_id": "frm_01JA7Z4C0Q6M2T8V4X0Z6B2D8F",
+      "model": "Muse Spark Open",
+      "bleaching_severity": 1,
+      "morphology": [
+        "branching acropora",
+        "tabular acropora"
+      ],
+      "damage": [
+        "none"
+      ],
+      "notes": "Pale tips on the branching colonies, otherwise intact."
+    }
+  },
+  {
+    "type": "assessed",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 20,
+    "ts": "2026-10-21T09:15:10Z",
+    "assessment": {
+      "id": "asm_01JA7Z4G3B6D8F0H2K4N6Q8S0V",
+      "frame_id": "frm_01JA7Z4C2R7N3V9W5Y1A7C3E9G",
+      "model": "Muse Spark Open",
+      "bleaching_severity": 1,
+      "morphology": [
+        "branching acropora",
+        "soft coral"
+      ],
+      "damage": [
+        "none"
+      ],
+      "notes": "Colour is holding. A few pale branch tips on the shallow section."
+    }
+  },
+  {
+    "type": "assessed",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 21,
+    "ts": "2026-10-21T09:15:13Z",
+    "assessment": {
+      "id": "asm_01JA7Z4G5C7E9G1J3M5P7R9T1W",
+      "frame_id": "frm_01JA7Z4C4S8P4X0Y6Z2B8D4F0H",
+      "model": "Muse Spark Open",
+      "bleaching_severity": 0,
+      "morphology": [
+        "massive porites",
+        "branching acropora"
+      ],
+      "damage": [
+        "none"
+      ],
+      "notes": "Healthy cover with no visible damage."
+    }
+  },
+  {
+    "type": "assessed",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 22,
+    "ts": "2026-10-21T09:15:16Z",
+    "assessment": {
+      "id": "asm_01JA7Z4G7D8F0H2K4N6Q8S0V2X",
+      "frame_id": "frm_01JA7Z4C6T9Q5Y1Z7A3C9E5G1J",
+      "model": "Muse Spark Open",
+      "bleaching_severity": 2,
+      "morphology": [
+        "tabular acropora",
+        "rubble field"
+      ],
+      "damage": [
+        "broken"
+      ],
+      "notes": "Bleached tabular plates and fresh rubble beside them."
+    }
+  },
+  {
+    "type": "assessed",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 23,
+    "ts": "2026-10-21T09:15:19Z",
+    "assessment": {
+      "id": "asm_01JA7Z4G9E9G1J3M5P7R9T1W3Y",
+      "frame_id": "frm_01JA7Z4C8V0R6Z2A8B4D0F6H2K",
+      "model": "Muse Spark Open",
+      "bleaching_severity": 1,
+      "morphology": [
+        "branching acropora",
+        "massive porites"
+      ],
+      "damage": [
+        "none"
+      ],
+      "notes": "Even colony colour; the sediment plume is in the upper third."
+    }
+  },
+  {
+    "type": "assessed",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 24,
+    "ts": "2026-10-21T09:15:22Z",
+    "assessment": {
+      "id": "asm_01JA7Z4GBFA0H2K4N6Q8S0V2X4Z",
+      "frame_id": "frm_01JA7Z4CBW1S7A3B9C5E1G7J3M",
+      "model": "Muse Spark Open",
+      "bleaching_severity": 3,
+      "morphology": [
+        "branching acropora"
+      ],
+      "damage": [
+        "broken"
+      ],
+      "notes": "Most branching colonies are white to the base."
+    }
+  },
+  {
+    "type": "assessed",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 25,
+    "ts": "2026-10-21T09:15:25Z",
+    "assessment": {
+      "id": "asm_01JA7Z4GDGB1J3M5P7R9T1W3Y5A",
+      "frame_id": "frm_01JA7Z4CDX2T8B4C0D6F2H8K4N",
+      "model": "Muse Spark Open",
+      "bleaching_severity": 2,
+      "morphology": [
+        "tabular acropora",
+        "massive porites"
+      ],
+      "damage": [
+        "none"
+      ],
+      "notes": "Partial bleaching on the plate edges."
+    }
+  },
+  {
+    "type": "assessed",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 26,
+    "ts": "2026-10-21T09:15:28Z",
+    "assessment": {
+      "id": "asm_01JA7Z4GFHC2K4N6Q8S0V2X4Z6B",
+      "frame_id": "frm_01JA7Z4CFY3V9C5D1E7G3J9M5P",
+      "model": "Muse Spark Open",
+      "bleaching_severity": 1,
+      "morphology": [
+        "branching acropora",
+        "soft coral"
+      ],
+      "damage": [
+        "none"
+      ],
+      "notes": "Back to healthy colour at the end of the transect."
+    }
+  },
+  {
+    "type": "disagreement",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 27,
+    "ts": "2026-10-21T09:15:30Z",
+    "frame_id": "frm_01JA7Z4C6T9Q5Y1Z7A3C9E5G1J",
+    "iou": 0.62,
+    "chosen": "sam3"
+  },
+  {
+    "type": "tool_called",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 28,
+    "ts": "2026-10-21T09:15:32Z",
+    "call_id": "call_01JA7Z5H0A2C4E6G8J0M2P4R6T",
+    "tool": "heat_stress",
+    "params": {
+      "site_id": "site_lizard_island",
+      "start": "2026-08-01",
+      "end": "2026-10-21"
+    }
+  },
+  {
+    "type": "tool_returned",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 29,
+    "ts": "2026-10-21T09:15:37Z",
+    "call_id": "call_01JA7Z5H0A2C4E6G8J0M2P4R6T",
+    "tool_result_id": "tr_01JA7Z5K1B3D5F7H9K1N3Q5S7V",
+    "summary": "DHW peaked at 6.8 C-weeks on 2026-09-14; alert level 1 held for 22 days."
+  },
+  {
+    "type": "tool_called",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 30,
+    "ts": "2026-10-21T09:15:39Z",
+    "call_id": "call_01JA7Z5H2C4E6G8J0M2P4R6T8V",
+    "tool": "vessel_activity",
+    "params": {
+      "site_id": "site_lizard_island",
+      "radius_km": 10,
+      "start": "2026-08-01",
+      "end": "2026-10-21"
+    }
+  },
+  {
+    "type": "tool_returned",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 31,
+    "ts": "2026-10-21T09:15:44Z",
+    "call_id": "call_01JA7Z5H2C4E6G8J0M2P4R6T8V",
+    "tool_result_id": "tr_01JA7Z5K3D5F7H9K1N3Q5S7V9X",
+    "summary": "14 SAR detections, 4 unmatched to AIS; 31 fishing hours inside 10 km."
+  },
+  {
+    "type": "tool_called",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 32,
+    "ts": "2026-10-21T09:15:46Z",
+    "call_id": "call_01JA7Z5H4E6G8J0M2P4R6T8V0X",
+    "tool": "reef_map",
+    "params": {
+      "site_id": "site_lizard_island"
+    }
+  },
+  {
+    "type": "tool_returned",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 33,
+    "ts": "2026-10-21T09:15:51Z",
+    "call_id": "call_01JA7Z5H4E6G8J0M2P4R6T8V0X",
+    "tool_result_id": "tr_01JA7Z5K5F7H9K1N3Q5S7V9X1Z",
+    "summary": "Reef slope over 1.8 km2 within 1 km, benthic class coral and algae."
+  },
+  {
+    "type": "tool_called",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 34,
+    "ts": "2026-10-21T09:15:53Z",
+    "call_id": "call_01JA7Z5H6G8J0M2P4R6T8V0X2Z",
+    "tool": "mpa_boundary",
+    "params": {
+      "site_id": "site_lizard_island"
+    }
+  },
+  {
+    "type": "tool_returned",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 35,
+    "ts": "2026-10-21T09:15:58Z",
+    "call_id": "call_01JA7Z5H6G8J0M2P4R6T8V0X2Z",
+    "tool_result_id": "tr_01JA7Z5K7H9K1N3Q5S7V9X1Z3B",
+    "summary": "Inside the Lizard Island Reef no-take zone, IUCN category Ia."
+  },
+  {
+    "type": "tool_called",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 36,
+    "ts": "2026-10-21T09:16:00Z",
+    "call_id": "call_01JA7Z5H8J0M2P4R6T8V0X2Z4B",
+    "tool": "site_history",
+    "params": {
+      "site_id": "site_lizard_island"
+    }
+  },
+  {
+    "type": "tool_returned",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 37,
+    "ts": "2026-10-21T09:16:05Z",
+    "call_id": "call_01JA7Z5H8J0M2P4R6T8V0X2Z4B",
+    "tool_result_id": "tr_01JA7Z5K9K1N3Q5S7V9X1Z3B5D",
+    "summary": "Six surveys since 2019; live cover fell from 48% to 34% after the 2024 event."
+  },
+  {
+    "type": "finding",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 38,
+    "ts": "2026-10-21T09:16:08Z",
+    "finding": {
+      "statement": "Live coral cover on the transect averages 37% and five of eight frames carry pale branch tips, deepest on frames 06 and 07.",
+      "evidence": [
+        {
+          "kind": "frame",
+          "id": "frm_01JA7Z4CBW1S7A3B9C5E1G7J3M"
+        },
+        {
+          "kind": "frame",
+          "id": "frm_01JA7Z4CDX2T8B4C0D6F2H8K4N"
+        },
+        {
+          "kind": "tool_result",
+          "id": "tr_01JA7Z5K1B3D5F7H9K1N3Q5S7V"
+        }
+      ]
+    }
+  },
+  {
+    "type": "finding",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 39,
+    "ts": "2026-10-21T09:16:11Z",
+    "finding": {
+      "statement": "Heat stress peaked at 6.8 C-weeks in September, above the 4 C-week bleaching threshold, and the reef has not degassed since.",
+      "evidence": [
+        {
+          "kind": "tool_result",
+          "id": "tr_01JA7Z5K1B3D5F7H9K1N3Q5S7V"
+        },
+        {
+          "kind": "frame",
+          "id": "frm_01JA7Z4C6T9Q5Y1Z7A3C9E5G1J"
+        }
+      ]
+    }
+  },
+  {
+    "type": "finding",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 40,
+    "ts": "2026-10-21T09:16:14Z",
+    "finding": {
+      "statement": "Four vessel detections inside 10 km were unmatched to AIS during the same window, and fresh rubble lies beside the bleached plates on frame 04.",
+      "evidence": [
+        {
+          "kind": "tool_result",
+          "id": "tr_01JA7Z5K3D5F7H9K1N3Q5S7V9X"
+        },
+        {
+          "kind": "frame",
+          "id": "frm_01JA7Z4C6T9Q5Y1Z7A3C9E5G1J"
+        }
+      ]
+    }
+  },
+  {
+    "type": "report_ready",
+    "survey_id": "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+    "seq": 41,
+    "ts": "2026-10-21T09:16:18Z",
+    "investigation_id": "inv_01JA7Z6M0B2D4F6H8K0N2Q4S6V"
+  }
+]

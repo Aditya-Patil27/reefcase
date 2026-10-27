@@ -1,0 +1,94 @@
+@import "tailwindcss";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+@import "../components/arc/foundation.css";
+
+/* <html data-theme="dark"> is set in index.html; Arc's dark theme, retinted to deep water. */
+:root[data-theme="dark"] {
+  --background: oklch(15.5% 0.014 235);
+  --surface: oklch(18% 0.016 235);
+  --surface-raised: oklch(21% 0.018 235);
+  --surface-muted: oklch(23.5% 0.018 235);
+  --foreground: oklch(95% 0.008 220);
+  --text-secondary: oklch(77% 0.015 225);
+  --text-muted: oklch(64% 0.016 230);
+  --border-subtle: oklch(24% 0.016 235);
+  --border: oklch(29% 0.018 235);
+  --border-strong: oklch(40% 0.02 235);
+  --accent: oklch(80% 0.11 190);
+  --accent-strong: oklch(88% 0.09 190);
+  --accent-subtle: oklch(80% 0.11 190 / 0.14);
+  --accent-foreground: oklch(18% 0.03 220);
+  --focus-ring: oklch(80% 0.11 190 / 0.6);
+  --font-body: "Geist Variable", sans-serif;
+
+  /* one per SegClass (architecture §4.2) */
+  --reef-live: oklch(74% 0.12 170);      /* live_coral */
+  --reef-bleached: oklch(93% 0.02 95);   /* bleached_coral, bone white */
+  --reef-algae: oklch(60% 0.09 100);     /* algae, olive */
+  --reef-rubble: oklch(55% 0.025 60);    /* rubble, warm grey */
+  --reef-sand: oklch(74% 0.04 85);       /* sand */
+  --reef-other: oklch(42% 0.02 240);     /* other */
+  --heat-0: oklch(64% 0.02 230);         /* no stress */
+  --heat-1: oklch(86% 0.14 95);          /* watch */
+  --heat-2: oklch(79% 0.16 70);          /* warning */
+  --heat-3: oklch(70% 0.19 42);          /* alert level 1 */
+  --heat-4: oklch(62% 0.21 25);          /* alert level 2 and above */
+  --vessel: oklch(88% 0.11 110);
+}
+
+@theme inline {
+  --color-bg: var(--background);
+  --color-surface: var(--surface);
+  --color-raised: var(--surface-raised);
+  --color-sunken: var(--surface-muted);
+  --color-fg: var(--foreground);
+  --color-secondary: var(--text-secondary);
+  --color-muted: var(--text-muted);
+  --color-hairline: var(--border-subtle);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-on-accent: var(--accent-foreground);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
+  --color-reef-live: var(--reef-live);
+  --color-reef-bleached: var(--reef-bleached);
+  --color-reef-algae: var(--reef-algae);
+  --color-reef-rubble: var(--reef-rubble);
+  --color-reef-sand: var(--reef-sand);
+  --color-reef-other: var(--reef-other);
+  --color-heat-0: var(--heat-0);
+  --color-heat-1: var(--heat-1);
+  --color-heat-2: var(--heat-2);
+  --color-heat-3: var(--heat-3);
+  --color-heat-4: var(--heat-4);
+  --color-vessel: var(--vessel);
+
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+
+  --text-label: 11px;   --text-label--line-height: 16px;  --text-label--letter-spacing: 0.06em;
+  --text-body: 13px;    --text-body--line-height: 20px;
+  --text-ui: 14px;      --text-ui--line-height: 20px;
+  --text-title: 20px;   --text-title--line-height: 28px;  --text-title--letter-spacing: -0.015em;
+  --text-display: 28px; --text-display--line-height: 34px; --text-display--letter-spacing: -0.02em;
+  --text-figure: 32px;  --text-figure--line-height: 36px;
+}
+
+html {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 20px;
+  -webkit-font-smoothing: antialiased;
+}

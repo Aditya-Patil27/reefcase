@@ -1,0 +1,676 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ReefCase API",
+    "version": "0.1.0",
+    "description": "Checked-in stand-in for the FastAPI export, built from architecture §4.2, §4.3 and §6.3. Replaced by web/openapi.json once Story 2.1 lands."
+  },
+  "servers": [{ "url": "/" }],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "operationId": "health",
+        "summary": "Provider configuration status",
+        "responses": {
+          "200": {
+            "description": "Health of the configured providers.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Health" } }
+            }
+          }
+        }
+      }
+    },
+    "/api/surveys": {
+      "post": {
+        "operationId": "createSurvey",
+        "summary": "Upload a dive clip and start a survey",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["video", "lat", "lon", "dive_date"],
+                "properties": {
+                  "video": { "type": "string", "format": "binary" },
+                  "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+                  "lon": { "type": "number", "minimum": -180, "maximum": 180 },
+                  "dive_date": { "type": "string", "format": "date" },
+                  "site_name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The queued survey.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Survey" } }
+            }
+          },
+          "422": {
+            "description": "Validation error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["detail"],
+                  "properties": {
+                    "detail": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["loc", "msg", "type"],
+                        "properties": {
+                          "loc": { "type": "array", "items": { "type": "string" } },
+                          "msg": { "type": "string" },
+                          "type": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/surveys/{survey_id}": {
+      "get": {
+        "operationId": "getSurvey",
+        "summary": "One survey",
+        "parameters": [
+          { "name": "survey_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "The survey.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Survey" } }
+            }
+          },
+          "404": { "description": "No such survey." }
+        }
+      }
+    },
+    "/api/surveys/{survey_id}/events": {
+      "get": {
+        "operationId": "getSurveyEvents",
+        "summary": "Server-sent event stream for a survey",
+        "parameters": [
+          { "name": "survey_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "SSE frames: `id:` is seq, `event:` is type, `data:` is the event JSON.",
+            "content": {
+              "text/event-stream": { "schema": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "/api/surveys/{survey_id}/investigation": {
+      "get": {
+        "operationId": "getInvestigation",
+        "summary": "The investigation, once the report is ready",
+        "parameters": [
+          { "name": "survey_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "The investigation.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Investigation" } }
+            }
+          },
+          "404": { "description": "Not ready yet." }
+        }
+      }
+    },
+    "/api/surveys/{survey_id}/frames": {
+      "get": {
+        "operationId": "getSurveyFrames",
+        "summary": "Frames with quality, segmentation and assessment",
+        "parameters": [
+          { "name": "survey_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Frame detail rows, in arrival order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/FrameDetail" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sites": {
+      "get": {
+        "operationId": "listSites",
+        "summary": "Sites with latest cover and trend",
+        "responses": {
+          "200": {
+            "description": "Sites.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/SiteSummary" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sites/{site_id}": {
+      "get": {
+        "operationId": "getSite",
+        "summary": "Site and survey timeline",
+        "parameters": [
+          { "name": "site_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "The site and its surveys, newest first.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/SiteDetail" } }
+            }
+          },
+          "404": { "description": "No such site." }
+        }
+      }
+    },
+    "/api/tool-results/{tool_result_id}": {
+      "get": {
+        "operationId": "getToolResult",
+        "summary": "One persisted tool result",
+        "parameters": [
+          { "name": "tool_result_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "The tool result.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ToolResult" } }
+            }
+          },
+          "404": { "description": "No such tool result." }
+        }
+      }
+    },
+    "/api/geo/{layer}": {
+      "get": {
+        "operationId": "getGeoLayer",
+        "summary": "GeoJSON for a map layer",
+        "parameters": [
+          {
+            "name": "layer",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "enum": ["mpa", "reef", "vessels"] }
+          },
+          { "name": "survey_id", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "A GeoJSON FeatureCollection.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["type", "features"],
+                  "properties": {
+                    "type": { "type": "string", "enum": ["FeatureCollection"] },
+                    "features": {
+                      "type": "array",
+                      "items": { "type": "object", "additionalProperties": true }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/media/{path}": {
+      "get": {
+        "operationId": "getMedia",
+        "summary": "Static frames, masks and clips from the blob directory",
+        "parameters": [
+          { "name": "path", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file.",
+            "content": {
+              "application/octet-stream": { "schema": { "type": "string", "format": "binary" } }
+            }
+          },
+          "404": { "description": "No such file." }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SegClass": {
+        "type": "string",
+        "description": "Segmentation classes, in declaration order (architecture §4.2).",
+        "enum": ["live_coral", "bleached_coral", "algae", "rubble", "sand", "other"]
+      },
+      "Cover": {
+        "type": "object",
+        "description": "Fraction of each SegClass, summing to 1.0.",
+        "additionalProperties": false,
+        "required": ["live_coral", "bleached_coral", "algae", "rubble", "sand", "other"],
+        "properties": {
+          "live_coral": { "type": "number" },
+          "bleached_coral": { "type": "number" },
+          "algae": { "type": "number" },
+          "rubble": { "type": "number" },
+          "sand": { "type": "number" },
+          "other": { "type": "number" }
+        }
+      },
+      "GeoPoint": {
+        "type": "object",
+        "required": ["lat", "lon"],
+        "properties": {
+          "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+          "lon": { "type": "number", "minimum": -180, "maximum": 180 }
+        }
+      },
+      "Site": {
+        "type": "object",
+        "required": ["id", "name", "location", "mpa_id", "created_at"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "location": { "$ref": "#/components/schemas/GeoPoint" },
+          "mpa_id": { "type": ["string", "null"] },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SiteTrend": {
+        "type": "string",
+        "description": "Cover trend since the first survey at the site.",
+        "enum": ["declining", "stable", "improving"]
+      },
+      "SiteSummary": {
+        "type": "object",
+        "required": ["id", "name", "location", "mpa_id", "latest_cover", "latest_dive_date", "trend"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "location": { "$ref": "#/components/schemas/GeoPoint" },
+          "mpa_id": { "type": ["string", "null"] },
+          "latest_cover": { "$ref": "#/components/schemas/Cover" },
+          "latest_dive_date": { "type": "string", "format": "date" },
+          "trend": { "$ref": "#/components/schemas/SiteTrend" }
+        }
+      },
+      "SiteDetail": {
+        "type": "object",
+        "required": ["site", "surveys"],
+        "properties": {
+          "site": { "$ref": "#/components/schemas/Site" },
+          "surveys": { "type": "array", "items": { "$ref": "#/components/schemas/Survey" } }
+        }
+      },
+      "SurveyStatus": {
+        "type": "string",
+        "enum": ["queued", "running", "done", "failed"]
+      },
+      "Survey": {
+        "type": "object",
+        "required": [
+          "id",
+          "site_id",
+          "dive_date",
+          "status",
+          "source",
+          "video_path",
+          "cover",
+          "failure_reason",
+          "created_at"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "site_id": { "type": "string" },
+          "dive_date": { "type": "string", "format": "date" },
+          "status": { "$ref": "#/components/schemas/SurveyStatus" },
+          "source": { "type": "string", "enum": ["upload", "bot", "historical"] },
+          "video_path": { "type": ["string", "null"] },
+          "cover": {
+            "oneOf": [{ "$ref": "#/components/schemas/Cover" }, { "type": "null" }]
+          },
+          "failure_reason": { "type": ["string", "null"] },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "QualityScore": {
+        "type": "object",
+        "required": ["blur", "color_cast", "turbidity", "passed", "reason"],
+        "properties": {
+          "blur": { "type": "number" },
+          "color_cast": { "type": "number" },
+          "turbidity": { "type": "number" },
+          "passed": { "type": "boolean" },
+          "reason": { "type": ["string", "null"] }
+        }
+      },
+      "Frame": {
+        "type": "object",
+        "required": ["id", "survey_id", "t_sec", "image_path", "quality"],
+        "properties": {
+          "id": { "type": "string" },
+          "survey_id": { "type": "string" },
+          "t_sec": { "type": "number" },
+          "image_path": { "type": "string" },
+          "quality": { "$ref": "#/components/schemas/QualityScore" }
+        }
+      },
+      "Segmentation": {
+        "type": "object",
+        "required": ["id", "frame_id", "backend", "mask_path", "cover", "latency_ms"],
+        "properties": {
+          "id": { "type": "string" },
+          "frame_id": { "type": "string" },
+          "backend": { "type": "string", "enum": ["sam3", "student", "fake"] },
+          "mask_path": { "type": "string" },
+          "cover": { "$ref": "#/components/schemas/Cover" },
+          "latency_ms": { "type": "integer" }
+        }
+      },
+      "FrameAssessment": {
+        "type": "object",
+        "required": ["id", "frame_id", "model", "bleaching_severity", "morphology", "damage", "notes"],
+        "properties": {
+          "id": { "type": "string" },
+          "frame_id": { "type": "string" },
+          "model": { "type": "string" },
+          "bleaching_severity": { "type": "integer", "minimum": 0, "maximum": 4 },
+          "morphology": { "type": "array", "items": { "type": "string" } },
+          "damage": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["broken", "overturned", "anchor_scar", "disease", "none"]
+            }
+          },
+          "notes": { "type": "string", "maxLength": 400 }
+        }
+      },
+      "FrameDetail": {
+        "type": "object",
+        "required": ["frame", "segmentation", "assessment"],
+        "properties": {
+          "frame": { "$ref": "#/components/schemas/Frame" },
+          "segmentation": {
+            "oneOf": [{ "$ref": "#/components/schemas/Segmentation" }, { "type": "null" }]
+          },
+          "assessment": {
+            "oneOf": [{ "$ref": "#/components/schemas/FrameAssessment" }, { "type": "null" }]
+          }
+        }
+      },
+      "EvidenceRef": {
+        "type": "object",
+        "required": ["kind", "id"],
+        "properties": {
+          "kind": { "type": "string", "enum": ["frame", "tool_result"] },
+          "id": { "type": "string" }
+        }
+      },
+      "ToolResult": {
+        "type": "object",
+        "required": ["id", "tool", "params", "data", "source_url", "retrieved_at"],
+        "properties": {
+          "id": { "type": "string" },
+          "tool": { "type": "string" },
+          "params": { "type": "object", "additionalProperties": true },
+          "data": { "type": "object", "additionalProperties": true },
+          "source_url": { "type": "string" },
+          "retrieved_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Finding": {
+        "type": "object",
+        "required": ["statement", "evidence"],
+        "properties": {
+          "statement": { "type": "string" },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/components/schemas/EvidenceRef" }
+          }
+        }
+      },
+      "Cause": {
+        "type": "string",
+        "enum": ["heat_stress", "physical_damage", "fishing_pressure", "disease", "unknown"]
+      },
+      "Hypothesis": {
+        "type": "object",
+        "required": ["cause", "confidence", "supporting", "contradicting", "rationale"],
+        "properties": {
+          "cause": { "$ref": "#/components/schemas/Cause" },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "supporting": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/components/schemas/EvidenceRef" }
+          },
+          "contradicting": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/EvidenceRef" }
+          },
+          "rationale": { "type": "string" }
+        }
+      },
+      "Investigation": {
+        "type": "object",
+        "required": [
+          "id",
+          "survey_id",
+          "findings",
+          "hypotheses",
+          "verdict",
+          "actions",
+          "uncertain_frames",
+          "model"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "survey_id": { "type": "string" },
+          "findings": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/components/schemas/Finding" }
+          },
+          "hypotheses": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/components/schemas/Hypothesis" }
+          },
+          "verdict": { "type": "string" },
+          "actions": { "type": "array", "items": { "type": "string" } },
+          "uncertain_frames": { "type": "array", "items": { "type": "string" } },
+          "model": { "type": "string" }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "required": ["status", "detail", "providers"],
+        "properties": {
+          "status": { "type": "string", "enum": ["ok", "degraded", "error"] },
+          "detail": { "type": "string" },
+          "providers": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          }
+        }
+      },
+      "survey_started": {
+        "type": "object",
+        "required": ["type", "survey_id", "seq", "ts", "site_id"],
+        "properties": {
+          "type": { "type": "string", "enum": ["survey_started"] },
+          "survey_id": { "type": "string" },
+          "seq": { "type": "integer" },
+          "ts": { "type": "string", "format": "date-time" },
+          "site_id": { "type": "string" }
+        }
+      },
+      "frames_extracted": {
+        "type": "object",
+        "required": ["type", "survey_id", "seq", "ts", "count"],
+        "properties": {
+          "type": { "type": "string", "enum": ["frames_extracted"] },
+          "survey_id": { "type": "string" },
+          "seq": { "type": "integer" },
+          "ts": { "type": "string", "format": "date-time" },
+          "count": { "type": "integer" }
+        }
+      },
+      "frame_scored": {
+        "type": "object",
+        "required": ["type", "survey_id", "seq", "ts", "frame_id", "quality", "thumb_url"],
+        "properties": {
+          "type": { "type": "string", "enum": ["frame_scored"] },
+          "survey_id": { "type": "string" },
+          "seq": { "type": "integer" },
+          "ts": { "type": "string", "format": "date-time" },
+          "frame_id": { "type": "string" },
+          "quality": { "$ref": "#/components/schemas/QualityScore" },
+          "thumb_url": { "type": "string" }
+        }
+      },
+      "segmented": {
+        "type": "object",
+        "required": ["type", "survey_id", "seq", "ts", "frame_id", "backend", "cover", "mask_url"],
+        "properties": {
+          "type": { "type": "string", "enum": ["segmented"] },
+          "survey_id": { "type": "string" },
+          "seq": { "type": "integer" },
+          "ts": { "type": "string", "format": "date-time" },
+          "frame_id": { "type": "string" },
+          "backend": { "type": "string", "enum": ["sam3", "student", "fake"] },
+          "cover": { "$ref": "#/components/schemas/Cover" },
+          "mask_url": { "type": "string" }
+        }
+      },
+      "assessed": {
+        "type": "object",
+        "required": ["type", "survey_id", "seq", "ts", "assessment"],
+        "properties": {
+          "type": { "type": "string", "enum": ["assessed"] },
+          "survey_id": { "type": "string" },
+          "seq": { "type": "integer" },
+          "ts": { "type": "string", "format": "date-time" },
+          "assessment": { "$ref": "#/components/schemas/FrameAssessment" }
+        }
+      },
+      "disagreement": {
+        "type": "object",
+        "required": ["type", "survey_id", "seq", "ts", "frame_id", "iou", "chosen"],
+        "properties": {
+          "type": { "type": "string", "enum": ["disagreement"] },
+          "survey_id": { "type": "string" },
+          "seq": { "type": "integer" },
+          "ts": { "type": "string", "format": "date-time" },
+          "frame_id": { "type": "string" },
+          "iou": { "type": "number" },
+          "chosen": { "type": "string", "enum": ["sam3"] }
+        }
+      },
+      "tool_called": {
+        "type": "object",
+        "required": ["type", "survey_id", "seq", "ts", "call_id", "tool", "params"],
+        "properties": {
+          "type": { "type": "string", "enum": ["tool_called"] },
+          "survey_id": { "type": "string" },
+          "seq": { "type": "integer" },
+          "ts": { "type": "string", "format": "date-time" },
+          "call_id": { "type": "string" },
+          "tool": { "type": "string" },
+          "params": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "tool_returned": {
+        "type": "object",
+        "required": ["type", "survey_id", "seq", "ts", "call_id", "tool_result_id", "summary"],
+        "properties": {
+          "type": { "type": "string", "enum": ["tool_returned"] },
+          "survey_id": { "type": "string" },
+          "seq": { "type": "integer" },
+          "ts": { "type": "string", "format": "date-time" },
+          "call_id": { "type": "string" },
+          "tool_result_id": { "type": "string" },
+          "summary": { "type": "string" }
+        }
+      },
+      "finding": {
+        "type": "object",
+        "required": ["type", "survey_id", "seq", "ts", "finding"],
+        "properties": {
+          "type": { "type": "string", "enum": ["finding"] },
+          "survey_id": { "type": "string" },
+          "seq": { "type": "integer" },
+          "ts": { "type": "string", "format": "date-time" },
+          "finding": { "$ref": "#/components/schemas/Finding" }
+        }
+      },
+      "report_ready": {
+        "type": "object",
+        "required": ["type", "survey_id", "seq", "ts", "investigation_id"],
+        "properties": {
+          "type": { "type": "string", "enum": ["report_ready"] },
+          "survey_id": { "type": "string" },
+          "seq": { "type": "integer" },
+          "ts": { "type": "string", "format": "date-time" },
+          "investigation_id": { "type": "string" }
+        }
+      },
+      "survey_failed": {
+        "type": "object",
+        "required": ["type", "survey_id", "seq", "ts", "reason"],
+        "properties": {
+          "type": { "type": "string", "enum": ["survey_failed"] },
+          "survey_id": { "type": "string" },
+          "seq": { "type": "integer" },
+          "ts": { "type": "string", "format": "date-time" },
+          "reason": { "type": "string" }
+        }
+      },
+      "Event": {
+        "description": "Discriminated union on `type` (architecture §4.3).",
+        "discriminator": { "propertyName": "type" },
+        "oneOf": [
+          { "$ref": "#/components/schemas/survey_started" },
+          { "$ref": "#/components/schemas/frames_extracted" },
+          { "$ref": "#/components/schemas/frame_scored" },
+          { "$ref": "#/components/schemas/segmented" },
+          { "$ref": "#/components/schemas/assessed" },
+          { "$ref": "#/components/schemas/disagreement" },
+          { "$ref": "#/components/schemas/tool_called" },
+          { "$ref": "#/components/schemas/tool_returned" },
+          { "$ref": "#/components/schemas/finding" },
+          { "$ref": "#/components/schemas/report_ready" },
+          { "$ref": "#/components/schemas/survey_failed" }
+        ]
+      }
+    }
+  }
+}

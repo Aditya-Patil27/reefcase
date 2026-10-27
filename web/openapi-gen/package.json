@@ -1,0 +1,11 @@
+{
+  "name": "@reefcase/openapi-gen",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Generates src/api/schema.d.ts from src/api/openapi.snapshot.json. Pinned to TypeScript 5 because openapi-typescript needs the compiler's JS API.",
+  "devDependencies": {
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3"
+  }
+}
