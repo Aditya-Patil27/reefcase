@@ -22,6 +22,7 @@ __all__ = [
     "Hypothesis",
     "Investigation",
     "QualityScore",
+    "SegBackend",
     "SegClass",
     "Segmentation",
     "Site",
@@ -29,6 +30,10 @@ __all__ = [
     "SurveyStatus",
     "ToolResult",
 ]
+
+
+#: Which segmentation backend produced a mask. A plain alias, so pydantic inlines it.
+SegBackend = Literal["sam3", "student", "fake"]
 
 
 class SegClass(StrEnum):
@@ -119,7 +124,7 @@ class Segmentation(BaseModel):
 
     id: str
     frame_id: str
-    backend: Literal["sam3", "student", "fake"]
+    backend: SegBackend
     mask_path: str
     cover: dict[SegClass, float]
     latency_ms: int

@@ -1,7 +1,10 @@
 """SAM 3 Modal endpoint and an offline dry-run.
 
-Human deployment command:
+Human deployment command (needs a Modal secret named ``huggingface`` holding
+``HF_TOKEN``, because ``facebook/sam3`` is gated):
     modal deploy ml/modal/sam_endpoint.py
+
+The printed ``...segment.modal.run`` URL goes in ``REEFCASE_SAM_MODAL_URL``.
 """
 
 from __future__ import annotations
@@ -13,6 +16,7 @@ import numpy as np
 from PIL import Image
 
 from reefcase.vision.fake import FakeSegmenter
+from reefcase.vision.segmenter import Segmenter
 
 try:
     import modal
@@ -20,9 +24,9 @@ except ImportError:  # pragma: no cover - Modal is a human deployment dependency
     modal = None
 
 
-def segment_jpeg(payload: bytes) -> bytes:
+def segment_jpeg(payload: bytes, segmenter: Segmenter) -> bytes:
     image = np.asarray(Image.open(BytesIO(payload)).convert("RGB"), dtype=np.uint8)
-    mask = FakeSegmenter().segment(image)
+    mask = segmenter.segment(image)
     output = BytesIO()
     Image.fromarray(mask, mode="L").save(output, format="PNG")
     return output.getvalue()
@@ -32,17 +36,41 @@ def dry_run() -> None:
     image = np.zeros((8, 8, 3), dtype=np.uint8)
     encoded = BytesIO()
     Image.fromarray(image, mode="RGB").save(encoded, format="JPEG")
-    decoded = np.asarray(Image.open(BytesIO(segment_jpeg(encoded.getvalue()))))
+    png = segment_jpeg(encoded.getvalue(), FakeSegmenter())
+    decoded = np.asarray(Image.open(BytesIO(png)))
     print(f"dry-run: {decoded.shape[0]}x{decoded.shape[1]} uint8 PNG class map")
 
 
 if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
-    app = modal.App("reefcase-sam3")
-    image = modal.Image.debian_slim().pip_install("numpy", "pillow")
+    from fastapi import Request, Response
 
-    @app.function(image=image)
-    def segment(payload: bytes) -> bytes:
-        return segment_jpeg(payload)
+    app = modal.App("reefcase-sam3")
+    image = (
+        modal.Image.debian_slim(python_version="3.14")
+        .pip_install(
+            "torch",
+            "transformers",
+            "numpy",
+            "pillow",
+            "pydantic",
+            "pydantic-settings",
+            "fastapi[standard]",
+        )
+        .add_local_python_source("reefcase")
+    )
+
+    @app.cls(gpu="T4", image=image, secrets=[modal.Secret.from_name("huggingface")])
+    class Sam3Endpoint:
+        @modal.enter()
+        def load(self) -> None:
+            from reefcase.vision.sam3 import Sam3Segmenter
+
+            self.segmenter = Sam3Segmenter()
+
+        @modal.fastapi_endpoint(method="POST")
+        async def segment(self, request: Request) -> Response:
+            png = segment_jpeg(await request.body(), self.segmenter)
+            return Response(content=png, media_type="image/png")
 
 
 if __name__ == "__main__":

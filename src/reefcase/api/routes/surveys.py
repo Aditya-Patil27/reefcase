@@ -2,14 +2,15 @@
 
 Validation happens before anything is stored: a non-video suffix is a 422 naming
 ``video``, lat/lon outside §4.2 bounds are 422s naming the field, and a body
-larger than ``MAX_VIDEO_BYTES`` is a 413. The video is written to
-``blobs/{survey_id}/video.mp4`` through ``Store.blobs`` and the ``Site`` and
-``Survey`` rows persist through the store's single writer, so the survey is
+larger than ``MAX_VIDEO_BYTES`` is a 413. The video is streamed to
+``blobs/{survey_id}/video<ext>`` (the upload's own suffix) through ``Store.blobs``
+and the ``Site`` and ``Survey`` rows persist through the store's single writer, so the survey is
 readable after the app shuts down (the store is the only database).
 """
 
 import asyncio
 from datetime import UTC, date, datetime
+from pathlib import PurePosixPath
 from typing import Annotated
 
 from fastapi import APIRouter, Form, HTTPException, Request, UploadFile
@@ -26,16 +27,10 @@ MAX_VIDEO_BYTES = 500 * 1024 * 1024
 
 VIDEO_SUFFIXES = frozenset({".mp4", ".mov", ".avi", ".webm", ".mkv"})
 
-_CHUNK = 1024 * 1024
-
 
 def _video_suffix(filename: str | None) -> str:
     """Return the lower-cased suffix of ``filename`` (empty when there is none)."""
-    if not filename:
-        return ""
-    name = filename.rsplit("/", 1)[-1]
-    dot = name.rfind(".")
-    return name[dot:].lower() if dot >= 0 else ""
+    return PurePosixPath(filename or "").suffix.lower()
 
 
 def _now() -> datetime:
@@ -79,20 +74,18 @@ async def create_survey(
             detail=f"lon: must be between -180 and 180, got {lon}",
         )
 
-    survey_id = new_id(SURVEY)
-    chunks: list[bytes] = []
-    total = 0
-    while chunk := await video.read(_CHUNK):
-        total += len(chunk)
-        if total > MAX_VIDEO_BYTES:
-            raise HTTPException(
-                status_code=413,
-                detail=f"video: larger than {MAX_VIDEO_BYTES} bytes",
-            )
-        chunks.append(chunk)
+    # Starlette has already spooled the upload to a temp file and counted its bytes.
+    if video.size is not None and video.size > MAX_VIDEO_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"video: larger than {MAX_VIDEO_BYTES} bytes",
+        )
 
+    survey_id = new_id(SURVEY)
     store = request.app.state.store
-    video_ref = await asyncio.to_thread(store.blobs.save_video, survey_id, b"".join(chunks))
+    video_ref = await asyncio.to_thread(
+        store.blobs.save_video_stream, survey_id, video.file, suffix
+    )
     await video.close()
 
     site = Site(
