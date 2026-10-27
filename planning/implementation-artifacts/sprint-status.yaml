@@ -37,8 +37,8 @@ development_status:
   2-5-site-matching: backlog # B P0
   epic-2-retrospective: optional
 
-  epic-3: backlog
-  3-1-segmenter-interface-and-cover-computation: backlog # A P0
+  epic-3: in-progress
+  3-1-segmenter-interface-and-cover-computation: done # A P0
   3-2-sam3-local-backend: backlog # A P0
   3-3-bleached-vs-live-coral-split: backlog # A P0
   3-4-sam3-on-modal: backlog # A P0
