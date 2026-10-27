@@ -29,8 +29,8 @@ development_status:
   1-5-test-fixtures-and-fakes: done # Opus P0
   epic-1-retrospective: optional
 
-  epic-2: backlog
-  2-1-survey-upload-endpoint: backlog # B P0
+  epic-2: in-progress
+  2-1-survey-upload-endpoint: done # B P0
   2-2-job-runner-event-bus-and-sse: backlog # B P0
   2-3-frame-extraction: backlog # B P0
   2-4-quality-scoring-and-fail-fast: backlog # B P0
