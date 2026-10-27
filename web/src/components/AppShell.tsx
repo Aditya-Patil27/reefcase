@@ -65,6 +65,8 @@ function HealthReadout() {
       if (!data) throw new Error(`Health check returned ${response.status}.`);
       return data;
     },
+    retry: 3,
+    retryDelay: 1000,
   });
 
   const status = health.isPending ? "pending" : health.isError ? "error" : health.data.status;
