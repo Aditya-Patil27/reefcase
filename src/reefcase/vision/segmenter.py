@@ -28,4 +28,12 @@ def build_segmenter(settings: Settings) -> Segmenter:
         from reefcase.vision.sam3 import Sam3Segmenter
 
         return Sam3Segmenter(settings.sam_model_id)
+    if settings.segmenter == "sam3_modal":
+        from reefcase.vision.modal_client import ModalSegmenter
+
+        return ModalSegmenter(settings)
+    if settings.segmenter == "student":
+        from reefcase.vision.student import StudentSegmenter
+
+        return StudentSegmenter(settings)
     raise ConfigError(f"segmenter backend {settings.segmenter!r} is not available yet")
