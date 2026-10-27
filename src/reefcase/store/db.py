@@ -8,7 +8,7 @@ it. ``duckdb.Error`` never escapes this package — it becomes ``StoreError``.
 
 import asyncio
 import contextlib
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import AsyncGenerator, Callable, Sequence
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -72,13 +72,12 @@ class Store:
     """The only writer to the DuckDB file, serialised by one asyncio lock."""
 
     def __init__(self, data_dir: Path, connection: duckdb.DuckDBPyConnection) -> None:
-        self._data_dir = Path(data_dir)
         self._connection = connection
         self._lock = asyncio.Lock()
-        self._blobs = Blobs(self._data_dir)
-        self._sites: SiteRepo | None = None
-        self._surveys: SurveyRepo | None = None
-        self._events: EventRepo | None = None
+        self.blobs = Blobs(Path(data_dir))
+        self.sites = SiteRepo(self)
+        self.surveys = SurveyRepo(self)
+        self.events = EventRepo(self)
 
     @classmethod
     def open(cls, data_dir: Path | str, *, migrations_dir: Path | str | None = None) -> Store:
@@ -111,42 +110,6 @@ class Store:
 
         return cls(root, connection)
 
-    @property
-    def data_dir(self) -> Path:
-        """The data directory the store was opened with."""
-        return self._data_dir
-
-    @property
-    def db_path(self) -> Path:
-        """``<data_dir>/reefcase.duckdb``."""
-        return self._data_dir / DB_FILENAME
-
-    @property
-    def blobs(self) -> Blobs:
-        """Blob paths and bytes under ``<data_dir>/blobs``."""
-        return self._blobs
-
-    @property
-    def sites(self) -> SiteRepo:
-        """The ``sites`` repo."""
-        if self._sites is None:
-            self._sites = SiteRepo(self)
-        return self._sites
-
-    @property
-    def surveys(self) -> SurveyRepo:
-        """The ``surveys`` repo."""
-        if self._surveys is None:
-            self._surveys = SurveyRepo(self)
-        return self._surveys
-
-    @property
-    def events(self) -> EventRepo:
-        """The ``events`` repo."""
-        if self._events is None:
-            self._events = EventRepo(self)
-        return self._events
-
     @asynccontextmanager
     async def locked(self) -> AsyncGenerator[duckdb.DuckDBPyConnection]:
         """Hold the write lock and yield the connection."""
@@ -154,38 +117,26 @@ class Store:
             yield self._connection
 
     async def execute(self, sql: str, parameters: Sequence[Any] | None = None) -> None:
-        """Run one statement, wrapping ``duckdb.Error`` in ``StoreError``."""
-        async with self.locked() as connection:
-            try:
-                connection.execute(sql, parameters)
-            except duckdb.Error as exc:
-                raise StoreError(f"query failed: {exc}") from exc
-
-    async def executemany(self, sql: str, rows: Sequence[Sequence[Any]]) -> None:
-        """Run one statement once per row, wrapping ``duckdb.Error`` in ``StoreError``."""
-        async with self.locked() as connection:
-            try:
-                connection.executemany(sql, rows)
-            except duckdb.Error as exc:
-                raise StoreError(f"query failed: {exc}") from exc
+        """Run one statement."""
+        await self._run(lambda connection: connection.execute(sql, parameters))
 
     async def fetchall(
         self, sql: str, parameters: Sequence[Any] | None = None
     ) -> list[tuple[Any, ...]]:
-        """Return every row, wrapping ``duckdb.Error`` in ``StoreError``."""
-        async with self.locked() as connection:
-            try:
-                return connection.execute(sql, parameters).fetchall()
-            except duckdb.Error as exc:
-                raise StoreError(f"query failed: {exc}") from exc
+        """Return every row."""
+        return await self._run(lambda connection: connection.execute(sql, parameters).fetchall())
 
     async def fetchone(
         self, sql: str, parameters: Sequence[Any] | None = None
     ) -> tuple[Any, ...] | None:
-        """Return the first row (or ``None``), wrapping ``duckdb.Error`` in ``StoreError``."""
+        """Return the first row (or ``None``)."""
+        return await self._run(lambda connection: connection.execute(sql, parameters).fetchone())
+
+    async def _run[T](self, query: Callable[[duckdb.DuckDBPyConnection], T]) -> T:
+        """Run ``query`` under the lock, wrapping ``duckdb.Error`` in ``StoreError``."""
         async with self.locked() as connection:
             try:
-                return connection.execute(sql, parameters).fetchone()
+                return query(connection)
             except duckdb.Error as exc:
                 raise StoreError(f"query failed: {exc}") from exc
 

@@ -1,9 +1,10 @@
-from typing import Literal, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 import numpy as np
 
 from reefcase.core.config import Settings
 from reefcase.core.errors import ConfigError
+from reefcase.core.schemas import SegBackend
 from reefcase.vision.cover import cover_from_mask
 from reefcase.vision.fake import FakeSegmenter
 
@@ -13,7 +14,7 @@ __all__ = ["Segmenter", "build_segmenter", "cover_from_mask"]
 @runtime_checkable
 class Segmenter(Protocol):
     @property
-    def name(self) -> Literal["sam3", "student", "fake"]: ...
+    def name(self) -> SegBackend: ...
 
     def segment(self, image: np.ndarray) -> np.ndarray:
         """Map an HxWx3 RGB image to an HxW class map."""

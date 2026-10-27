@@ -12,10 +12,9 @@ class FakeProcessor:
     def __call__(self, **kwargs: object) -> dict[str, object]:
         text = kwargs.get("text")
         self.prompts.append(text if isinstance(text, str) else None)
-        return {
-            "pixel_values": np.zeros((1, 3, 2, 4), dtype=np.float32),
-            "text": text,
-        }
+        if "images" in kwargs:
+            return {"pixel_values": np.zeros((1, 3, 2, 4), dtype=np.float32)}
+        return {"text": text}
 
     def post_process_instance_segmentation(
         self,
@@ -25,7 +24,7 @@ class FakeProcessor:
         mask_threshold: float,
         target_sizes: list[tuple[int, int]],
     ) -> list[dict[str, object]]:
-        return [{"segmentation": outputs}]
+        return [{"masks": outputs}]
 
 
 class FakeModel:
@@ -38,7 +37,8 @@ class FakeModel:
         return self.feature_token
 
     def __call__(self, **kwargs: object) -> object:
-        assert kwargs["vision_features"] is self.feature_token
+        assert kwargs["vision_embeds"] is self.feature_token
+        assert "pixel_values" not in kwargs
         prompt = kwargs.get("text")
         masks = {
             "sand": np.array([[1, 0, 0, 0], [0, 0, 0, 0]], dtype=bool),

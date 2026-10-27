@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from contextlib import AbstractContextManager, nullcontext
 from importlib import import_module
-from typing import Literal, Protocol, cast
+from types import ModuleType
+from typing import Any, Literal
 
 import numpy as np
 
@@ -20,33 +22,6 @@ _PROMPT_CLASS = {
 }
 
 
-class _Processor(Protocol):
-    def __call__(self, **kwargs: object) -> Mapping[str, object]: ...
-
-    def post_process_instance_segmentation(
-        self,
-        outputs: object,
-        *,
-        threshold: float,
-        mask_threshold: float,
-        target_sizes: list[tuple[int, int]],
-    ) -> Sequence[Mapping[str, object]]: ...
-
-
-class _Model(Protocol):
-    def get_vision_features(self, **kwargs: object) -> object: ...
-
-    def __call__(self, **kwargs: object) -> object: ...
-
-
-class _TensorLike(Protocol):
-    def detach(self) -> _TensorLike: ...
-
-    def cpu(self) -> _TensorLike: ...
-
-    def numpy(self) -> np.ndarray: ...
-
-
 class Sam3Segmenter:
     """Local SAM 3 backend with one vision-feature extraction per frame."""
 
@@ -56,11 +31,19 @@ class Sam3Segmenter:
         self,
         model_id: str = DEFAULT_SAM_MODEL_ID,
         *,
-        model: _Model | None = None,
-        processor: _Processor | None = None,
+        model: Any = None,
+        processor: Any = None,
     ) -> None:
+        # Injected test doubles take numpy inputs as-is; real weights need torch.
+        self._torch: ModuleType | None = None
         if model is None or processor is None:
-            model, processor = self._load(model_id)
+            self._torch = import_module("torch")
+            transformers = import_module("transformers")
+            model = transformers.Sam3Model.from_pretrained(
+                model_id, torch_dtype=self._torch.float16
+            )
+            model = model.to("cuda").eval()
+            processor = transformers.Sam3Processor.from_pretrained(model_id)
         self._model = model
         self._processor = processor
 
@@ -68,59 +51,53 @@ class Sam3Segmenter:
         if image.ndim != 3 or image.shape[2] != 3:
             raise ValueError("image must have shape HxWx3")
         height, width = image.shape[:2]
-        base_inputs = self._processor(images=image, return_tensors="pt")
-        vision_features = self._model.get_vision_features(**base_inputs)
         class_map = np.zeros((height, width), dtype=np.uint8)
         coral_mask = np.zeros((height, width), dtype=bool)
 
-        for prompt in _PROMPTS:
-            prompt_inputs = self._processor(
-                images=image,
-                text=prompt,
-                return_tensors="pt",
+        with self._no_grad():
+            image_inputs = self._inputs(images=image)
+            vision_embeds = self._model.get_vision_features(
+                pixel_values=image_inputs["pixel_values"]
             )
-            outputs = self._model(
-                **prompt_inputs,
-                vision_features=vision_features,
-            )
-            results = self._processor.post_process_instance_segmentation(
-                outputs,
-                threshold=0.5,
-                mask_threshold=0.5,
-                target_sizes=[(height, width)],
-            )
-            prompt_mask = _result_mask(results, (height, width))
-            if prompt == "coral":
-                coral_mask |= prompt_mask
-            else:
-                class_map[prompt_mask] = MASK_INDEX[_PROMPT_CLASS[prompt]]
+            for prompt in _PROMPTS:
+                outputs = self._model(**self._inputs(text=prompt), vision_embeds=vision_embeds)
+                results = self._processor.post_process_instance_segmentation(
+                    outputs,
+                    threshold=0.5,
+                    mask_threshold=0.5,
+                    target_sizes=[(height, width)],
+                )
+                prompt_mask = _result_mask(results, (height, width))
+                if prompt == "coral":
+                    coral_mask |= prompt_mask
+                else:
+                    class_map[prompt_mask] = MASK_INDEX[_PROMPT_CLASS[prompt]]
 
-        class_map[coral_mask] = MASK_INDEX[SegClass.LIVE_CORAL]
         coral_classes = classify_coral_pixels(image, coral_mask)
         class_map[coral_mask] = coral_classes[coral_mask]
         return class_map
 
-    @staticmethod
-    def _load(model_id: str) -> tuple[_Model, _Processor]:
-        transformers = import_module("transformers")
-        torch = import_module("torch")
-        model_type = getattr(transformers, "Sam3Model")  # noqa: B009
-        processor_type = getattr(transformers, "Sam3Processor")  # noqa: B009
-        model = model_type.from_pretrained(model_id, torch_dtype=torch.float16)
-        model = model.to("cuda").eval()
-        processor = processor_type.from_pretrained(model_id)
-        return cast(_Model, model), cast(_Processor, processor)
+    def _inputs(self, **kwargs: object) -> Any:
+        """Processor outputs, moved onto the GPU in the model's fp16 when torch is loaded."""
+        inputs = self._processor(**kwargs, return_tensors="pt")
+        if self._torch is None:
+            return inputs
+        return inputs.to("cuda", self._torch.float16)
+
+    def _no_grad(self) -> AbstractContextManager[object]:
+        if self._torch is None:
+            return nullcontext()
+        return self._torch.inference_mode()
 
 
-def _result_mask(results: Sequence[Mapping[str, object]], shape: tuple[int, int]) -> np.ndarray:
+def _result_mask(results: Sequence[Mapping[str, Any]], shape: tuple[int, int]) -> np.ndarray:
     if not results:
         return np.zeros(shape, dtype=bool)
-    segmentation: object = results[0].get("segmentation")
+    segmentation = results[0].get("masks")
     if segmentation is None:
         return np.zeros(shape, dtype=bool)
     if hasattr(segmentation, "detach"):
-        tensor = cast(_TensorLike, segmentation)
-        segmentation = tensor.detach().cpu().numpy()
+        segmentation = segmentation.detach().cpu().numpy()
     mask = np.asarray(segmentation, dtype=bool)
     if mask.ndim == 3:
         mask = np.any(mask, axis=0)

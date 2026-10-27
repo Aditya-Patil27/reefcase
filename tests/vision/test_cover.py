@@ -4,6 +4,7 @@ import pytest
 from reefcase.core.config import Settings
 from reefcase.core.schemas import MASK_INDEX, SegClass
 from reefcase.vision.fake import FakeSegmenter
+from reefcase.vision.modal_client import ModalSegmenter
 from reefcase.vision.segmenter import Segmenter, build_segmenter, cover_from_mask
 
 
@@ -34,4 +35,15 @@ def test_build_segmenter_selects_fake_backend(make_settings) -> None:
     segmenter = build_segmenter(settings)
 
     assert isinstance(segmenter, FakeSegmenter)
+    assert isinstance(segmenter, Segmenter)
+
+
+def test_build_segmenter_selects_modal_backend(make_settings) -> None:
+    settings: Settings = make_settings(
+        segmenter="sam3_modal", sam_modal_url="https://modal.test/segment"
+    )
+
+    segmenter = build_segmenter(settings)
+
+    assert isinstance(segmenter, ModalSegmenter)
     assert isinstance(segmenter, Segmenter)
