@@ -82,7 +82,9 @@ class Sam3Segmenter:
         inputs = self._processor(**kwargs, return_tensors="pt")
         if self._torch is None:
             return inputs
-        return inputs.to("cuda", self._torch.float16)
+        if "pixel_values" in inputs:
+            return inputs.to("cuda", self._torch.float16)
+        return inputs.to("cuda")  # text gives a BatchEncoding, whose .to() takes no dtype
 
     def _no_grad(self) -> AbstractContextManager[object]:
         if self._torch is None:
@@ -100,6 +102,8 @@ def _result_mask(results: Sequence[Mapping[str, Any]], shape: tuple[int, int]) -
         segmentation = segmentation.detach().cpu().numpy()
     mask = np.asarray(segmentation, dtype=bool)
     if mask.ndim == 3:
+        if mask.shape[0] == 0:  # no instances: SAM 3 skips the resize to target_sizes
+            return np.zeros(shape, dtype=bool)
         mask = np.any(mask, axis=0)
     if mask.shape != shape:
         raise ValueError("SAM 3 returned a mask with the wrong shape")
