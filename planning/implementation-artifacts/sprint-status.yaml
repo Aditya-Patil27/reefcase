@@ -24,7 +24,7 @@ development_status:
   epic-1: in-progress
   1-1-repository-scaffold-and-quality-gates: review # Opus P0
   1-2-core-schemas-ids-and-events: done # Opus P0
-  1-3-settings-and-model-provider-factory: backlog # Opus P0
+  1-3-settings-and-model-provider-factory: done # Opus P0
   1-4-store-foundation: backlog # Opus P0
   1-5-test-fixtures-and-fakes: backlog # Opus P0
   epic-1-retrospective: optional
