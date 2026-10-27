@@ -1,4 +1,4 @@
-import { http, HttpResponse } from "msw";
+import { http, HttpResponse, delay } from "msw";
 import type { components } from "../api/schema";
 import events from "./events.json";
 
@@ -407,6 +407,48 @@ function notFound(detail: string) {
   return HttpResponse.json({ detail }, { status: 404 });
 }
 
+/** FastAPI's validation body: `loc` names the field, `msg` reads like a person wrote it. */
+type ValidationIssue = { loc: string[]; msg: string; type: string };
+
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** The checks POST /api/surveys makes, so the form's 422 path runs without a backend. */
+function validateUpload(form: FormData): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  const video = form.get("video");
+  if (!video || typeof video === "string" || video.size === 0) {
+    issues.push({ loc: ["body", "video"], msg: "Provide the dive clip.", type: "missing" });
+  }
+
+  const bounds: [string, number, number][] = [
+    ["lat", -90, 90],
+    ["lon", -180, 180],
+  ];
+  for (const [field, min, max] of bounds) {
+    const raw = form.get(field);
+    const value = typeof raw === "string" && raw.trim() !== "" ? Number(raw) : Number.NaN;
+    if (!Number.isFinite(value) || value < min || value > max) {
+      issues.push({
+        loc: ["body", field],
+        msg: `${field} must be between ${min} and ${max}.`,
+        type: "value_error",
+      });
+    }
+  }
+
+  const diveDate = form.get("dive_date");
+  if (typeof diveDate !== "string" || !DATE.test(diveDate) || Number.isNaN(Date.parse(diveDate))) {
+    issues.push({
+      loc: ["body", "dive_date"],
+      msg: "dive_date must be a date, as YYYY-MM-DD.",
+      type: "value_error",
+    });
+  }
+
+  return issues;
+}
+
 function geoLayer(layer: string) {
   if (layer === "mpa") {
     return {
@@ -469,7 +511,13 @@ function geoLayer(layer: string) {
 export const handlers = [
   http.get("/api/health", () => HttpResponse.json(health)),
 
-  http.post("/api/surveys", () => HttpResponse.json(survey, { status: 201 })),
+  http.post("/api/surveys", async ({ request }) => {
+    const issues = validateUpload(await request.formData());
+    if (issues.length > 0) return HttpResponse.json({ detail: issues }, { status: 422 });
+    // A real upload takes a moment; the delay is what makes the progress bar visible in mock mode.
+    await delay(600);
+    return HttpResponse.json(survey, { status: 201 });
+  }),
 
   http.get("/api/surveys/:survey_id/events", () => {
     return new HttpResponse(sseBody, {

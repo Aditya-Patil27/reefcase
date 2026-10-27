@@ -22,7 +22,7 @@ for (const route of ROUTES) {
     await expect(primaryNav.getByRole("link", { name: "Upload" })).toBeVisible();
 
     // Health readout comes from GET /api/health, served by MSW.
-    await expect(page.getByRole("status")).toContainText("models ok");
+    await expect(page.getByRole("banner").getByRole("status")).toContainText("models ok", { timeout: 10_000 });
 
     await expect(page.getByRole("contentinfo")).toContainText(
       "Open-weight models · SAM 3 · Muse Spark Open",
@@ -42,7 +42,7 @@ test("the shell survives a route change without a reload", async ({ page }) => {
   await stubBasemap(page);
 
   await page.goto("/");
-  await expect(page.getByRole("status")).toContainText("models ok");
+  await expect(page.getByRole("banner").getByRole("status")).toContainText("models ok", { timeout: 10_000 });
 
   await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Upload" }).click();
   await expect(page).toHaveURL(/\/upload$/);

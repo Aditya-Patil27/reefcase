@@ -24,8 +24,8 @@ test("no route shows an API error and no /api/ response fails", async ({ page })
     await expect(page.getByRole("main")).toContainText(route.heading);
 
     // The health readout is the client's own probe: it must be healthy.
-    const health = page.getByRole("status");
-    await expect(health).toContainText("models ok");
+    const health = page.getByRole("banner").getByRole("status");
+    await expect(health).toContainText("models ok", { timeout: 10_000 });
     await expect(health).not.toContainText("API unreachable");
 
     // The error copy ui.md prescribes when the client cannot reach the API.

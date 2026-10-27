@@ -93,6 +93,52 @@ describe("mock handlers", () => {
     expect(created.id).toBe(MOCK_SURVEY_ID);
   });
 
+  it("rejects an upload with no clip in FastAPI's validation shape", async () => {
+    const body = new FormData();
+    body.set("lat", "-14.668");
+    body.set("lon", "145.461");
+    body.set("dive_date", "2026-10-21");
+
+    const response = await fetch(`${origin}/api/surveys`, { method: "POST", body });
+    expect(response.status).toBe(422);
+    const detail = (await response.json()) as {
+      detail: { loc: string[]; msg: string; type: string }[];
+    };
+    expect(detail.detail).toEqual([
+      { loc: ["body", "video"], msg: expect.any(String), type: expect.any(String) },
+    ]);
+  });
+
+  it("rejects a latitude outside the globe", async () => {
+    const body = new FormData();
+    body.set("video", new Blob(["clip"]), "transect.mp4");
+    body.set("lat", "91");
+    body.set("lon", "145.461");
+    body.set("dive_date", "2026-10-21");
+
+    const response = await fetch(`${origin}/api/surveys`, { method: "POST", body });
+    expect(response.status).toBe(422);
+    const detail = (await response.json()) as {
+      detail: { loc: string[]; msg: string; type: string }[];
+    };
+    expect(detail.detail).toEqual([
+      { loc: ["body", "lat"], msg: expect.any(String), type: expect.any(String) },
+    ]);
+  });
+
+  it("rejects a dive date that is not an ISO day", async () => {
+    const body = new FormData();
+    body.set("video", new Blob(["clip"]), "transect.mp4");
+    body.set("lat", "-14.668");
+    body.set("lon", "145.461");
+    body.set("dive_date", "21/10/2026");
+
+    const response = await fetch(`${origin}/api/surveys`, { method: "POST", body });
+    expect(response.status).toBe(422);
+    const detail = (await response.json()) as { detail: { loc: string[] }[] };
+    expect(detail.detail.map((issue) => issue.loc)).toEqual([["body", "dive_date"]]);
+  });
+
   it("returns 404 for an API path without a handler", async () => {
     const response = await fetch(`${origin}/api/not-a-route`);
     expect(response.status).toBe(404);
