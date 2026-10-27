@@ -3,7 +3,9 @@ name = "reefcase"
 version = "0.1.0"
 description = "Turn a diver's reef video into a cited investigation."
 requires-python = ">=3.14,<3.15"
-dependencies = []
+dependencies = [
+    "pydantic>=2.14.1",
+]
 
 [build-system]
 requires = ["uv_build>=0.13,<0.14"]
@@ -33,7 +35,7 @@ sequence = [
 target-version = "py314"
 line-length = 100
 src = ["src", "tests"]
-extend-exclude = ["web", "ml", "var", ".scratch", ".claude", "scripts"]
+extend-exclude = ["web", "ml", "var", ".scratch", ".claude", "planning", "scripts"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
