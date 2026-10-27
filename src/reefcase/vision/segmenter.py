@@ -23,4 +23,8 @@ def build_segmenter(settings: Settings) -> Segmenter:
     """Build the configured segmentation backend."""
     if settings.segmenter == "fake":
         return FakeSegmenter()
+    if settings.segmenter == "sam3_local":
+        from reefcase.vision.sam3 import Sam3Segmenter
+
+        return Sam3Segmenter(settings.sam_model_id)
     raise ConfigError(f"segmenter backend {settings.segmenter!r} is not available yet")
