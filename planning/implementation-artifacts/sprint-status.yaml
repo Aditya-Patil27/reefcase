@@ -71,8 +71,8 @@ development_status:
   6-6-site-timeline: backlog # C P1
   epic-6-retrospective: optional
 
-  epic-7: backlog
-  7-1-training-corpus-and-sam3-pseudo-labels: backlog # A P1
+  epic-7: in-progress
+  7-1-training-corpus-and-sam3-pseudo-labels: done # A P1
   7-2-train-reefstudent: backlog # A P1
   7-3-evaluate-against-human-labels: backlog # A P1
   7-4-reefstudent-backend-in-the-app: backlog # A P1
