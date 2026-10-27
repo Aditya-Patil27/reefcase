@@ -36,3 +36,10 @@ licence and the obligation we carry. Demo and test fixtures are listed under
 The frames are painted from the hand masks (256×256, 8-bit grayscale, pixel value = §4.2 class
 id); frame `06` is intentionally blurred. `clip_10s.mp4` is 10.0 s at 4 fps, cycling the six
 frames, so a 0.5 s extraction stride yields ~20 candidates (Story 2.3).
+
+## Distillation corpus sources (Epic 7)
+
+| Dataset slice | Source URL | Licence |
+|---|---|---|
+| Coralscapes train + val (pseudo-label input only; excludes test split) | https://zenodo.org/records/7879150 | Apache-2.0 |
+| NOAA NCRMP imagery (non-demo regions used for pseudo-labelling) | https://www.fisheries.noaa.gov/inport/item/27322 | US Gov |

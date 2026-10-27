@@ -37,11 +37,11 @@ development_status:
   2-5-site-matching: backlog # B P0
   epic-2-retrospective: optional
 
-  epic-3: backlog
-  3-1-segmenter-interface-and-cover-computation: backlog # A P0
-  3-2-sam3-local-backend: backlog # A P0
-  3-3-bleached-vs-live-coral-split: backlog # A P0
-  3-4-sam3-on-modal: backlog # A P0
+  epic-3: in-progress
+  3-1-segmenter-interface-and-cover-computation: done # A P0
+  3-2-sam3-local-backend: done # A P0
+  3-3-bleached-vs-live-coral-split: done # A P0
+  3-4-sam3-on-modal: review # A P0
   3-5-segmentation-stage: backlog # A P0
   epic-3-retrospective: optional
 
@@ -71,8 +71,8 @@ development_status:
   6-6-site-timeline: backlog # C P1
   epic-6-retrospective: optional
 
-  epic-7: backlog
-  7-1-training-corpus-and-sam3-pseudo-labels: backlog # A P1
+  epic-7: in-progress
+  7-1-training-corpus-and-sam3-pseudo-labels: done # A P1
   7-2-train-reefstudent: backlog # A P1
   7-3-evaluate-against-human-labels: backlog # A P1
   7-4-reefstudent-backend-in-the-app: backlog # A P1
