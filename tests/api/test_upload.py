@@ -6,9 +6,9 @@ from pathlib import Path
 
 import httpx
 import pytest
+from fastapi.testclient import TestClient
 
 from reefcase.api.main import create_app
-from reefcase.api.sync_asgi import SyncASGITransport
 from reefcase.core.errors import NotFoundError
 from reefcase.store.db import Store
 
@@ -23,10 +23,6 @@ def build_app(make_settings, tmp_path: Path):
 
 def client_for(app) -> httpx.AsyncClient:
     return httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test")
-
-
-def sync_client_for(app) -> httpx.Client:
-    return httpx.Client(transport=SyncASGITransport(app), base_url="http://test")
 
 
 async def post_survey(
@@ -59,6 +55,17 @@ async def test_upload_creates_queued_survey_and_stores_video(make_settings, tmp_
     survey = await store.surveys.get(body["id"])
     assert survey.model_dump(mode="json") == body
     assert store.blobs.read(body["video_path"]) == CLIP_BYTES
+
+
+@pytest.mark.asyncio
+async def test_upload_keeps_the_video_suffix(make_settings, tmp_path) -> None:
+    app = build_app(make_settings, tmp_path)
+    async with client_for(app) as client:
+        response = await post_survey(client, video_name="dive.MOV")
+    assert response.status_code == 201
+    body = response.json()
+    assert body["video_path"] == f"blobs/{body['id']}/video.mov"
+    assert app.state.store.blobs.read(body["video_path"]) == CLIP_BYTES
 
 
 @pytest.mark.asyncio
@@ -154,7 +161,7 @@ async def test_survey_survives_app_shutdown(make_settings, tmp_path) -> None:
 
 def test_health_reports_provider_config(make_settings, tmp_path) -> None:
     app = build_app(make_settings, tmp_path)
-    with sync_client_for(app) as client:
+    with TestClient(app) as client:
         response = client.get("/api/health")
     assert response.status_code == 200
     body = response.json()

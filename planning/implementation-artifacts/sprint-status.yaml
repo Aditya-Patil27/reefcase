@@ -73,9 +73,9 @@ development_status:
 
   epic-7: in-progress
   7-1-training-corpus-and-sam3-pseudo-labels: done # A P1
-  7-2-train-reefstudent: backlog # A P1
-  7-3-evaluate-against-human-labels: backlog # A P1
-  7-4-reefstudent-backend-in-the-app: backlog # A P1
+  7-2-train-reefstudent: done # A P1
+  7-3-evaluate-against-human-labels: done # A P1
+  7-4-reefstudent-backend-in-the-app: done # A P1
   7-5-teacher-assessment-dataset: backlog # B P2
   7-6-glimmer-reef-lora-fine-tune: backlog # B P2
   7-7-serve-glimmer-reef: backlog # B P2

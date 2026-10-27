@@ -6,7 +6,9 @@ never absolute paths, so a seeded ``data/demo/`` tree can move between hosts.
 ``resolve()``.
 """
 
+import shutil
 from pathlib import Path
+from typing import BinaryIO
 
 from reefcase.core.errors import StoreError
 
@@ -76,6 +78,14 @@ class Blobs:
     def save_video(self, survey_id: str, data: bytes, suffix: str = ".mp4") -> str:
         """Write ``data`` as the survey video and return its ref."""
         return self._write(self.video_path(survey_id, suffix), data)
+
+    def save_video_stream(self, survey_id: str, source: BinaryIO, suffix: str = ".mp4") -> str:
+        """Copy ``source`` to the survey video without loading it into memory; return its ref."""
+        path = self.video_path(survey_id, suffix)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("wb") as target:
+            shutil.copyfileobj(source, target)
+        return self.ref(path)
 
     def read(self, ref: str) -> bytes:
         """Read the bytes behind ``ref``."""

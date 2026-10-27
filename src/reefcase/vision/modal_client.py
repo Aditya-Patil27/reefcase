@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from io import BytesIO
+from typing import Literal
 
 import httpx
 import numpy as np
@@ -15,7 +16,7 @@ __all__ = ["ModalSegmenter"]
 class ModalSegmenter:
     """HTTP client for the deployed SAM 3 Modal endpoint."""
 
-    name = "sam3"
+    name: Literal["sam3"] = "sam3"
 
     def __init__(
         self,

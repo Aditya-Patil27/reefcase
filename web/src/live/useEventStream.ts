@@ -2,6 +2,7 @@
 import type { LiveState } from "./reducer";
 import { initialLiveState, liveReducer } from "./reducer";
 import type { components } from "../api/schema";
+import { config } from "../config";
 
 type Event = components["schemas"]["Event"];
 
@@ -48,7 +49,7 @@ export function useEventStream(surveyId: string | undefined): UseEventStreamResu
 
     function connect() {
       if (isCancelled) return;
-      const url = `/api/surveys/${encodeURIComponent(id)}/events`;
+      const url = `${config.API_URL}/api/surveys/${encodeURIComponent(id)}/events`;
       const es = new EventSource(url);
       eventSource = es;
 

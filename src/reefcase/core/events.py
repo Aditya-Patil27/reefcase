@@ -10,7 +10,7 @@ from typing import Annotated, Any, Literal, TypeAlias
 
 from pydantic import AwareDatetime, BaseModel, Field, TypeAdapter
 
-from reefcase.core.schemas import Finding, FrameAssessment, QualityScore, SegClass
+from reefcase.core.schemas import Finding, FrameAssessment, QualityScore, SegBackend, SegClass
 
 __all__ = [
     "Assessed",
@@ -65,7 +65,7 @@ class Segmented(_EventBase):
 
     type: Literal["segmented"] = "segmented"
     frame_id: str
-    backend: Literal["sam3", "student", "fake"]
+    backend: SegBackend
     cover: dict[SegClass, float]
     mask_url: str
 
