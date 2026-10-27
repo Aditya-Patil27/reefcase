@@ -15,8 +15,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 
-from reefcase.api.routes import surveys
+from reefcase.api.routes import events, surveys
 from reefcase.core.config import Settings
+from reefcase.pipeline.bus import EventBus
+from reefcase.pipeline.runner import JobRunner, RunStages
 from reefcase.store.db import Store
 
 __all__ = ["create_app"]
@@ -31,8 +33,15 @@ def _health_payload(settings: Settings) -> dict[str, object]:
     }
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
-    """Build the API app: open the store, mount the routers, wire the lifespan."""
+def create_app(
+    settings: Settings | None = None,
+    run_stages: RunStages | None = None,
+) -> FastAPI:
+    """Build the API app: open the store, mount the routers, wire the lifespan.
+
+    ``run_stages`` is injected for tests (2.2's SSE tests stub the stage
+    chain); production wires the real chain when the stage stories land.
+    """
     resolved = settings if settings is not None else Settings()
 
     store = Store.open(resolved.data_dir)
@@ -40,8 +49,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.store = store
     app.state.settings = resolved
     app.state.health = _health_payload(resolved)
+    app.state.bus = EventBus(store)
+    app.state.runner = JobRunner(store, run_stages, bus=app.state.bus)
 
     app.include_router(surveys.router, prefix="/api")
+    app.include_router(events.router, prefix="/api")
     app.get("/api/health")(_health_route)
 
     return app
