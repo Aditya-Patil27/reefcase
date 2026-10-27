@@ -62,13 +62,13 @@ development_status:
   5-5-teacher-student-disagreement: backlog # B P1
   epic-5-retrospective: optional
 
-  epic-6: in-progress
+  epic-6: done
   6-1-web-scaffold-typed-client-and-event-reducer: done # C P0
   6-2-upload-page: done # C P0
   6-3-live-investigation-view: done # C P0
   6-4-reef-map: done # C P0
-  6-5-case-file-with-evidence-drawer: backlog # C P0
-  6-6-site-timeline: backlog # C P1
+  6-5-case-file-with-evidence-drawer: done # C P0
+  6-6-site-timeline: done # C P1
   epic-6-retrospective: optional
 
   epic-7: in-progress

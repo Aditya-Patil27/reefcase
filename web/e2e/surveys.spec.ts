@@ -29,6 +29,12 @@ test("/surveys/$id renders live investigation view with frames, trace, and findi
     await expect(page.getByText("Investigate").first()).toBeVisible();
   }
 
+  // Switch to Frames tab if case file report is active
+  const framesTab = page.getByRole("button", { name: "Frames", exact: true });
+  if (await framesTab.isVisible()) {
+    await framesTab.click();
+  }
+
   // 01 FRAMES section
   await expect(page.getByRole("heading", { name: /01\s+FRAMES/i }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Frame", exact: true })).toBeVisible();
