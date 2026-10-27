@@ -14,16 +14,16 @@
 # Priority: P0 by Sat Oct 31, P1 by Mon Nov 2, P2 by Tue Nov 3; freeze Wed Nov 4
 
 generated: 2026-10-26
-last_updated: 2026-10-26
+last_updated: 2026-10-27
 project: met
 project_key: NOKEY
 tracking_system: file-system
 story_location: planning/implementation-artifacts
 
 development_status:
-  epic-1: backlog
-  1-1-repository-scaffold-and-quality-gates: backlog # Opus P0
-  1-2-core-schemas-ids-and-events: backlog # Opus P0
+  epic-1: in-progress
+  1-1-repository-scaffold-and-quality-gates: review # Opus P0
+  1-2-core-schemas-ids-and-events: done # Opus P0
   1-3-settings-and-model-provider-factory: backlog # Opus P0
   1-4-store-foundation: backlog # Opus P0
   1-5-test-fixtures-and-fakes: backlog # Opus P0
