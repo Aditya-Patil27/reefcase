@@ -13,6 +13,7 @@ All status flips and events go through the single-writer ``Store`` and the
 
 import asyncio
 import contextlib
+import logging
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 
@@ -25,9 +26,11 @@ __all__ = ["JobRunner", "RunStages"]
 
 RunStages = Callable[[Store, str], Awaitable[None]]
 
+logger = logging.getLogger(__name__)
+
 
 class JobRunner:
-    """Runs queued surveys, ``concurrency`` at a time, until closed."""
+    """Runs queued surveys, up to ``concurrency`` at a time, until closed."""
 
     def __init__(
         self,
@@ -46,6 +49,7 @@ class JobRunner:
         self._pending: asyncio.Queue[str] = asyncio.Queue()
         self._wakeup = asyncio.Event()
         self._closed = False
+        self._inflight: set[asyncio.Task[None]] = set()
 
     async def submit(self, survey_id: str) -> None:
         """Queue a survey and wake the poll loop."""
@@ -58,19 +62,34 @@ class JobRunner:
         self._wakeup.set()
 
     async def run_forever(self) -> None:
-        """Poll for work until :meth:`close`."""
+        """Poll for work until :meth:`close`.
+
+        Each claimed survey runs in its own :class:`asyncio.Task`; a new survey
+        is claimed only while fewer than ``concurrency`` tasks are in flight.
+        On close, the loop stops claiming and returns once the in-flight
+        surveys finish.
+        """
         while not self._closed:
-            ran = await self.run_once()
-            if not ran:
+            if len(self._inflight) >= self._concurrency:
                 await self._sleep()
+                continue
+            survey_id = self._pending.get_nowait() if not self._pending.empty() else None
+            if survey_id is None:
+                survey_id = await self._claim()
+            if survey_id is None:
+                await self._sleep()
+                continue
+            self._spawn(survey_id)
+        if self._inflight:
+            await asyncio.gather(*self._inflight, return_exceptions=True)
         self._wakeup.set()
 
     async def run_once(self) -> bool:
-        """Claim and run one queued survey; return whether something ran.
+        """Claim and run one queued survey to completion; return whether it ran.
 
-        Always one survey per call (the concurrency limit applies to
-        ``run_forever``'s in-flight tasks, not to the claim itself), so tests
-        can drive the loop deterministically.
+        Always one survey per call, awaited inline (the concurrency limit only
+        applies to ``run_forever``'s in-flight tasks), so tests can drive the
+        loop deterministically.
         """
         survey_id = self._pending.get_nowait() if not self._pending.empty() else None
         if survey_id is None:
@@ -79,6 +98,24 @@ class JobRunner:
             return False
         await self._run(survey_id)
         return True
+
+    def _spawn(self, survey_id: str) -> None:
+        """Start one survey in a background task and track it as in flight."""
+        task = asyncio.create_task(self._run(survey_id))
+        self._inflight.add(task)
+        task.add_done_callback(self._on_done)
+
+    def _on_done(self, task: asyncio.Task[None]) -> None:
+        """Drop a finished task from the in-flight set and wake the poll loop."""
+        self._inflight.discard(task)
+        if not task.cancelled():
+            exc = task.exception()
+            if exc is not None:
+                # ``_run`` already marks the survey FAILED for stage errors; a
+                # task-level exception means something escaped it (e.g. the
+                # store broke before the stage chain started).
+                logger.error("survey job crashed outside the stage chain", exc_info=exc)
+        self._wakeup.set()
 
     async def _sleep(self) -> None:
         """Wait for the next poll tick or an explicit wake-up."""
