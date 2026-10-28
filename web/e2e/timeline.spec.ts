@@ -21,19 +21,18 @@ test("/sites/$id renders site timeline with metrics, cover chart, and surveys ta
   await expect(page.getByText(/14.6680°\s+S\s+145.4610°\s+E/i)).toBeVisible();
   await expect(page.getByText(/MPA Protected/i)).toBeVisible();
 
-  // Figures row: 4 metric cards
-  await expect(page.getByText("Live cover now")).toBeVisible();
-  await expect(page.getByText("Change")).toBeVisible();
-  await expect(page.getByText("Surveys", { exact: true })).toBeVisible();
-  await expect(page.getByText("Latest heat stress")).toBeVisible();
+  // One readout line of key figures
+  await expect(page.getByLabel("Site key figures")).toHaveText(
+    /LIVE CORAL \d+% \([+−]\d+\.\d pp since \d{4}\) · \d+ SURVEYS/,
+  );
 
-  // 01 COVER OVER TIME section
-  await expect(page.getByRole("heading", { name: /01\s+COVER OVER TIME/i })).toBeVisible();
+  // COVER OVER TIME section
+  await expect(page.getByRole("heading", { name: "COVER OVER TIME" })).toBeVisible();
   await expect(page.getByText("Live coral").first()).toBeVisible();
   await expect(page.getByText("Bleached coral").first()).toBeVisible();
 
-  // 02 SURVEYS section
-  await expect(page.getByRole("heading", { name: /02\s+SURVEYS/i })).toBeVisible();
+  // SURVEYS section
+  await expect(page.getByRole("heading", { name: "SURVEYS" })).toBeVisible();
 
   // Save screenshot of timeline at this viewport size
   const viewport = page.viewportSize();

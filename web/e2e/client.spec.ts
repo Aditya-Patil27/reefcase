@@ -44,9 +44,10 @@ test("the mock survey and site resolve by their real ids", async ({ page }) => {
 
   await page.goto(`/surveys/${SURVEY_ID}`);
   await expect(page.getByRole("main")).toContainText(SURVEY_ID);
-  await expect(page.getByRole("main")).toContainText("FINDINGS");
+  // The mock paces the event stream, so findings arrive a few seconds in.
+  await expect(page.getByRole("main")).toContainText("FINDINGS", { timeout: 15_000 });
 
   await page.goto(`/sites/${SITE_ID}`);
-  await expect(page.getByRole("main")).toContainText(SITE_ID);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Lizard Island");
   await expect(page.getByRole("main")).toContainText("COVER OVER TIME");
 });

@@ -127,15 +127,15 @@ describe("SurveyRoute", () => {
     expect(screen.getAllByText("Frames").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Segment").length).toBeGreaterThan(0);
 
-    // 01 FRAMES section
-    expect(screen.getAllByRole("heading", { name: /01\s+FRAMES/i }).length).toBeGreaterThan(0);
+    // FRAMES section
+    expect(screen.getAllByRole("heading", { name: "FRAMES" }).length).toBeGreaterThan(0);
 
-    // 02 TRACE section
-    expect(screen.getAllByRole("heading", { name: /02\s+TRACE/i }).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("heat_stress").length).toBeGreaterThan(0);
+    // TRACE section
+    expect(screen.getAllByRole("heading", { name: "TRACE" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Heat stress").length).toBeGreaterThan(0);
 
-    // 03 FINDINGS section
-    expect(screen.getAllByRole("heading", { name: /03\s+FINDINGS/i }).length).toBeGreaterThan(0);
+    // FINDINGS section
+    expect(screen.getAllByRole("heading", { name: "FINDINGS" }).length).toBeGreaterThan(0);
     expect(
       screen.getAllByText(/Bleaching detected across transect frames./i).length,
     ).toBeGreaterThan(0);
@@ -185,7 +185,7 @@ describe("SurveyRoute", () => {
     expect(
       await screen.findByText(/Thermal stress drove most of the bleaching/i),
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /02.*HYPOTHESES/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /03.*ACTIONS/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "HYPOTHESES" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "ACTIONS" })).toBeInTheDocument();
   });
 });

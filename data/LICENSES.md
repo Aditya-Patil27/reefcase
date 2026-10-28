@@ -32,6 +32,7 @@ licence and the obligation we carry. Demo and test fixtures are listed under
 | `tests/fixtures/masks/05.png` | self-authored, generated offline for tests (`.scratch/gen_fixtures.py`) | CC0 (test fixture) |
 | `tests/fixtures/masks/06.png` | self-authored, generated offline for tests (`.scratch/gen_fixtures.py`) | CC0 (test fixture) |
 | `tests/fixtures/clip_10s.mp4` | self-authored, generated offline for tests (`.scratch/gen_fixtures.py`) | CC0 (test fixture) |
+| `web/public/demo/frames/01–08.jpg`, `web/public/demo/masks/01–08.png` | https://huggingface.co/datasets/EPFL-ECEO/coralscapes (test split rows test-2/1/11, test-1/0/36, test-1/1/24, test-2/1/12, test-2/0/60, test-2/1/18, test-2/0/17, test-2/0/12; centre-cropped to 16:9, 960×540; masks are the Coralscapes labels remapped to the six §4.2 classes) | Apache-2.0; cite the Coralscapes paper |
 
 The frames are painted from the hand masks (256×256, 8-bit grayscale, pixel value = §4.2 class
 id); frame `06` is intentionally blurred. `clip_10s.mp4` is 10.0 s at 4 fps, cycling the six

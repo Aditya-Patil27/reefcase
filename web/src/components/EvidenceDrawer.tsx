@@ -9,6 +9,7 @@ import { CoverStrip } from "./CoverStrip";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
 import type { FrameView } from "../live/reducer";
+import { frameLabel, humanize } from "../format";
 
 export type EvidenceRef = components["schemas"]["EvidenceRef"];
 export type EvidenceItem = EvidenceRef;
@@ -42,39 +43,26 @@ export function EvidenceDrawer({
     enabled: evidence?.kind === "tool_result" && Boolean(evidence.id),
   });
 
+  const frameIds = frames.map((f) => f.id);
   const frame =
-    evidence?.kind === "frame"
-      ? frames.find((f) => f.id === evidence.id) ?? {
-          id: evidence.id,
-          thumbUrl: "/media/frames/01.jpg",
-          maskUrl: "/media/masks/01.png",
-          cover: {
-            live_coral: 0.35,
-            bleached_coral: 0.15,
-            algae: 0.1,
-            rubble: 0.2,
-            sand: 0.18,
-            other: 0.02,
-          },
-          assessment: "Assessment not available for this frame.",
-        }
-      : null;
+    evidence?.kind === "frame" ? frames.find((f) => f.id === evidence.id) ?? null : null;
+  const frameName = evidence?.kind === "frame" ? frameLabel(frameIds, evidence.id) : "";
 
   const toolResult = toolQuery.data;
 
   const title =
     evidence?.kind === "frame"
-      ? `Frame ${evidence.id}`
+      ? frameName
       : toolResult
-        ? `Tool: ${toolResult.tool}`
+        ? humanize(toolResult.tool)
         : "Evidence item";
 
   const description =
     evidence?.kind === "frame"
-      ? "Transect frame assessment and segmentation"
+      ? "Transect frame and its segmentation mask"
       : toolResult
-        ? `Retrieved ${toolResult.retrieved_at}`
-        : "Investigation evidence inspection";
+        ? `Retrieved ${toolResult.retrieved_at.slice(0, 16).replace("T", " ")} UTC`
+        : "Investigation evidence";
 
   // Heat stress series data for line chart
   const heatData = (toolResult?.data as any)?.series as
@@ -102,6 +90,10 @@ export function EvidenceDrawer({
       >
         <div className="space-y-6 pt-4">
           {/* Frame Evidence View */}
+          {evidence?.kind === "frame" && !frame ? (
+            <p className="text-body text-secondary">This frame is not loaded yet.</p>
+          ) : null}
+
           {evidence?.kind === "frame" && frame ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -119,27 +111,26 @@ export function EvidenceDrawer({
                 />
               </div>
 
-              {/* 16:9 visual */}
-              <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-hairline bg-surface">
+              <div className="relative aspect-video w-full overflow-hidden rounded-sm bg-sunken">
                 {maskMode !== "mask" && frame.thumbUrl ? (
                   <img
                     src={frame.thumbUrl}
-                    alt={`Frame ${frame.id}`}
+                    alt={frameName}
                     className="absolute inset-0 h-full w-full object-cover"
                   />
                 ) : null}
                 {maskMode !== "frame" && frame.maskUrl ? (
                   <img
                     src={frame.maskUrl}
-                    alt={`Mask ${frame.id}`}
-                    className="absolute inset-0 h-full w-full object-cover opacity-60 mix-blend-screen"
+                    alt={`${frameName} mask`}
+                    className={`absolute inset-0 h-full w-full object-cover ${maskMode === "both" ? "opacity-55" : ""}`}
                   />
                 ) : null}
               </div>
 
               {/* Cover breakdown */}
               {frame.cover ? (
-                <div className="space-y-2 rounded-lg border border-hairline bg-surface p-4">
+                <div className="space-y-2 border-y border-hairline py-3">
                   <div className="flex items-center justify-between font-mono text-label text-secondary">
                     <span>Benthic cover</span>
                     <span className="font-semibold text-fg">
@@ -152,7 +143,7 @@ export function EvidenceDrawer({
 
               {/* Assessment */}
               {frame.assessment ? (
-                <div className="rounded-lg border border-hairline bg-surface p-4 space-y-2">
+                <div className="space-y-2">
                   <h4 className="font-mono text-label uppercase text-muted">
                     Assessment
                   </h4>
@@ -170,12 +161,12 @@ export function EvidenceDrawer({
                       ) : null}
                       {(frame.assessment as any).morphology ? (
                         <p className="text-secondary">
-                          Morphology: <span className="text-fg">{(frame.assessment as any).morphology}</span>
+                          Morphology: <span className="text-fg">{[(frame.assessment as any).morphology].flat().join(", ")}</span>
                         </p>
                       ) : null}
                       {(frame.assessment as any).damage ? (
                         <p className="text-secondary">
-                          Damage: <span className="text-danger">{(frame.assessment as any).damage}</span>
+                          Damage: <span className="text-danger">{[(frame.assessment as any).damage].flat().join(", ")}</span>
                         </p>
                       ) : null}
                     </div>
@@ -188,9 +179,8 @@ export function EvidenceDrawer({
           {/* Tool Result View */}
           {evidence?.kind === "tool_result" && toolResult ? (
             <div className="space-y-6">
-              {/* Source URL link */}
-              <div className="rounded-lg border border-hairline bg-surface p-3">
-                <span className="font-mono text-label text-muted">Source:</span>
+              <div className="border-y border-hairline py-3">
+                <span className="font-mono text-label uppercase text-muted">Source</span>
                 <a
                   href={toolResult.source_url}
                   target="_blank"
@@ -207,7 +197,7 @@ export function EvidenceDrawer({
                 <h4 className="font-mono text-label uppercase text-muted">
                   PARAMETERS
                 </h4>
-                <div className="rounded-lg border border-hairline bg-surface p-2">
+                <div className="border-y border-hairline py-2">
                   <JsonViewer data={toolResult.params} />
                 </div>
               </div>
@@ -218,7 +208,7 @@ export function EvidenceDrawer({
                   <h4 className="font-mono text-label uppercase text-muted">
                     HEAT STRESS TIMELINE
                   </h4>
-                  <div className="rounded-lg border border-hairline bg-surface p-4">
+                  <div className="border-y border-hairline py-3">
                     <LineChart
                       data={chartData}
                       series={[
@@ -244,7 +234,7 @@ export function EvidenceDrawer({
                   <h4 className="font-mono text-label uppercase text-muted">
                     SAR DETECTIONS
                   </h4>
-                  <div className="rounded-lg border border-hairline bg-surface p-3 font-mono text-label space-y-1">
+                  <div className="space-y-1 border-y border-hairline py-3 font-mono text-label">
                     <p className="text-secondary">
                       Unmatched to AIS:{" "}
                       <span className="text-danger font-semibold">
@@ -266,7 +256,7 @@ export function EvidenceDrawer({
                 <h4 className="font-mono text-label uppercase text-muted">
                   RESULT DATA
                 </h4>
-                <div className="rounded-lg border border-hairline bg-surface p-2">
+                <div className="border-y border-hairline py-2">
                   <JsonViewer data={toolResult.data} />
                 </div>
               </div>

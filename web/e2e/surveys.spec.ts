@@ -15,7 +15,7 @@ test("/surveys/$id renders live investigation view with frames, trace, and findi
   await page.goto(`/surveys/${SURVEY_ID}`);
 
   // Header readout contains survey ID and Lizard Island
-  await expect(page.getByText("LIZARD ISLAND")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Lizard Island" })).toBeVisible();
   await expect(page.getByText(SURVEY_ID).first()).toBeVisible();
 
   // Pipeline stages (responsive)
@@ -35,22 +35,22 @@ test("/surveys/$id renders live investigation view with frames, trace, and findi
     await framesTab.click();
   }
 
-  // 01 FRAMES section
-  await expect(page.getByRole("heading", { name: /01\s+FRAMES/i }).first()).toBeVisible();
+  // FRAMES section
+  await expect(page.getByRole("heading", { name: "FRAMES" }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Frame", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Mask", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Both", exact: true })).toBeVisible();
 
   // Frame tiles and thumbnails appear from mock event stream
-  await expect(page.getByText("FR 01").first()).toBeVisible();
+  await expect(page.getByText("Frame 01").first()).toBeVisible();
 
-  // 02 TRACE section
-  await expect(page.getByRole("heading", { name: /02\s+TRACE/i }).first()).toBeVisible();
-  await expect(page.getByText("heat_stress").first()).toBeVisible();
-  await expect(page.getByText("vessel_activity").first()).toBeVisible();
+  // TRACE section
+  await expect(page.getByRole("heading", { name: "TRACE" }).first()).toBeVisible();
+  await expect(page.getByText("Heat stress").first()).toBeVisible();
+  await expect(page.getByText("Vessel activity").first()).toBeVisible();
 
-  // 03 FINDINGS section
-  await expect(page.getByRole("heading", { name: /03\s+FINDINGS/i }).first()).toBeVisible();
+  // FINDINGS section
+  await expect(page.getByRole("heading", { name: "FINDINGS" }).first()).toBeVisible();
 
   // Save screenshot of live investigation at this viewport size
   const viewport = page.viewportSize();
