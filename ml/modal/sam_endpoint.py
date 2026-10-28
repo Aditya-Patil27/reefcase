@@ -48,8 +48,10 @@ if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
     image = (
         modal.Image.debian_slim(python_version="3.14")
         .pip_install(
-            "torch",
-            "transformers",
+            # Same versions as the `gpu` group in pyproject.toml.
+            "torch==2.14.1",
+            "torchvision==0.29.1",
+            "transformers==5.20.2",
             "numpy",
             "pillow",
             "pydantic",
@@ -59,7 +61,15 @@ if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
         .add_local_python_source("reefcase")
     )
 
-    @app.cls(gpu="T4", image=image, secrets=[modal.Secret.from_name("huggingface")])
+    # Keeps the 3.3 GB of weights between cold starts instead of re-downloading them.
+    hf_cache = modal.Volume.from_name("reefcase-hf-cache", create_if_missing=True)
+
+    @app.cls(
+        gpu="T4",
+        image=image,
+        secrets=[modal.Secret.from_name("huggingface")],
+        volumes={"/root/.cache/huggingface": hf_cache},
+    )
     class Sam3Endpoint:
         @modal.enter()
         def load(self) -> None:
