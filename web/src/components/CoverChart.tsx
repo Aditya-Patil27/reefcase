@@ -25,7 +25,7 @@ export function CoverChart({ surveys, className }: CoverChartProps): ReactElemen
   return (
     <figure
       aria-label="Reef cover over time"
-      className={["rounded-lg border border-hairline bg-surface p-4 sm:p-6 space-y-6 max-w-full overflow-hidden", className]
+      className={["border-y border-hairline py-4 sm:py-6 space-y-6 max-w-full overflow-hidden", className]
         .filter(Boolean)
         .join(" ")}
     >
@@ -84,7 +84,7 @@ export function CoverChart({ surveys, className }: CoverChartProps): ReactElemen
 
                 {/* Stacked bar (height 180px) */}
                 <div
-                  className="h-44 w-12 rounded-t-md overflow-hidden flex flex-col-reverse shadow-sm transition-transform duration-200 group-hover:scale-105"
+                  className="h-44 w-12 rounded-t-sm overflow-hidden flex flex-col-reverse"
                   aria-label={`Dive ${survey.dive_date}: ${livePct}% live coral`}
                 >
                   {CATEGORIES.map((cat) => {

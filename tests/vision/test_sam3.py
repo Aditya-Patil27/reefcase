@@ -1,8 +1,11 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
+from PIL import Image
 
 from reefcase.core.schemas import MASK_INDEX, SegClass
-from reefcase.vision.sam3 import Sam3Segmenter
+from reefcase.vision.sam3 import Sam3Segmenter, _result_mask  # pyright: ignore[reportPrivateUsage]
 
 
 class FakeProcessor:
@@ -67,7 +70,28 @@ def test_sam3_reuses_features_and_paints_priority() -> None:
     ]
 
 
+def test_sam3_no_instances_gives_an_empty_mask_at_frame_size() -> None:
+    # Real SAM 3 returns (0, 288, 288) when nothing matches, not (0, H, W).
+    empty = np.zeros((0, 288, 288), dtype=bool)
+
+    mask = _result_mask([{"masks": empty}], (2, 4))
+
+    assert mask.shape == (2, 4)
+    assert not mask.any()
+
+
 @pytest.mark.gpu
-def test_sam3_real_model_is_gpu_only() -> None:
-    """The real-weight test is run manually on a Kaggle T4."""
-    assert True
+def test_sam3_real_weights_segment_a_fixture_frame() -> None:
+    """Real `facebook/sam3` on CUDA. Needs `uv sync --group gpu` and HF_TOKEN with gated access."""
+    torch = pytest.importorskip("torch")
+    if not torch.cuda.is_available():
+        pytest.skip("no CUDA device")
+    frame = Path(__file__).parents[1] / "fixtures" / "frames" / "01.jpg"
+    image = np.asarray(Image.open(frame).convert("RGB"))
+
+    result = Sam3Segmenter().segment(image)
+
+    assert result.dtype == np.uint8
+    assert result.shape == image.shape[:2]
+    # Fixture frames are synthetic shapes SAM 3 may not recognise: check the contract only.
+    assert set(np.unique(result).tolist()) <= set(MASK_INDEX.values())

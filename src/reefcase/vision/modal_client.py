@@ -26,7 +26,11 @@ class ModalSegmenter:
     ) -> None:
         if settings.sam_modal_url is None:
             raise ConfigError("REEFCASE_SAM_MODAL_URL is required for ModalSegmenter")
+        if settings.sam_modal_token is None:
+            raise ConfigError("REEFCASE_SAM_MODAL_TOKEN is required for ModalSegmenter")
         self._url = settings.sam_modal_url
+        # Modal proxy auth: the endpoint rejects anyone without this workspace token.
+        self._auth = f"Bearer {settings.sam_modal_token.get_secret_value()}"
         self._client = client or httpx.Client(timeout=60.0)
 
     def segment(self, image: np.ndarray) -> np.ndarray:
@@ -37,7 +41,7 @@ class ModalSegmenter:
         response = self._client.post(
             self._url,
             content=encoded.getvalue(),
-            headers={"content-type": "image/jpeg"},
+            headers={"content-type": "image/jpeg", "authorization": self._auth},
         )
         response.raise_for_status()
         mask = np.asarray(Image.open(BytesIO(response.content)).convert("L"), dtype=np.uint8)

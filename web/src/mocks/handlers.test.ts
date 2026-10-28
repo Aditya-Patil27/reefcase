@@ -59,7 +59,8 @@ describe("mock handlers", () => {
     expect(body).toContain("event: report_ready");
     expect(body).toContain(`"survey_id":"${MOCK_SURVEY_ID}"`);
     expect(body.split("\n\n").filter(Boolean)).toHaveLength(41);
-  });
+    // The mock paces events so the demo streams visibly; reading all 41 takes ~6s.
+  }, 20_000);
 
   it("serves frames, the investigation and a tool result", async () => {
     const frames = await fetch(`${origin}/api/surveys/${MOCK_SURVEY_ID}/frames`);

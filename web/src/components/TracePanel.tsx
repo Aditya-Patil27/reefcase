@@ -5,6 +5,8 @@ import type { EventStreamStatus } from "../live/useEventStream";
 import type { components } from "../api/schema";
 import Alert from "./arc/alert/alert";
 import TextShimmer from "./arc/text-shimmer/text-shimmer";
+import { EvidenceChip, toolNamesByResultId } from "./CaseFile";
+import { evidenceLabel, humanize } from "../format";
 
 type Finding = components["schemas"]["Finding"];
 
@@ -13,6 +15,8 @@ export interface TracePanelProps {
   findings: Finding[];
   status?: EventStreamStatus;
   reconnectSeq?: number | null;
+  /** Frame ids in arrival order, for human chip labels. */
+  frameIds?: string[];
   className?: string;
   onSelectEvidence?: (kind: "frame" | "tool_result", id: string) => void;
 }
@@ -55,10 +59,12 @@ export function TracePanel({
   findings,
   status,
   reconnectSeq,
+  frameIds = [],
   className = "",
   onSelectEvidence,
 }: TracePanelProps) {
   const [expandedCalls, setExpandedCalls] = useState<Record<string, boolean>>({});
+  const toolByResultId = toolNamesByResultId(toolCalls);
 
   function toggleCall(callId: string) {
     setExpandedCalls((prev) => ({ ...prev, [callId]: !prev[callId] }));
@@ -75,7 +81,7 @@ export function TracePanel({
 
       <div>
         <h2 id="trace-heading" className="font-mono text-label uppercase text-muted">
-          02&nbsp;&nbsp;TRACE
+          TRACE
         </h2>
 
         <div className="mt-3 divide-y divide-dashed divide-hairline border-y border-dashed border-hairline">
@@ -98,9 +104,7 @@ export function TracePanel({
                   >
                     <div className="flex min-w-0 items-center gap-2">
                       <span className="font-mono text-label text-muted tabular-nums">{idxStr}</span>
-                      <span className="rounded-md border border-hairline bg-sunken px-1.5 py-0.5 font-mono text-label text-fg">
-                        {call.tool}
-                      </span>
+                      <span className="text-ui font-medium text-fg">{humanize(call.tool)}</span>
                       <span className="truncate font-mono text-label text-muted">{summary}</span>
                     </div>
 
@@ -145,34 +149,26 @@ export function TracePanel({
 
       {findings.length > 0 ? (
         <div>
-          <h3 className="font-mono text-label uppercase text-muted">03&nbsp;&nbsp;FINDINGS</h3>
-          <div className="mt-3 space-y-3">
+          <h3 className="font-mono text-label uppercase text-muted">FINDINGS</h3>
+          <ul className="mt-3 divide-y divide-hairline border-y border-hairline">
             {findings.map((f, i) => (
-              <div key={i} className="rounded-md border border-hairline bg-surface p-3">
+              <li key={i} className="py-3">
                 <p className="text-body text-fg">{f.statement}</p>
                 {f.evidence && f.evidence.length > 0 ? (
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    {f.evidence.map((ev, evIdx) => {
-                      const label =
-                        ev.kind === "frame"
-                          ? `FR ${ev.id.slice(-2)}`
-                          : ev.id.slice(0, 8);
-                      return (
-                        <button
-                          key={evIdx}
-                          type="button"
-                          onClick={() => onSelectEvidence?.(ev.kind as "frame" | "tool_result", ev.id)}
-                          className="rounded-md border border-hairline bg-sunken px-1.5 py-0.5 font-mono text-label text-secondary hover:text-fg"
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
+                    {f.evidence.map((ev) => (
+                      <EvidenceChip
+                        key={`${ev.kind}-${ev.id}`}
+                        evidence={ev}
+                        label={evidenceLabel(ev, frameIds, toolByResultId)}
+                        onOpen={(e) => onSelectEvidence?.(e.kind as "frame" | "tool_result", e.id)}
+                      />
+                    ))}
                   </div>
                 ) : null}
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       ) : null}
     </aside>

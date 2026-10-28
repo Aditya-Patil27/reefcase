@@ -6,9 +6,9 @@ import { formatCoordinates } from "../components/SitePicker";
 import { CoverChart } from "../components/CoverChart";
 import { CoverStrip } from "../components/CoverStrip";
 import { Badge } from "../components/arc/badge/badge";
-import { MetricCard } from "../components/arc/metric-card/metric-card";
 import { SortableDataTable, type DataColumn } from "../components/arc/sortable-data-table/sortable-data-table";
 import { Button } from "../components/arc/button/button";
+import { formatSignedPp } from "../format";
 
 type SiteDetail = components["schemas"]["SiteDetail"];
 type Survey = components["schemas"]["Survey"];
@@ -44,9 +44,7 @@ function SiteRoute() {
 
   const firstLive = firstSurvey?.cover?.live_coral ?? 0;
   const latestLive = latestSurvey?.cover?.live_coral ?? 0;
-  const changePp = Math.round((latestLive - firstLive) * 1000) / 10;
-  const changeText =
-    changePp >= 0 ? `+${changePp.toFixed(1)} pp` : `−${Math.abs(changePp).toFixed(1)} pp`;
+  const changeText = formatSignedPp((latestLive - firstLive) * 100);
 
   const columns: DataColumn<Survey & Record<string, unknown>>[] = [
     {
@@ -120,9 +118,6 @@ function SiteRoute() {
                   {formatCoordinates(site.location)}
                 </p>
               ) : null}
-              <span className="font-mono text-label text-muted">
-                {id}
-              </span>
             </div>
           </div>
 
@@ -134,36 +129,17 @@ function SiteRoute() {
         </div>
       </header>
 
-      {/* Figures row: 4 metric-cards */}
-      {surveys.length > 0 ? (
-        <section
+      {latestSurvey && firstSurvey ? (
+        <p
           aria-label="Site key figures"
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+          className="border-y border-hairline py-3 font-mono text-label text-secondary tabular-nums"
         >
-          <MetricCard
-            label="Live cover now"
-            value={Math.round(latestLive * 100)}
-            suffix="%"
-            context={latestSurvey ? `Latest dive: ${latestSurvey.dive_date}` : "No dives"}
-          />
-          <MetricCard
-            label="Change"
-            value={Math.abs(changePp)}
-            suffix=" pp"
-            change={changeText}
-            context="Since first survey"
-          />
-          <MetricCard
-            label="Surveys"
-            value={surveys.length}
-            context="Recorded dives"
-          />
-          <MetricCard
-            label="Latest heat stress"
-            value={1}
-            context="Alert Level 1"
-          />
-        </section>
+          <span className="font-semibold text-fg">
+            LIVE CORAL {Math.round(latestLive * 100)}%
+          </span>{" "}
+          ({changeText} since {firstSurvey.dive_date.slice(0, 4)}) · {surveys.length}{" "}
+          {surveys.length === 1 ? "SURVEY" : "SURVEYS"} · LATEST DIVE {latestSurvey.dive_date}
+        </p>
       ) : null}
 
       {/* Empty State */}
@@ -183,26 +159,24 @@ function SiteRoute() {
         </section>
       ) : (
         <>
-          {/* 01 COVER OVER TIME */}
           <section aria-labelledby="cover-heading" className="space-y-4">
             <h2
               id="cover-heading"
-              className="font-mono text-label uppercase tracking-wider text-muted"
+              className="font-mono text-label uppercase text-muted"
             >
-              01&nbsp;&nbsp;COVER OVER TIME
+              COVER OVER TIME
             </h2>
             <CoverChart surveys={surveys} />
           </section>
 
-          {/* 02 SURVEYS */}
           <section aria-labelledby="surveys-heading" className="space-y-4">
             <h2
               id="surveys-heading"
-              className="font-mono text-label uppercase tracking-wider text-muted"
+              className="font-mono text-label uppercase text-muted"
             >
-              02&nbsp;&nbsp;SURVEYS
+              SURVEYS
             </h2>
-            <div className="rounded-lg border border-hairline bg-surface overflow-x-auto max-w-full">
+            <div className="overflow-x-auto max-w-full border-y border-hairline">
               <SortableDataTable
                 rows={sortedSurveys.slice().reverse() as (Survey & Record<string, unknown>)[]}
                 columns={columns}

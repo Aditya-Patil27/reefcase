@@ -107,15 +107,14 @@ describe("SiteTimelineRoute", () => {
     // MPA badge
     expect(screen.getByText(/MPA/i)).toBeInTheDocument();
 
-    // 4 metric cards
-    expect(screen.getByText("Live cover now")).toBeInTheDocument();
-    expect(screen.getByText("Change")).toBeInTheDocument();
-    expect(screen.getByText("Surveys")).toBeInTheDocument();
-    expect(screen.getByText("Latest heat stress")).toBeInTheDocument();
+    // One readout line of key figures
+    expect(screen.getByLabelText("Site key figures")).toHaveTextContent(
+      /LIVE CORAL \d+% \([+−]\d+\.\d pp since \d{4}\) · \d+ SURVEYS/,
+    );
 
-    // 01 COVER OVER TIME and 02 SURVEYS
-    expect(screen.getByRole("heading", { name: /01\s+COVER OVER TIME/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /02\s+SURVEYS/i })).toBeInTheDocument();
+    // COVER OVER TIME and SURVEYS
+    expect(screen.getByRole("heading", { name: "COVER OVER TIME" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "SURVEYS" })).toBeInTheDocument();
 
     // Surveys table contains Case file links
     const caseFileLinks = screen.getAllByRole("link", { name: /Case file/i });

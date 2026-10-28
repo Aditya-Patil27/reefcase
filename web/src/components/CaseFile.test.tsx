@@ -58,41 +58,48 @@ describe("CaseFile", () => {
       screen.getByText(/Thermal stress drove most of the bleaching/i),
     ).toBeInTheDocument();
 
-    // 01 FINDINGS
-    expect(screen.getByRole("heading", { name: /01\s+FINDINGS/i })).toBeInTheDocument();
+    // FINDINGS
+    expect(screen.getByRole("heading", { name: "FINDINGS" })).toBeInTheDocument();
     expect(
       screen.getByText(/Bleaching detected across transect frames./i),
     ).toBeInTheDocument();
 
-    // 02 HYPOTHESES with confidence bars
-    expect(screen.getByRole("heading", { name: /02\s+HYPOTHESES/i })).toBeInTheDocument();
-    expect(screen.getByText("heat_stress")).toBeInTheDocument();
+    // HYPOTHESES with confidence bars
+    expect(screen.getByRole("heading", { name: "HYPOTHESES" })).toBeInTheDocument();
+    expect(screen.getByText("Heat stress")).toBeInTheDocument();
     expect(screen.getByText("62%")).toBeInTheDocument();
-    expect(screen.getByText("fishing_pressure")).toBeInTheDocument();
+    expect(screen.getByText("Fishing pressure")).toBeInTheDocument();
     expect(screen.getByText("24%")).toBeInTheDocument();
 
-    // 03 ACTIONS
-    expect(screen.getByRole("heading", { name: /03\s+ACTIONS/i })).toBeInTheDocument();
+    // ACTIONS
+    expect(screen.getByRole("heading", { name: "ACTIONS" })).toBeInTheDocument();
     expect(
       screen.getByText(/Re-survey the same transect in February 2027./i),
     ).toBeInTheDocument();
   });
 
-  it("calls onOpenEvidence when clicking a frame or tool chip", () => {
+  it("labels chips by frame ordinal and tool name, and opens the evidence", () => {
     const handleOpenEvidence = vi.fn();
 
     render(
       <CaseFile
         investigation={mockInvestigation}
         onOpenEvidence={handleOpenEvidence}
+        frames={[
+          { id: "frm_04", thumbUrl: "/media/frames/04.jpg" },
+          { id: "frm_06", thumbUrl: "/media/frames/06.jpg" },
+        ]}
+        toolCalls={[
+          { callId: "c1", tool: "heat_stress", params: {}, status: "returned", toolResultId: "tr_01JA7" },
+        ]}
       />,
     );
 
-    const frameChip = screen.getByRole("button", { name: /frm_06/i });
+    const frameChip = screen.getByRole("button", { name: "Open evidence: Frame 02" });
     fireEvent.click(frameChip);
     expect(handleOpenEvidence).toHaveBeenCalledWith({ kind: "frame", id: "frm_06" });
 
-    const toolChip = screen.getAllByRole("button", { name: /tr_01JA7/i })[0];
+    const toolChip = screen.getAllByRole("button", { name: "Open evidence: Heat stress" })[0];
     fireEvent.click(toolChip!);
 
     expect(handleOpenEvidence).toHaveBeenCalledWith({ kind: "tool_result", id: "tr_01JA7" });

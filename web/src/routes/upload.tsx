@@ -231,7 +231,7 @@ function UploadRoute() {
     <form className="grid gap-4 p-4 lg:grid-cols-2" onSubmit={handleSubmit} noValidate>
       <section aria-labelledby="clip-heading" className="grid min-w-0 content-start gap-3">
         <h1 id="clip-heading" className="font-mono text-label uppercase text-muted">
-          01&nbsp;&nbsp;CLIP
+          CLIP
         </h1>
         <Field name="video" label="Dive clip" error={errors.video}>
           <FileDropzone
@@ -270,7 +270,7 @@ function UploadRoute() {
 
       <section aria-labelledby="site-heading" className="grid min-w-0 content-start gap-3">
         <h2 id="site-heading" className="font-mono text-label uppercase text-muted">
-          02&nbsp;&nbsp;SITE
+          SITE
         </h2>
         <SitePicker value={site} onChange={movePin} />
         <div className="grid grid-cols-2 gap-3">

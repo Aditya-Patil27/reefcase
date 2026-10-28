@@ -1,4 +1,4 @@
-import { http, HttpResponse, delay } from "msw";
+import { bypass, http, HttpResponse, delay } from "msw";
 import type { components } from "../api/schema";
 import events from "./events.json";
 
@@ -391,17 +391,33 @@ const health: Health = {
   },
 };
 
-const sseBody = eventList
-  .map((event) => `id: ${event.seq}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`)
-  .join("");
+/** Paced like a real run, so frames and the trace visibly fill in rather than landing at once. */
+function sseStream(): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    async start(controller) {
+      for (const event of eventList) {
+        await delay(event.type.startsWith("tool") || event.type === "finding" ? 220 : 80);
+        controller.enqueue(
+          encoder.encode(`id: ${event.seq}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`),
+        );
+      }
+      controller.close();
+    },
+  });
+}
 
-/** 8×8 dark frame, valid PNG, stands in for thumbnails, masks and clips. */
+/** 8×8 dark frame, valid PNG, stands in for clips and any media without a demo file. */
 const PIXEL_PNG = Uint8Array.from(
   atob(
     "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEUlEQVR42mMQkVHCihiGlgQA/7EUgft8CDcAAAAASUVORK5CYII=",
   ),
   (char) => char.charCodeAt(0),
 );
+
+function pixel() {
+  return new HttpResponse(PIXEL_PNG, { headers: { "Content-Type": "image/png" } });
+}
 
 function notFound(detail: string) {
   return HttpResponse.json({ detail }, { status: 404 });
@@ -520,7 +536,7 @@ export const handlers = [
   }),
 
   http.get("/api/surveys/:survey_id/events", () => {
-    return new HttpResponse(sseBody, {
+    return new HttpResponse(sseStream(), {
       headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-store" },
     });
   }),
@@ -559,7 +575,16 @@ export const handlers = [
 
   http.get("/api/geo/:layer", ({ params }) => HttpResponse.json(geoLayer(String(params.layer)))),
 
-  http.get("/media/*", () => new HttpResponse(PIXEL_PNG, { headers: { "Content-Type": "image/png" } })),
+  // Survey frames and masks are real Coralscapes transects in public/demo (data/LICENSES.md),
+  // matched to the mock frame ids by stream order.
+  http.get("/media/:surveyId/:kind/:file", ({ params }) => {
+    const slot = frameIds.indexOf(String(params.file).replace(/\.\w+$/, "")) + 1;
+    if (slot === 0 || (params.kind !== "frames" && params.kind !== "masks")) return pixel();
+    const ext = params.kind === "frames" ? "jpg" : "png";
+    return fetch(bypass(`/demo/${params.kind}/${String(slot).padStart(2, "0")}.${ext}`));
+  }),
+
+  http.get("/media/*", pixel),
 
   // A path with no handler returns 404 rather than a network error, so a missing
   // fixture is visible in the UI and in the tests.

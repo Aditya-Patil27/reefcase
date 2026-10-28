@@ -152,6 +152,7 @@ A discriminated union on `type`. Every event has `survey_id`, `seq: int` (monoto
 | `REEFCASE_SEGMENTER` | `fake` \| `sam3_local` \| `sam3_modal` \| `student` |
 | `REEFCASE_SAM_MODEL_ID` | HF model id (default `facebook/sam3`, loaded through Transformers; see §9.6) |
 | `REEFCASE_SAM_MODAL_URL` | URL of the Modal SAM endpoint |
+| `REEFCASE_SAM_MODAL_TOKEN` | Modal proxy-auth token for that endpoint, `<id>.<secret>` |
 | `REEFCASE_STUDENT_WEIGHTS` | path to ReefStudent weights |
 | `REEFCASE_LLM_AGENT_{BASE_URL,API_KEY,MODEL}` | agent model (OpenAI-compatible) |
 | `REEFCASE_LLM_TEACHER_{BASE_URL,API_KEY,MODEL}` | frame assessor teacher |

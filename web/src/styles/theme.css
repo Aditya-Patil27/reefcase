@@ -71,7 +71,7 @@
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono Variable", ui-monospace, monospace;
 
-  --text-label: 11px;   --text-label--line-height: 16px;  --text-label--letter-spacing: 0.06em;
+  --text-label: 11px;   --text-label--line-height: 16px;
   --text-body: 13px;    --text-body--line-height: 20px;
   --text-ui: 14px;      --text-ui--line-height: 20px;
   --text-title: 20px;   --text-title--line-height: 28px;  --text-title--letter-spacing: -0.015em;

@@ -33,11 +33,11 @@ const sampleFindings: Finding[] = [
 ];
 
 describe("TracePanel", () => {
-  it("renders 02 TRACE heading and tool calls", () => {
+  it("renders TRACE heading and tool calls", () => {
     render(<TracePanel toolCalls={sampleCalls} findings={[]} />);
-    expect(screen.getByRole("heading", { name: /02\s+TRACE/i })).toBeInTheDocument();
-    expect(screen.getByText("heat_stress")).toBeInTheDocument();
-    expect(screen.getByText("vessel_activity")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "TRACE" })).toBeInTheDocument();
+    expect(screen.getByText("Heat stress")).toBeInTheDocument();
+    expect(screen.getByText("Vessel activity")).toBeInTheDocument();
     expect(screen.getByText("running")).toBeInTheDocument();
   });
 
@@ -55,7 +55,7 @@ describe("TracePanel", () => {
 
   it("expands a tool call row to reveal its result summary", () => {
     render(<TracePanel toolCalls={sampleCalls} findings={[]} />);
-    const heatStressRow = screen.getByText("heat_stress").closest("button");
+    const heatStressRow = screen.getByText("Heat stress").closest("button");
     expect(heatStressRow).toBeInTheDocument();
     if (heatStressRow) {
       fireEvent.click(heatStressRow);
@@ -65,12 +65,12 @@ describe("TracePanel", () => {
     }
   });
 
-  it("renders 03 FINDINGS when findings are emitted", () => {
-    render(<TracePanel toolCalls={sampleCalls} findings={sampleFindings} />);
-    expect(screen.getByRole("heading", { name: /03\s+FINDINGS/i })).toBeInTheDocument();
+  it("renders FINDINGS when findings are emitted", () => {
+    render(<TracePanel toolCalls={sampleCalls} findings={sampleFindings} frameIds={["frm_01"]} />);
+    expect(screen.getByRole("heading", { name: "FINDINGS" })).toBeInTheDocument();
     expect(
       screen.getByText(/Live coral cover averages 37% with bleaching on five frames./i),
     ).toBeInTheDocument();
-    expect(screen.getByText("FR 01")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open evidence: Frame 01" })).toBeInTheDocument();
   });
 });

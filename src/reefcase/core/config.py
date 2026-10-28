@@ -77,6 +77,7 @@ class Settings(BaseSettings):
     segmenter: SegmenterName = "fake"
     sam_model_id: str = DEFAULT_SAM_MODEL_ID
     sam_modal_url: str | None = None
+    sam_modal_token: SecretStr | None = None
     student_weights: Path | None = None
 
     llm_agent_base_url: str | None = None

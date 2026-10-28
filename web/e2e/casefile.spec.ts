@@ -19,23 +19,23 @@ test("/surveys/$id displays CaseFile on report ready and opens EvidenceDrawer", 
   // Once investigation report is ready, CaseFile renders with verdict and sections
   await expect(
     page.getByText(/Thermal stress drove most of the bleaching/i),
-  ).toBeVisible({ timeout: 10_000 });
+  ).toBeVisible({ timeout: 15_000 });
 
-  // 01 FINDINGS
-  await expect(page.getByRole("heading", { name: /01\s+FINDINGS/i }).first()).toBeVisible();
+  // FINDINGS
+  await expect(page.getByRole("heading", { name: "FINDINGS" }).first()).toBeVisible();
 
-  // 02 HYPOTHESES with confidence percentage
-  await expect(page.getByRole("heading", { name: /02\s+HYPOTHESES/i })).toBeVisible();
+  // HYPOTHESES with confidence percentage
+  await expect(page.getByRole("heading", { name: "HYPOTHESES" })).toBeVisible();
   await expect(page.getByText("62%")).toBeVisible();
 
-  // 03 ACTIONS
-  await expect(page.getByRole("heading", { name: /03\s+ACTIONS/i })).toBeVisible();
+  // ACTIONS
+  await expect(page.getByRole("heading", { name: "ACTIONS" })).toBeVisible();
   await expect(
     page.getByText(/Re-survey the same transect in February 2027/i),
   ).toBeVisible();
 
   // Click an evidence chip to open EvidenceDrawer
-  const evidenceChip = page.getByRole("button", { name: /frm_/i }).first();
+  const evidenceChip = page.getByRole("button", { name: /Open evidence: Frame/ }).first();
   await expect(evidenceChip).toBeVisible();
   await evidenceChip.click();
 

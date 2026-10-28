@@ -25,9 +25,9 @@ const sampleFrames: FrameView[] = [
 ];
 
 describe("FrameGrid", () => {
-  it("renders the 01 FRAMES section header and segmented control", () => {
+  it("renders the FRAMES section header and segmented control", () => {
     render(<FrameGrid frames={sampleFrames} />);
-    expect(screen.getByRole("heading", { name: /01\s+FRAMES/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "FRAMES" })).toBeInTheDocument();
     expect(screen.getByText("Frame")).toBeInTheDocument();
     expect(screen.getByText("Mask")).toBeInTheDocument();
     expect(screen.getByText("Both")).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe("FrameGrid", () => {
     fireEvent.click(maskButton);
 
     // In Mask mode, mask image is visible
-    const maskImg = screen.getByAltText("Mask 01");
+    const maskImg = screen.getByAltText("Frame 01 mask");
     expect(maskImg).toBeInTheDocument();
   });
 });
