@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import type { FrameView } from "../live/reducer";
 import SegmentedControl from "./arc/segmented-control/segmented-control";
 import { Skeleton } from "./arc/skeleton/skeleton";
@@ -17,17 +17,6 @@ const VIEW_OPTIONS = [
   { value: "both", label: "Both" },
 ];
 
-function formatIndex(index: number): string {
-  return String(index + 1).padStart(2, "0");
-}
-
-function formatTimestamp(index: number): string {
-  const seconds = index * 2;
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
 export function FrameGrid({ frames, className = "" }: FrameGridProps) {
   const [mode, setMode] = useState<ViewMode>("both");
 
@@ -35,7 +24,7 @@ export function FrameGrid({ frames, className = "" }: FrameGridProps) {
     <section aria-labelledby="frames-heading" className={`space-y-4 ${className}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="frames-heading" className="font-mono text-label uppercase text-muted">
-          01&nbsp;&nbsp;FRAMES
+          FRAMES
         </h2>
         <SegmentedControl
           options={VIEW_OPTIONS}
@@ -45,69 +34,45 @@ export function FrameGrid({ frames, className = "" }: FrameGridProps) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-5 lg:grid-cols-4">
         {frames.map((frame, index) => {
-          const idxStr = formatIndex(index);
-          const timeStr = formatTimestamp(index);
+          const name = `Frame ${String(index + 1).padStart(2, "0")}`;
           const isPending = !frame.thumbUrl;
 
           return (
-            <div
-              key={frame.id}
-              className="flex flex-col justify-between overflow-hidden rounded-md border border-hairline bg-surface p-1.5"
-            >
-              <div className="mb-1 flex items-center justify-between font-mono text-label text-muted tabular-nums">
-                <span>{`FR ${idxStr}`}</span>
-                <span>{timeStr}</span>
-              </div>
-
+            <figure key={frame.id} className="space-y-1.5">
               {isPending ? (
-                <div data-skeleton="true" className="aspect-video w-full overflow-hidden rounded-md">
+                <div data-skeleton="true" className="aspect-video w-full overflow-hidden rounded-sm">
                   <Skeleton className="size-full" />
                 </div>
               ) : (
-                <div className="relative aspect-video w-full overflow-hidden rounded-md bg-sunken">
-                  {mode === "frame" && (
+                <div className="relative aspect-video w-full overflow-hidden rounded-sm bg-sunken">
+                  {mode !== "mask" && (
+                    <img src={frame.thumbUrl} alt={name} className="size-full object-cover" />
+                  )}
+                  {mode !== "frame" && frame.maskUrl ? (
                     <img
-                      src={frame.thumbUrl}
-                      alt={`Frame ${idxStr}`}
-                      className="size-full object-cover"
+                      src={frame.maskUrl}
+                      alt={`${name} mask`}
+                      className={`absolute inset-0 size-full object-cover ${mode === "both" ? "opacity-55" : ""}`}
                     />
-                  )}
-                  {mode === "mask" && (
-                    <img
-                      src={frame.maskUrl || frame.thumbUrl}
-                      alt={`Mask ${idxStr}`}
-                      className="size-full object-cover opacity-55"
-                    />
-                  )}
-                  {mode === "both" && (
-                    <>
-                      <img
-                        src={frame.thumbUrl}
-                        alt={`Frame ${idxStr}`}
-                        className="size-full object-cover"
-                      />
-                      {frame.maskUrl ? (
-                        <img
-                          src={frame.maskUrl}
-                          alt={`Mask ${idxStr}`}
-                          className="absolute inset-0 size-full object-cover opacity-55"
-                        />
-                      ) : null}
-                    </>
-                  )}
+                  ) : null}
                 </div>
               )}
 
-              <div className="mt-1.5 min-h-1 w-full">
+              <figcaption className="flex items-baseline justify-between font-mono text-label tabular-nums">
+                <span className="text-secondary">{name}</span>
                 {frame.cover ? (
-                  <CoverStrip cover={frame.cover} />
-                ) : (
-                  <div className="h-1 w-full bg-hairline" />
-                )}
-              </div>
-            </div>
+                  <span className="text-fg">{Math.round(frame.cover.live_coral * 100)}% live</span>
+                ) : null}
+              </figcaption>
+
+              {frame.cover ? (
+                <CoverStrip cover={frame.cover} />
+              ) : (
+                <div className="h-1 w-full bg-hairline" />
+              )}
+            </figure>
           );
         })}
       </div>

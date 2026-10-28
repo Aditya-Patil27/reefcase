@@ -61,11 +61,19 @@ export function useEventStream(surveyId: string | undefined): UseEventStreamResu
 
       const handleEvent = (raw: MessageEvent) => {
         if (isCancelled) return;
+        let parsed: Event;
         try {
-          const parsed = JSON.parse(raw.data) as Event;
-          dispatch({ type: "event", event: parsed });
+          parsed = JSON.parse(raw.data) as Event;
         } catch {
-          // ignore malformed payloads
+          return; // ignore malformed payloads
+        }
+        dispatch({ type: "event", event: parsed });
+        // The server ends the stream after a terminal event; close first so
+        // EventSource does not read that end as a dropped connection.
+        if (parsed.type === "report_ready" || parsed.type === "survey_failed") {
+          es.close();
+          setStatus("closed");
+          setReconnectSeq(null);
         }
       };
 

@@ -147,4 +147,23 @@ describe("useEventStream", () => {
     expect(result.current.state.toolCalls[0]?.status).toBe("returned");
     expect(result.current.state.toolCalls[0]?.summary).toBe("DHW peak 4.2");
   });
+
+  it("closes after report_ready so the server's end of stream is not a reconnect", () => {
+    const { result } = renderHook(() => useEventStream("srv_test3"));
+    const es = MockEventSource.instances[0]!;
+    act(() => {
+      es.simulateOpen();
+      es.emit("report_ready", {
+        type: "report_ready",
+        seq: 1,
+        ts: "2026-10-21T06:20:00Z",
+        survey_id: "srv_test3",
+        investigation_id: "inv_01",
+      });
+    });
+
+    expect(es.closed).toBe(true);
+    expect(result.current.status).toBe("closed");
+    expect(result.current.reconnectSeq).toBeNull();
+  });
 });

@@ -13,8 +13,11 @@ import { CopyButton } from "../components/arc/copy-button/copy-button";
 import { Stepper, type StepperStep } from "../components/arc/stepper/stepper";
 import { ResizablePanels, ResizablePanel } from "../components/arc/resizable-panels/resizable-panels";
 import TextShimmer from "../components/arc/text-shimmer/text-shimmer";
+import { formatCoordinates } from "../components/SitePicker";
 
 type Investigation = components["schemas"]["Investigation"];
+type Survey = components["schemas"]["Survey"];
+type SiteDetail = components["schemas"]["SiteDetail"];
 
 export const Route = createFileRoute("/surveys/$id")({
   component: SurveyRouteComponent,
@@ -58,15 +61,16 @@ function useIsDesktop(breakpoint = 1280): boolean {
   return isDesktop;
 }
 
-function useElapsedTime(): string {
+function useElapsedTime(running: boolean): string {
   const [seconds, setSeconds] = useState(0);
 
   useEffect(() => {
+    if (!running) return;
     const timer = setInterval(() => {
       setSeconds((s) => s + 1);
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [running]);
 
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
@@ -78,7 +82,7 @@ function SurveyRouteComponent() {
   const id = params.id;
 
   const { state, status, reconnectSeq } = useEventStream(id);
-  const elapsed = useElapsedTime();
+  const elapsed = useElapsedTime(!state.reportReady && !state.failed);
   const isDesktop = useIsDesktop(1280);
 
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceItem | null>(null);
@@ -103,6 +107,29 @@ function SurveyRouteComponent() {
 
   const investigation = investigationQuery.data;
 
+  const surveyQuery = useQuery({
+    queryKey: ["survey", id],
+    queryFn: async (): Promise<Survey | null> => {
+      const { data } = await api.GET("/api/surveys/{survey_id}", {
+        params: { path: { survey_id: id } },
+      });
+      return data ?? null;
+    },
+  });
+  const survey = surveyQuery.data;
+
+  const siteQuery = useQuery({
+    queryKey: ["site", survey?.site_id],
+    queryFn: async (): Promise<SiteDetail | null> => {
+      const { data } = await api.GET("/api/sites/{site_id}", {
+        params: { path: { site_id: survey!.site_id } },
+      });
+      return data ?? null;
+    },
+    enabled: Boolean(survey?.site_id),
+  });
+  const site = siteQuery.data?.site;
+
 
   const hasTools = state.toolCalls.length > 0 || state.findings.length > 0;
   const hasAssessments = state.frames.some((f) => f.assessment !== undefined);
@@ -123,22 +150,23 @@ function SurveyRouteComponent() {
     <div className="flex min-h-[calc(100vh-48px-32px)] flex-col bg-bg text-fg">
       {/* Header strip */}
       <header className="border-b border-hairline bg-surface px-4 py-3">
-        {/* Readout line */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2 font-mono text-label text-secondary tabular-nums">
-            <span className="font-semibold text-fg">LIZARD ISLAND</span>
-            <span>·</span>
-            <span>14.6680° S&nbsp;&nbsp;145.4610° E</span>
-            <span>·</span>
-            <span>2026-10-21</span>
-            <span>·</span>
-            <span className="text-muted">{id}</span>
-            <CopyButton value={id} iconOnly />
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h1 className="text-title font-semibold text-fg">{site?.name ?? "Survey"}</h1>
+            <span className="font-mono text-label text-secondary tabular-nums">
+              {[site ? formatCoordinates(site.location) : null, survey?.dive_date]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+            <span className="flex items-center gap-1 font-mono text-label text-muted">
+              {id}
+              <CopyButton value={id} iconOnly />
+            </span>
           </div>
 
-          <div className="font-mono text-label text-muted tabular-nums">
+          <time className="font-mono text-label text-muted tabular-nums" aria-label="Elapsed time">
             {elapsed}
-          </div>
+          </time>
         </div>
 
         {/* Stepper row */}
@@ -191,6 +219,8 @@ function SurveyRouteComponent() {
                       <CaseFile
                         investigation={investigation}
                         onOpenEvidence={handleOpenEvidence}
+                        frames={state.frames}
+                        toolCalls={state.toolCalls}
                       />
                     ) : (
                       <FrameGrid frames={state.frames} />
@@ -208,6 +238,7 @@ function SurveyRouteComponent() {
                   findings={state.findings}
                   status={status}
                   reconnectSeq={reconnectSeq}
+                  frameIds={state.frames.map((f) => f.id)}
                   onSelectEvidence={(kind, evId) => handleOpenEvidence({ kind, id: evId })}
                 />
               </div>
@@ -230,6 +261,8 @@ function SurveyRouteComponent() {
                 <CaseFile
                   investigation={investigation}
                   onOpenEvidence={handleOpenEvidence}
+                  frames={state.frames}
+                  toolCalls={state.toolCalls}
                 />
               ) : (
                 <FrameGrid frames={state.frames} />
@@ -243,6 +276,7 @@ function SurveyRouteComponent() {
             findings={state.findings}
             status={status}
             reconnectSeq={reconnectSeq}
+            frameIds={state.frames.map((f) => f.id)}
             onSelectEvidence={(kind, evId) => handleOpenEvidence({ kind, id: evId })}
           />
         </div>

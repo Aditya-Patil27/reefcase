@@ -13,13 +13,13 @@ test("/ renders reef map with sites, layers toggles, and site popover", async ({
 
   await page.goto("/");
 
-  // 01 SITES section and site rows
-  await expect(page.getByRole("heading", { name: /01\s+SITES/i })).toBeVisible();
+  // SITES section and site rows
+  await expect(page.getByRole("heading", { name: "SITES" })).toBeVisible();
   await expect(page.getByText("Lizard Island").first()).toBeVisible();
   await expect(page.getByText("Heron Island").first()).toBeVisible();
 
-  // 02 LAYERS section and switch toggles
-  await expect(page.getByRole("heading", { name: /02\s+LAYERS/i })).toBeVisible();
+  // LAYERS section and switch toggles
+  await expect(page.getByRole("heading", { name: "LAYERS" })).toBeVisible();
   const mpaSwitch = page.getByRole("switch", { name: "MPA boundaries" });
   const reefSwitch = page.getByRole("switch", { name: "Reef extent" });
   const vesselSwitch = page.getByRole("switch", { name: "Vessel activity" });

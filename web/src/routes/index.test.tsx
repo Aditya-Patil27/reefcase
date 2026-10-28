@@ -79,7 +79,7 @@ describe("MapRoute", () => {
     });
   });
 
-  it("renders 01 SITES list and 02 LAYERS controls", async () => {
+  it("renders SITES list and LAYERS controls", async () => {
     render(
       <QueryClientProvider client={queryClient}>
         <Component />
@@ -87,8 +87,8 @@ describe("MapRoute", () => {
     );
 
     // Section headings
-    expect(screen.getByRole("heading", { name: /01\s+SITES/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /02\s+LAYERS/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "SITES" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "LAYERS" })).toBeInTheDocument();
 
     // Sites in list
     await waitFor(() => {

@@ -70,7 +70,7 @@ describe("EvidenceDrawer", () => {
     );
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByText(/Frame frm_06/i)).toBeInTheDocument();
+    expect(screen.getByText("Frame 01")).toBeInTheDocument();
     expect(screen.getByText("Both")).toBeInTheDocument();
     expect(
       screen.getByText(/Branching colonies show advanced bleaching./i),
@@ -89,7 +89,7 @@ describe("EvidenceDrawer", () => {
     );
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(await screen.findByText(/Tool: heat_stress/i)).toBeInTheDocument();
+    expect(await screen.findByText("Heat stress")).toBeInTheDocument();
     expect(
       await screen.findByText(
         "https://coralreefwatch.noaa.gov/product/vs/gauges/lizard_island.php",
