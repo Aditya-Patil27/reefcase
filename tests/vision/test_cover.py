@@ -40,7 +40,9 @@ def test_build_segmenter_selects_fake_backend(make_settings) -> None:
 
 def test_build_segmenter_selects_modal_backend(make_settings) -> None:
     settings: Settings = make_settings(
-        segmenter="sam3_modal", sam_modal_url="https://modal.test/segment"
+        segmenter="sam3_modal",
+        sam_modal_url="https://modal.test/segment",
+        sam_modal_token="wk-id.ws-secret",
     )
 
     segmenter = build_segmenter(settings)

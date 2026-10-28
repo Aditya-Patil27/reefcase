@@ -4,7 +4,12 @@ Human deployment command (needs a Modal secret named ``huggingface`` holding
 ``HF_TOKEN``, because ``facebook/sam3`` is gated):
     modal deploy ml/modal/sam_endpoint.py
 
-The printed ``...segment.modal.run`` URL goes in ``REEFCASE_SAM_MODAL_URL``.
+The printed ``...segment.modal.run`` URL goes in ``REEFCASE_SAM_MODAL_URL``, and a
+proxy-auth token (``modal workspace proxy-tokens``) goes in ``REEFCASE_SAM_MODAL_TOKEN``
+as ``<id>.<secret>``.
+
+Credit guards: one T4 at most, scale to zero after 30 s idle, 60 s per request, and
+no warm containers. Do not add ``min_containers``: that bills around the clock.
 """
 
 from __future__ import annotations
@@ -69,6 +74,9 @@ if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
         image=image,
         secrets=[modal.Secret.from_name("huggingface")],
         volumes={"/root/.cache/huggingface": hf_cache},
+        max_containers=1,
+        scaledown_window=30,
+        timeout=60,
     )
     class Sam3Endpoint:
         @modal.enter()
@@ -77,7 +85,7 @@ if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
 
             self.segmenter = Sam3Segmenter()
 
-        @modal.fastapi_endpoint(method="POST")
+        @modal.fastapi_endpoint(method="POST", requires_proxy_auth=True)
         async def segment(self, request: Request) -> Response:
             png = segment_jpeg(await request.body(), self.segmenter)
             return Response(content=png, media_type="image/png")

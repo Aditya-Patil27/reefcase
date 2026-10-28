@@ -48,6 +48,7 @@ ENV_TABLE: list[tuple[str, str, object]] = [
     ("REEFCASE_SEGMENTER", "sam3_modal", "sam3_modal"),
     ("REEFCASE_SAM_MODEL_ID", "facebook/sam3.1", "facebook/sam3.1"),
     ("REEFCASE_SAM_MODAL_URL", "https://modal.example/sam", "https://modal.example/sam"),
+    ("REEFCASE_SAM_MODAL_TOKEN", "wk-id.ws-secret", "wk-id.ws-secret"),
     ("REEFCASE_STUDENT_WEIGHTS", "var/student.pt", Path("var/student.pt")),
     ("REEFCASE_LLM_AGENT_BASE_URL", "https://agent.example/v1", "https://agent.example/v1"),
     ("REEFCASE_LLM_AGENT_API_KEY", "sk-agent", "sk-agent"),
@@ -126,9 +127,9 @@ def test_every_4_4_variable_is_read(
 
 
 def test_every_env_example_variable_is_covered() -> None:
-    """The table above is the full §4.4 surface: 20 variables, no more, no fewer."""
-    assert len(ENV_TABLE) == 20
-    assert len({row[0] for row in ENV_TABLE}) == 20
+    """The table above is the full §4.4 surface: 21 variables, no more, no fewer."""
+    assert len(ENV_TABLE) == 21
+    assert len({row[0] for row in ENV_TABLE}) == 21
 
 
 def test_empty_env_value_means_unset(monkeypatch: pytest.MonkeyPatch) -> None:
