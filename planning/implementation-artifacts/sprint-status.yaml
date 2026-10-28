@@ -31,7 +31,7 @@ development_status:
 
   epic-2: in-progress
   2-1-survey-upload-endpoint: done # B P0
-  2-2-job-runner-event-bus-and-sse: backlog # B P0
+  2-2-job-runner-event-bus-and-sse: done # B P0
   2-3-frame-extraction: backlog # B P0
   2-4-quality-scoring-and-fail-fast: backlog # B P0
   2-5-site-matching: backlog # B P0
