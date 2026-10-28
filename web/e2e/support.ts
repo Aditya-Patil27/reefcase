@@ -18,7 +18,7 @@ export type RouteCase = {
 export const ROUTES: readonly RouteCase[] = [
   { path: "/", heading: "SITES", slug: "root" },
   { path: "/upload", heading: "CLIP", slug: "upload" },
-  { path: `/surveys/${SURVEY_ID}`, heading: "FRAMES", slug: "surveys" },
+  { path: `/surveys/${SURVEY_ID}`, heading: "FINDINGS", slug: "surveys" },
   { path: `/sites/${SITE_ID}`, heading: "COVER OVER TIME", slug: "sites" },
 ];
 

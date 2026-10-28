@@ -7,9 +7,9 @@ LIVE_CORAL 0.25, ALGAE 0.125, RUBBLE 0.125 — with a two-column BLEACHED_CORAL
 strip and a one-column OTHER strip so all six §4.2 classes are always present.
 """
 
-from typing import Literal
-
 import numpy as np
+
+from reefcase.core.schemas import MASK_INDEX, SegBackend, SegClass
 
 __all__ = ["FakeSegmenter"]
 
@@ -17,7 +17,7 @@ __all__ = ["FakeSegmenter"]
 class FakeSegmenter:
     """Deterministic stand-in for the SAM 3 / ReefStudent backends."""
 
-    name: Literal["sam3", "student", "fake"] = "fake"
+    name: SegBackend = "fake"
 
     def segment(self, image: np.ndarray) -> np.ndarray:
         """Map an HxWx3 uint8 RGB image to an HxW uint8 class map (§4.2 indices)."""
@@ -26,10 +26,10 @@ class FakeSegmenter:
         live_coral_end = sand_end + height // 4
         algae_end = live_coral_end + height // 8
 
-        mask = np.full((height, width), 4, dtype=np.uint8)  # RUBBLE: the last band
-        mask[:algae_end] = 3  # ALGAE
-        mask[:live_coral_end] = 1  # LIVE_CORAL
-        mask[:sand_end] = 5  # SAND
-        mask[sand_end:live_coral_end, : min(2, width)] = 2  # BLEACHED_CORAL strip
-        mask[:sand_end, :1] = 0  # OTHER column
+        mask = np.full((height, width), MASK_INDEX[SegClass.RUBBLE], dtype=np.uint8)
+        mask[:algae_end] = MASK_INDEX[SegClass.ALGAE]
+        mask[:live_coral_end] = MASK_INDEX[SegClass.LIVE_CORAL]
+        mask[:sand_end] = MASK_INDEX[SegClass.SAND]
+        mask[sand_end:live_coral_end, : min(2, width)] = MASK_INDEX[SegClass.BLEACHED_CORAL]
+        mask[:sand_end, :1] = MASK_INDEX[SegClass.OTHER]
         return mask

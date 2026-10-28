@@ -62,20 +62,20 @@ development_status:
   5-5-teacher-student-disagreement: backlog # B P1
   epic-5-retrospective: optional
 
-  epic-6: in-progress
+  epic-6: done
   6-1-web-scaffold-typed-client-and-event-reducer: done # C P0
   6-2-upload-page: done # C P0
   6-3-live-investigation-view: done # C P0
   6-4-reef-map: done # C P0
-  6-5-case-file-with-evidence-drawer: backlog # C P0
-  6-6-site-timeline: backlog # C P1
+  6-5-case-file-with-evidence-drawer: done # C P0
+  6-6-site-timeline: done # C P1
   epic-6-retrospective: optional
 
   epic-7: in-progress
   7-1-training-corpus-and-sam3-pseudo-labels: done # A P1
-  7-2-train-reefstudent: backlog # A P1
-  7-3-evaluate-against-human-labels: backlog # A P1
-  7-4-reefstudent-backend-in-the-app: backlog # A P1
+  7-2-train-reefstudent: done # A P1
+  7-3-evaluate-against-human-labels: done # A P1
+  7-4-reefstudent-backend-in-the-app: done # A P1
   7-5-teacher-assessment-dataset: backlog # B P2
   7-6-glimmer-reef-lora-fine-tune: backlog # B P2
   7-7-serve-glimmer-reef: backlog # B P2

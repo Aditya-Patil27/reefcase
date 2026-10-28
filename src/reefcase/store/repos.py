@@ -219,8 +219,7 @@ class EventRepo:
             "SELECT coalesce(max(seq), 0) + 1 FROM events WHERE survey_id = ?",
             [survey_id],
         )
-        if row is None:
-            return 1
+        assert row is not None  # an aggregate always returns one row
         return int(row[0])
 
     async def list(self, survey_id: str, after_seq: int = 0) -> list[Event]:

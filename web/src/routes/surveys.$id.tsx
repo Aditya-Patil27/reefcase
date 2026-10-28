@@ -1,12 +1,20 @@
-﻿import { createFileRoute } from "@tanstack/react-router";
+import SegmentedControl from "../components/arc/segmented-control/segmented-control";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../api/client";
+import type { components } from "../api/schema";
 import { useEventStream } from "../live/useEventStream";
 import { FrameGrid } from "../components/FrameGrid";
 import { TracePanel } from "../components/TracePanel";
+import { CaseFile } from "../components/CaseFile";
+import { EvidenceDrawer, type EvidenceItem } from "../components/EvidenceDrawer";
 import { CopyButton } from "../components/arc/copy-button/copy-button";
 import { Stepper, type StepperStep } from "../components/arc/stepper/stepper";
 import { ResizablePanels, ResizablePanel } from "../components/arc/resizable-panels/resizable-panels";
 import TextShimmer from "../components/arc/text-shimmer/text-shimmer";
+
+type Investigation = components["schemas"]["Investigation"];
 
 export const Route = createFileRoute("/surveys/$id")({
   component: SurveyRouteComponent,
@@ -72,6 +80,29 @@ function SurveyRouteComponent() {
   const { state, status, reconnectSeq } = useEventStream(id);
   const elapsed = useElapsedTime();
   const isDesktop = useIsDesktop(1280);
+
+  const [selectedEvidence, setSelectedEvidence] = useState<EvidenceItem | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"report" | "frames">("report");
+
+  const handleOpenEvidence = (ev: EvidenceItem) => {
+    setSelectedEvidence(ev);
+    setDrawerOpen(true);
+  };
+
+  const investigationQuery = useQuery({
+    queryKey: ["investigation", id],
+    queryFn: async (): Promise<Investigation | null> => {
+      const { data } = await api.GET("/api/surveys/{survey_id}/investigation", {
+        params: { path: { survey_id: id } },
+      });
+      return data ?? null;
+    },
+    enabled: state.reportReady,
+  });
+
+  const investigation = investigationQuery.data;
+
 
   const hasTools = state.toolCalls.length > 0 || state.findings.length > 0;
   const hasAssessments = state.frames.some((f) => f.assessment !== undefined);
@@ -146,7 +177,28 @@ function SurveyRouteComponent() {
           <ResizablePanels label="Investigation panels" className="h-full min-h-[640px]">
             <ResizablePanel id="frames-panel" label="Frames" defaultSize={62} minSize={380}>
               <div className="h-full overflow-y-auto p-4">
-                <FrameGrid frames={state.frames} />
+                {state.reportReady && investigation ? (
+                  <div className="space-y-4">
+                    <SegmentedControl
+                      options={[
+                        { value: "report", label: "Case file" },
+                        { value: "frames", label: "Frames" },
+                      ]}
+                      value={viewMode}
+                      onValueChange={(val: string) => setViewMode(val as "report" | "frames")}
+                    />
+                    {viewMode === "report" ? (
+                      <CaseFile
+                        investigation={investigation}
+                        onOpenEvidence={handleOpenEvidence}
+                      />
+                    ) : (
+                      <FrameGrid frames={state.frames} />
+                    )}
+                  </div>
+                ) : (
+                  <FrameGrid frames={state.frames} />
+                )}
               </div>
             </ResizablePanel>
             <ResizablePanel id="trace-panel" label="Trace" defaultSize={38} minSize={380}>
@@ -156,6 +208,7 @@ function SurveyRouteComponent() {
                   findings={state.findings}
                   status={status}
                   reconnectSeq={reconnectSeq}
+                  onSelectEvidence={(kind, evId) => handleOpenEvidence({ kind, id: evId })}
                 />
               </div>
             </ResizablePanel>
@@ -163,15 +216,44 @@ function SurveyRouteComponent() {
         </div>
       ) : (
         <div className="space-y-6 p-4">
-          <FrameGrid frames={state.frames} />
+          {state.reportReady && investigation ? (
+            <div className="space-y-4">
+              <SegmentedControl
+                options={[
+                  { value: "report", label: "Case file" },
+                  { value: "frames", label: "Frames" },
+                ]}
+                value={viewMode}
+                onValueChange={(val: string) => setViewMode(val as "report" | "frames")}
+              />
+              {viewMode === "report" ? (
+                <CaseFile
+                  investigation={investigation}
+                  onOpenEvidence={handleOpenEvidence}
+                />
+              ) : (
+                <FrameGrid frames={state.frames} />
+              )}
+            </div>
+          ) : (
+            <FrameGrid frames={state.frames} />
+          )}
           <TracePanel
             toolCalls={state.toolCalls}
             findings={state.findings}
             status={status}
             reconnectSeq={reconnectSeq}
+            onSelectEvidence={(kind, evId) => handleOpenEvidence({ kind, id: evId })}
           />
         </div>
       )}
+
+      <EvidenceDrawer
+        evidence={selectedEvidence}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        frames={state.frames}
+      />
     </div>
   );
 }

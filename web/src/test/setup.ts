@@ -16,3 +16,13 @@ if (typeof window !== "undefined") {
   window.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
 }
 globalThis.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
+
+class MockResizeObserver {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+}
+if (typeof window !== "undefined") {
+  window.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
+}
+globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
