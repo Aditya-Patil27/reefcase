@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Turn a diver's reef video into a cited investigation."
 requires-python = ">=3.14,<3.15"
 dependencies = [
+    "av>=19.0.2",
     "duckdb>=2.0.0",
     "fastapi>=0.162.0",
     "httpx>=0.28.1",
