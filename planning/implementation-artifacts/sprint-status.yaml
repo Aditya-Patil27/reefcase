@@ -81,8 +81,8 @@ development_status:
   7-7-serve-glimmer-reef: backlog # B P2
   epic-7-retrospective: optional
 
-  epic-8: backlog
-  8-1-historical-survey-import: backlog # B P1
+  epic-8: in-progress
+  8-1-historical-survey-import: done # B P1
   8-2-telegram-bot: backlog # C P2
   8-3-deployment: backlog # B P1
   8-4-demo-dataset-and-rehearsal: backlog # C P1

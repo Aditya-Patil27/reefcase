@@ -25,6 +25,18 @@ subsets only; the raw downloads stay in the gitignored `data/geo/raw/`.
 | `data/geo/mpa.parquet` | https://data-gis.unep-wcmc.org/server/rest/services/ProtectedSites/The_World_Database_of_Protected_Areas/MapServer/1 (WDPA, non-terrestrial) | WDPA terms, non-commercial; cite UNEP-WCMC & IUCN, Protected Planet |
 | `data/geo/reef_map.parquet` | https://allencoralatlas.org/geoserver/ows (`coral-atlas:geomorphic_data_verbose`, `coral-atlas:benthic_data_verbose`) | CC BY 4.0; cite Allen Coral Atlas, doi:10.5281/zenodo.3833242 |
 
+## Historical survey photos
+
+Listed in `data/demo/history_manifest.csv` and downloaded by `scripts/import_history.py` into the
+gitignored `data/demo/history/`; not redistributed in the repo. Use constraint: cite PIFSC ESD;
+public-domain status is unverified (architecture §9.5).
+
+| Photos | Source URL | Licence |
+|---|---|---|
+| NCRMP station HAW-41, 2013-08-03 (30) | https://www.ncei.noaa.gov/archive/accession/0159172 | US Gov; cite NOAA PIFSC ESD |
+| NCRMP station HAW-41, 2016-08-15 (32) | https://www.ncei.noaa.gov/archive/accession/0164296 | US Gov; cite NOAA PIFSC ESD |
+| NCRMP station HAW-41, 2019-07-15 (30) | https://www.ncei.noaa.gov/archive/accession/0240600 | US Gov; cite NOAA PIFSC ESD |
+
 ## Local fixtures
 
 | Fixture | Source URL | Licence |
