@@ -77,7 +77,7 @@ development_status:
   7-2-train-reefstudent: done # A P1
   7-3-evaluate-against-human-labels: done # A P1
   7-4-reefstudent-backend-in-the-app: done # A P1
-  7-5-teacher-assessment-dataset: backlog # B P2
+  7-5-teacher-assessment-dataset: done # B P2
   7-6-glimmer-reef-lora-fine-tune: backlog # B P2
   7-7-serve-glimmer-reef: backlog # B P2
   epic-7-retrospective: optional
