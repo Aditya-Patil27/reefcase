@@ -45,6 +45,7 @@ def make_settings() -> Settings:
 # ``.env.example`` order, each row with a sample value and the value it must produce.
 ENV_TABLE: list[tuple[str, str, object]] = [
     ("REEFCASE_DATA_DIR", "var/data", Path("var/data")),
+    ("REEFCASE_WEB_DIST", "web/dist", Path("web/dist")),
     ("REEFCASE_SEGMENTER", "sam3_modal", "sam3_modal"),
     ("REEFCASE_SAM_MODEL_ID", "facebook/sam3.1", "facebook/sam3.1"),
     ("REEFCASE_SAM_MODAL_URL", "https://modal.example/sam", "https://modal.example/sam"),
@@ -78,6 +79,7 @@ def test_defaults_match_architecture() -> None:
     assert settings.data_dir == DEFAULT_DATA_DIR == Path("var")
     assert settings.segmenter == "fake"
     assert settings.sam_model_id == DEFAULT_SAM_MODEL_ID == "facebook/sam3"
+    assert settings.web_dist is None
     assert settings.sam_modal_url is None
     assert settings.student_weights is None
     assert settings.keep_frames == DEFAULT_KEEP_FRAMES == 24
@@ -127,9 +129,9 @@ def test_every_4_4_variable_is_read(
 
 
 def test_every_env_example_variable_is_covered() -> None:
-    """The table above is the full §4.4 surface: 21 variables, no more, no fewer."""
-    assert len(ENV_TABLE) == 21
-    assert len({row[0] for row in ENV_TABLE}) == 21
+    """The table above is the full §4.4 surface: 22 variables, no more, no fewer."""
+    assert len(ENV_TABLE) == 22
+    assert len({row[0] for row in ENV_TABLE}) == 22
 
 
 def test_empty_env_value_means_unset(monkeypatch: pytest.MonkeyPatch) -> None:
