@@ -13,12 +13,12 @@ from typing import TYPE_CHECKING, Any
 
 from reefcase.core.errors import NotFoundError
 from reefcase.core.events import Event, EventAdapter
-from reefcase.core.schemas import GeoPoint, SegClass, Site, Survey
+from reefcase.core.schemas import Frame, GeoPoint, QualityScore, SegClass, Site, Survey
 
 if TYPE_CHECKING:
     from reefcase.store.db import Store
 
-__all__ = ["EventRepo", "SiteRepo", "SurveyRepo"]
+__all__ = ["EventRepo", "FrameRepo", "SiteRepo", "SurveyRepo"]
 
 #: Columns ``events`` stores as its own fields; the rest goes to ``data`` as JSON.
 _EVENT_OWN_COLUMNS = frozenset({"survey_id", "seq", "ts", "type"})
@@ -244,3 +244,66 @@ class EventRepo:
             )
             for row in rows
         ]
+
+
+def _frame_from_row(row: tuple[Any, ...]) -> Frame:
+    return Frame(
+        id=row[0],
+        survey_id=row[1],
+        t_sec=row[2],
+        image_path=row[3],
+        quality=QualityScore.model_validate_json(row[4]),
+    )
+
+
+class FrameRepo:
+    """Reads and writes ``frames`` (§4.2, §6.4)."""
+
+    def __init__(self, store: Store) -> None:
+        self._store = store
+
+    async def save(self, frame: Frame) -> None:
+        """Insert ``frame`` or update the row with its id."""
+        await self._store.execute(
+            """
+            INSERT INTO frames (id, survey_id, t_sec, image_path, quality)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT (id) DO UPDATE SET
+                survey_id = excluded.survey_id,
+                t_sec = excluded.t_sec,
+                image_path = excluded.image_path,
+                quality = excluded.quality
+            """,
+            [
+                frame.id,
+                frame.survey_id,
+                frame.t_sec,
+                frame.image_path,
+                frame.quality.model_dump_json(),
+            ],
+        )
+
+    async def get(self, frame_id: str) -> Frame:
+        """Return the frame, or raise ``NotFoundError``."""
+        row = await self._store.fetchone(
+            """
+            SELECT id, survey_id, t_sec, image_path, quality FROM frames
+            WHERE id = ?
+            """,
+            [frame_id],
+        )
+        if row is None:
+            raise NotFoundError(f"unknown frame: {frame_id}")
+        return _frame_from_row(row)
+
+    async def list_by_survey(self, survey_id: str) -> list[Frame]:
+        """Return one survey's frames, ordered by timestamp then id."""
+        rows = await self._store.fetchall(
+            """
+            SELECT id, survey_id, t_sec, image_path, quality FROM frames
+            WHERE survey_id = ?
+            ORDER BY t_sec, id
+            """,
+            [survey_id],
+        )
+        return [_frame_from_row(row) for row in rows]
