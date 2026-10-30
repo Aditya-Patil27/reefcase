@@ -72,7 +72,8 @@ async def test_upload_keeps_the_video_suffix(make_settings, tmp_path) -> None:
 async def test_upload_names_the_site(make_settings, tmp_path) -> None:
     app = build_app(make_settings, tmp_path)
     async with client_for(app) as client:
-        named = await post_survey(client, site_name="Horseshoe Reef")
+        # ~11 km apart, so 2.5's site matching gives each its own site.
+        named = await post_survey(client, lat="19.8292", site_name="Horseshoe Reef")
         unnamed = await post_survey(client)
     store = app.state.store
     site_named = await store.sites.get(named.json()["site_id"])

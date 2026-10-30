@@ -54,7 +54,7 @@ async def create_survey(
     dive_date: Annotated[date, Form()],
     site_name: Annotated[str | None, Form()] = None,
 ) -> Survey:
-    """Store an uploaded clip as a new site + queued survey, and return the survey."""
+    """Store an uploaded clip as a queued survey at the nearest site (or a new one)."""
     suffix = _video_suffix(video.filename)
     if suffix not in VIDEO_SUFFIXES:
         raise HTTPException(
@@ -88,12 +88,17 @@ async def create_survey(
     )
     await video.close()
 
-    site = Site(
-        id=new_id(SITE),
-        name=_site_name(lat, lon, site_name),
-        location=GeoPoint(lat=lat, lon=lon),
-        created_at=_now(),
-    )
+    # A survey within 500 m of an existing site joins it (2.5, FR12).
+    location = GeoPoint(lat=lat, lon=lon)
+    site = await store.sites.find_site_near(location)
+    if site is None:
+        site = Site(
+            id=new_id(SITE),
+            name=_site_name(lat, lon, site_name),
+            location=location,
+            created_at=_now(),
+        )
+        await store.sites.save(site)
     survey = Survey(
         id=survey_id,
         site_id=site.id,
@@ -101,9 +106,8 @@ async def create_survey(
         status=SurveyStatus.QUEUED,
         source="upload",
         video_path=video_ref,
-        created_at=site.created_at,
+        created_at=_now(),
     )
-    await store.sites.save(site)
     await store.surveys.save(survey)
     return survey
 

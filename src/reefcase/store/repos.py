@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from reefcase.store.db import Store
 
 __all__ = [
+    "SITE_MATCH_RADIUS_M",
     "EventRepo",
     "FrameRepo",
     "SegmentationRepo",
@@ -35,6 +36,9 @@ __all__ = [
     "SurveyRepo",
     "ToolResultRepo",
 ]
+
+#: A survey within this distance of an existing site joins it (FR12, Story 2.5).
+SITE_MATCH_RADIUS_M = 500.0
 
 #: Columns ``events`` stores as its own fields; the rest goes to ``data`` as JSON.
 _EVENT_OWN_COLUMNS = frozenset({"survey_id", "seq", "ts", "type"})
@@ -104,6 +108,30 @@ class SiteRepo:
                 site.created_at,
             ],
         )
+
+    async def find_site_near(
+        self, location: GeoPoint, radius_m: float = SITE_MATCH_RADIUS_M
+    ) -> Site | None:
+        """Return the nearest site within ``radius_m`` of ``location`` (FR12), if any.
+
+        Great-circle (haversine) distance on a sphere of radius 6371 km.
+        """
+        row = await self._store.fetchone(
+            """
+            SELECT id, name, lat, lon, mpa_id, created_at FROM (
+                SELECT *, 2 * 6371000 * asin(sqrt(
+                    pow(sin(radians(lat - ?) / 2), 2)
+                    + cos(radians(?)) * cos(radians(lat)) * pow(sin(radians(lon - ?) / 2), 2)
+                )) AS distance_m
+                FROM sites
+            )
+            WHERE distance_m <= ?
+            ORDER BY distance_m, id
+            LIMIT 1
+            """,
+            [location.lat, location.lat, location.lon, radius_m],
+        )
+        return None if row is None else _site_from_row(row)
 
     async def get(self, site_id: str) -> Site:
         """Return the site, or raise ``NotFoundError``."""
