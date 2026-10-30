@@ -43,8 +43,9 @@ WEB_DIST = f"{APP_DIR}/web/dist"
 
 
 def api_settings() -> Settings:
-    """The deployed settings: the volume and the baked web build win over the secret's env."""
-    return Settings(data_dir=Path(DATA_DIR), web_dist=Path(WEB_DIST))
+    """The deployed settings: the volume, the baked web build and SAM 3 on Modal win over the
+    secret's env (a laptop ``.env`` may say ``fake`` or ``sam3_local``)."""
+    return Settings(data_dir=Path(DATA_DIR), web_dist=Path(WEB_DIST), segmenter="sam3_modal")
 
 
 def seed_env(environ: Mapping[str, str]) -> dict[str, str]:
