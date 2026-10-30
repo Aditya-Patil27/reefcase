@@ -1,6 +1,6 @@
 # Story 4.3: vessel_activity (Global Fishing Watch)
 
-Owner: D (lead-d) · Priority: P0 · Depends on: 4.1 · Status: backlog
+Owner: D (lead-d) · Priority: P0 · Depends on: 4.1 · Status: in-progress
 
 ## Story (verbatim from epics.md)
 
