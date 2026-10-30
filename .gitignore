@@ -22,4 +22,5 @@ var/
 *.duckdb
 *.duckdb.wal
 .scratch/
+data/geo/raw/
 .playwright-mcp/

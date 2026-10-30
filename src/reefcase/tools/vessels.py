@@ -2,14 +2,14 @@
 
 Queries SAR detections (total and unmatched-to-AIS) and apparent fishing effort
 around a site within radius_km (<= 20 km) for a date range. Holds a process-wide
-asyncio.Semaphore(1) to respect GFW concurrency limits, recovers 524 timeouts via
-the last-report endpoint, and ensures no vessel names, MMSI, or IMO numbers are returned.
+asyncio.Semaphore(1) to respect GFW concurrency limits, recovers 524 timeouts by polling
+the last-report endpoint, and reads only counts and cell centres from report rows, so no
+vessel names, MMSI, or IMO numbers are returned.
 """
 
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import io
 import json
 import math
@@ -21,7 +21,7 @@ from typing import Any, cast
 import httpx
 from pydantic import Field
 
-from reefcase.core.errors import ExternalServiceError
+from reefcase.core.errors import ConfigError, ExternalServiceError
 from reefcase.core.ids import TOOL_RESULT, new_id
 from reefcase.core.schemas import ToolResult
 from reefcase.tools.http import ToolContext
@@ -40,6 +40,10 @@ GFW_LAST_REPORT_URL: str = "https://gateway.api.globalfishingwatch.org/v3/4wings
 
 # GFW limits users to one concurrent report; hold a process-wide semaphore (§5.4).
 GFW_SEMAPHORE: asyncio.Semaphore = asyncio.Semaphore(1)
+
+# After a 524, poll last-report for up to 10 minutes (GFW keeps it for 30).
+LAST_REPORT_POLL_SECONDS: float = 10.0
+LAST_REPORT_MAX_POLLS: int = 60
 
 _EARTH_RADIUS_KM: float = 6371.0088
 
@@ -125,25 +129,9 @@ async def _fetch_gfw_report(
             msg = f"POST {GFW_REPORT_URL} failed: {exc}"
             raise ExternalServiceError(msg, url=GFW_REPORT_URL) from exc
 
-        # Reports taking >100s return 524; retrieve through last-report (§9.1)
+        # Reports taking >100s return 524 but keep running; poll last-report (§9.1).
         if response.status_code == 524:
-            try:
-                last_report_resp = await ctx.http.get(GFW_LAST_REPORT_URL, headers=headers)
-            except httpx.HTTPError as exc:
-                msg = f"GET {GFW_LAST_REPORT_URL} after 524 failed: {exc}"
-                raise ExternalServiceError(
-                    msg,
-                    status_code=524,
-                    url=GFW_LAST_REPORT_URL,
-                ) from exc
-
-            if not last_report_resp.is_success:
-                raise ExternalServiceError(
-                    f"GET {GFW_LAST_REPORT_URL} returned {last_report_resp.status_code}",
-                    status_code=last_report_resp.status_code,
-                    url=GFW_LAST_REPORT_URL,
-                )
-            return _extract_json_from_response(last_report_resp.content)
+            return await _await_last_report(ctx, headers)
 
         if not response.is_success:
             raise ExternalServiceError(
@@ -155,97 +143,87 @@ async def _fetch_gfw_report(
         return _extract_json_from_response(response.content)
 
 
-def _extract_dict(val: object) -> dict[str, object] | None:
-    """Safely narrow an object to a dict[str, object]."""
-    if isinstance(val, dict):
-        d: dict[str, object] = {}
-        for k, v in cast(dict[object, object], val).items():
-            if isinstance(k, str):
-                d[k] = v
-        return d
-    return None
+async def _await_last_report(ctx: ToolContext, headers: Mapping[str, str]) -> object:
+    """Poll last-report until the timed-out report finishes.
+
+    It answers ``{"status": "running", ...}`` while the report runs, the report body once it
+    is done, and ``{"status": <code>, "message": ...}`` if the report failed.
+    """
+    for _ in range(LAST_REPORT_MAX_POLLS):
+        await asyncio.sleep(LAST_REPORT_POLL_SECONDS)
+        try:
+            response = await ctx.http.get(GFW_LAST_REPORT_URL, headers=headers)
+        except httpx.HTTPError as exc:
+            msg = f"GET {GFW_LAST_REPORT_URL} after 524 failed: {exc}"
+            raise ExternalServiceError(msg, status_code=524, url=GFW_LAST_REPORT_URL) from exc
+        if not response.is_success:
+            raise ExternalServiceError(
+                f"GET {GFW_LAST_REPORT_URL} returned {response.status_code}",
+                status_code=response.status_code,
+                url=GFW_LAST_REPORT_URL,
+            )
+        payload = _extract_json_from_response(response.content)
+        status = cast(dict[str, object], payload).get("status") if isinstance(payload, dict) else None
+        if status == "running":
+            continue
+        if status is not None:
+            message = cast(dict[str, object], payload).get("message")
+            raise ExternalServiceError(
+                f"GFW report failed ({status}): {message}",
+                status_code=status if isinstance(status, int) else None,
+                url=GFW_LAST_REPORT_URL,
+            )
+        return payload
+    raise ExternalServiceError(
+        f"GFW report still running after {LAST_REPORT_MAX_POLLS} polls",
+        status_code=524,
+        url=GFW_LAST_REPORT_URL,
+    )
 
 
-def _get_entries(payload: object) -> list[dict[str, object]]:
-    payload_dict = _extract_dict(payload)
-    if payload_dict is not None:
-        entries_val = (
-            payload_dict.get("entries") or payload_dict.get("data") or payload_dict.get("rows")
-        )
-        if isinstance(entries_val, list):
-            res: list[dict[str, object]] = []
-            for item in cast(list[object], entries_val):
-                sub_dict = _extract_dict(item)
-                if sub_dict is not None:
-                    res.append(sub_dict)
-            return res
-        return []
-    elif isinstance(payload, list):
-        res: list[dict[str, object]] = []
-        for item in cast(list[object], payload):
-            sub_dict = _extract_dict(item)
-            if sub_dict is not None:
-                res.append(sub_dict)
-        return res
-    return []
+def _report_rows(payload: object) -> list[dict[str, object]]:
+    """Flatten a 4Wings report, ``{"total": n, "entries": [{"<dataset>:vN": [row, ...]}]}``.
+
+    Each row is one grid cell (and flag), e.g. ``{"lat", "lon", "flag", "detections"}`` for SAR
+    or ``{"lat", "lon", "flag", "hours", "vesselIDs"}`` for fishing effort.
+    """
+    entries = cast(dict[str, object], payload).get("entries") if isinstance(payload, dict) else None
+    if not isinstance(entries, list):
+        raise ExternalServiceError("GFW report has no entries list", url=GFW_REPORT_URL)
+    rows: list[dict[str, object]] = []
+    for entry in cast(list[object], entries):
+        if not isinstance(entry, dict):
+            continue
+        for dataset_rows in cast(dict[str, object], entry).values():
+            if isinstance(dataset_rows, list):
+                rows.extend(
+                    cast(dict[str, object], row)
+                    for row in cast(list[object], dataset_rows)
+                    if isinstance(row, dict)
+                )
+    return rows
 
 
-def _parse_total_sar(payload: object) -> int:
-    payload_dict = _extract_dict(payload)
-    if payload_dict is not None and "total" in payload_dict:
-        total_val = payload_dict["total"]
-        if isinstance(total_val, (int, float, str)):
-            with contextlib.suppress(ValueError, TypeError):
-                return int(total_val)
-    entries = _get_entries(payload)
-    total = 0
-    for e in entries:
-        count = e.get("count", 1)
-        if isinstance(count, (int, float, str)):
-            with contextlib.suppress(ValueError, TypeError):
-                total += int(count)
-                continue
-        total += 1
-    return total
+def _number(row: Mapping[str, object], key: str) -> float:
+    value = row.get(key)
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return 0.0
+    return float(value)
 
 
-def _parse_unmatched_sar(payload: object) -> tuple[int, list[dict[str, float]]]:
-    entries = _get_entries(payload)
-    points: list[dict[str, float]] = []
-    for e in entries:
-        lat_val = e.get("lat") if "lat" in e else e.get("latitude")
-        lon_val = e.get("lon") if "lon" in e else e.get("longitude")
-        if isinstance(lat_val, (int, float, str)) and isinstance(lon_val, (int, float, str)):
-            with contextlib.suppress(ValueError, TypeError):
-                points.append({"lat": float(lat_val), "lon": float(lon_val)})
-
-    count = len(points)
-    payload_dict = _extract_dict(payload)
-    if payload_dict is not None and "total" in payload_dict:
-        total_val = payload_dict["total"]
-        if isinstance(total_val, (int, float, str)):
-            with contextlib.suppress(ValueError, TypeError):
-                count = int(total_val)
-    return count, points
+def _sum(rows: list[dict[str, object]], key: str) -> float:
+    return sum(_number(row, key) for row in rows)
 
 
-def _parse_fishing_hours(payload: object) -> float:
-    entries = _get_entries(payload)
-    total_hours = 0.0
-    for e in entries:
-        val = (
-            e.get("hours")
-            if "hours" in e
-            else e.get("apparentFishingHours")
-            if "apparentFishingHours" in e
-            else e.get("fishing_hours")
-            if "fishing_hours" in e
-            else e.get("value")
-        )
-        if isinstance(val, (int, float, str)):
-            with contextlib.suppress(ValueError, TypeError):
-                total_hours += float(val)
-    return round(total_hours, 2)
+def _cell_points(rows: list[dict[str, object]]) -> list[dict[str, float]]:
+    """Distinct grid-cell centres with detections; no other row field leaves this module."""
+    cells: set[tuple[float, float]] = set()
+    for row in rows:
+        lat, lon = row.get("lat"), row.get("lon")
+        if isinstance(lat, int | float) and isinstance(lon, int | float):
+            if _number(row, "detections") > 0:
+                cells.add((float(lat), float(lon)))
+    return [{"lat": lat, "lon": lon} for lat, lon in sorted(cells)]
 
 
 @tool(
@@ -255,10 +233,9 @@ def _parse_fishing_hours(payload: object) -> float:
 )
 async def vessel_activity(params: VesselActivityParams, ctx: ToolContext) -> ToolResult:
     """Query SAR detections and fishing effort near the site from GFW API v3."""
-    if params.radius_km > 20.0:
-        raise ValueError("radius_km must be <= 20.0")
-
     site = await ctx.store.sites.get(params.site_id)
+    if ctx.settings.gfw_token is None:
+        raise ConfigError("REEFCASE_GFW_TOKEN is not configured")
 
     geojson_fc = _circle_polygon_feature_collection(
         lat=site.location.lat,
@@ -266,9 +243,7 @@ async def vessel_activity(params: VesselActivityParams, ctx: ToolContext) -> Too
         radius_km=params.radius_km,
     )
 
-    headers: dict[str, str] = {}
-    if ctx.settings.gfw_token is not None:
-        headers["Authorization"] = f"Bearer {ctx.settings.gfw_token.get_secret_value()}"
+    headers = {"Authorization": f"Bearer {ctx.settings.gfw_token.get_secret_value()}"}
 
     start_str = params.start.isoformat()
     end_str = params.end.isoformat()
@@ -287,8 +262,7 @@ async def vessel_activity(params: VesselActivityParams, ctx: ToolContext) -> Too
         **base_query,
         "datasets[0]": "public-global-sar-presence:latest",
     }
-    sar_total_payload = await _fetch_gfw_report(ctx, sar_total_query, geojson_fc, headers)
-    total_sar_count = _parse_total_sar(sar_total_payload)
+    sar_rows = _report_rows(await _fetch_gfw_report(ctx, sar_total_query, geojson_fc, headers))
 
     # 2. Unmatched-to-AIS SAR presence (matched='false')
     sar_unmatched_query = {
@@ -296,16 +270,16 @@ async def vessel_activity(params: VesselActivityParams, ctx: ToolContext) -> Too
         "datasets[0]": "public-global-sar-presence:latest",
         "filters[0]": "matched='false'",
     }
-    sar_unmatched_payload = await _fetch_gfw_report(ctx, sar_unmatched_query, geojson_fc, headers)
-    unmatched_count, unmatched_points = _parse_unmatched_sar(sar_unmatched_payload)
+    unmatched_rows = _report_rows(
+        await _fetch_gfw_report(ctx, sar_unmatched_query, geojson_fc, headers)
+    )
 
     # 3. Fishing effort
     fishing_query = {
         **base_query,
         "datasets[0]": "public-global-fishing-effort:latest",
     }
-    fishing_payload = await _fetch_gfw_report(ctx, fishing_query, geojson_fc, headers)
-    fishing_hours = _parse_fishing_hours(fishing_payload)
+    fishing_rows = _report_rows(await _fetch_gfw_report(ctx, fishing_query, geojson_fc, headers))
 
     return ToolResult(
         id=new_id(TOOL_RESULT),
@@ -313,13 +287,13 @@ async def vessel_activity(params: VesselActivityParams, ctx: ToolContext) -> Too
         params=params.model_dump(mode="json"),
         data={
             "sar_detections": {
-                "total": total_sar_count,
+                "total": int(_sum(sar_rows, "detections")),
                 "unmatched_to_ais": {
-                    "count": unmatched_count,
-                    "points": unmatched_points,
+                    "count": int(_sum(unmatched_rows, "detections")),
+                    "points": _cell_points(unmatched_rows),
                 },
             },
-            "fishing_hours": fishing_hours,
+            "fishing_hours": round(_sum(fishing_rows, "hours"), 2),
         },
         source_url=GFW_REPORT_URL,
         retrieved_at=datetime.now(UTC),
