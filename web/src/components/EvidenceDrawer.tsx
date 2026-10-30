@@ -238,13 +238,13 @@ export function EvidenceDrawer({
                     <p className="text-secondary">
                       Unmatched to AIS:{" "}
                       <span className="text-danger font-semibold">
-                        {(toolResult.data as any).sar_detections.unmatched_to_ais}
+                        {(toolResult.data as any).sar_detections.unmatched_to_ais?.count}
                       </span>
                     </p>
                     <p className="text-secondary">
                       Total detections inside 10km:{" "}
                       <span className="text-fg font-semibold">
-                        {(toolResult.data as any).sar_detections.count}
+                        {(toolResult.data as any).sar_detections.total}
                       </span>
                     </p>
                   </div>
