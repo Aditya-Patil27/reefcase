@@ -45,8 +45,8 @@ development_status:
   3-5-segmentation-stage: backlog # A P0
   epic-3-retrospective: optional
 
-  epic-4: backlog
-  4-1-tool-framework-and-result-cache: backlog # C P0
+  epic-4: in-progress
+  4-1-tool-framework-and-result-cache: done # C P0
   4-2-heat-stress-noaa-crw: backlog # C P0
   4-3-vessel-activity-gfw: backlog # D P0
   4-4-reef-map-and-mpa-boundary: backlog # D P0
