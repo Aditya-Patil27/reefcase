@@ -50,7 +50,7 @@ development_status:
   4-2-heat-stress-noaa-crw: done # C P0
   4-3-vessel-activity-gfw: done # D P0
   4-4-reef-map-and-mpa-boundary: done # D P0
-  4-5-site-history: review # D P0
+  4-5-site-history: done # D P0
   4-6-map-layer-endpoints: backlog # D P0
   epic-4-retrospective: optional
 
