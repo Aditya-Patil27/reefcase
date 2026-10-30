@@ -12,9 +12,13 @@ Configuration comes only from ``Settings`` (env vars); nothing here reads
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import PurePath
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException
+from starlette.responses import Response
+from starlette.types import Scope
 
 from reefcase.api.routes import events, surveys, tool_results
 from reefcase.core.config import Settings
@@ -60,8 +64,23 @@ def create_app(
     app.get("/api/health")(_health_route)
     # Frames and masks for the web (§6.3); thumb_url and mask_url point here.
     app.mount("/media", StaticFiles(directory=store.blobs.root, check_dir=False), name="media")
+    # Last, so every API route wins (§12: one origin for the API and the web build).
+    if resolved.web_dist is not None:
+        app.mount("/", _WebApp(directory=resolved.web_dist, html=True), name="web")
 
     return app
+
+
+class _WebApp(StaticFiles):
+    """The built web app; an unknown path outside ``/api`` is a client-side route."""
+
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        try:
+            return await super().get_response(path, scope)
+        except HTTPException as exc:
+            if exc.status_code != 404 or PurePath(path).parts[:1] == ("api",):
+                raise
+            return await super().get_response("index.html", scope)
 
 
 def _health_route(request: Request) -> dict[str, object]:

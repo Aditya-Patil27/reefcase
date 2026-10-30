@@ -149,6 +149,7 @@ A discriminated union on `type`. Every event has `survey_id`, `seq: int` (monoto
 | Variable | Meaning |
 |---|---|
 | `REEFCASE_DATA_DIR` | default `var/` |
+| `REEFCASE_WEB_DIST` | built web app (`web/dist`) served at `/` by the API; unset by default (§12) |
 | `REEFCASE_SEGMENTER` | `fake` \| `sam3_local` \| `sam3_modal` \| `student` |
 | `REEFCASE_SAM_MODEL_ID` | HF model id (default `facebook/sam3`, loaded through Transformers; see §9.6) |
 | `REEFCASE_SAM_MODAL_URL` | URL of the Modal SAM endpoint |
@@ -436,6 +437,6 @@ Definition of done for every story: `uv run ruff check && uv run ruff format --c
 
 ## 12. Deployment (demo)
 - **API:** a Docker image (python slim + ffmpeg libs) deployed as a Modal ASGI app if Modal credits land, otherwise Fly.io. Segmentation runs on the Modal SAM endpoint; ReefStudent runs on CPU in the API container.
-- **Web:** a static build on Cloudflare Pages, with `VITE_API_URL` pointing at the API.
+- **Web:** the static build is served by the API itself (`REEFCASE_WEB_DIST`), one origin, so no CORS and the laptop fallback serves the same build (8.3; replaces the Cloudflare Pages plan).
 - **Data:** demo DuckDB and blobs are seeded at deploy time from `data/demo/`.
 - **Fallback for the live demo:** run everything on the team laptop (RTX 3050) behind a Cloudflare tunnel, with `REEFCASE_SEGMENTER=student`. SAM 3 may not fit in 6 GB (§9.6), so demo-site SAM 3 masks are precomputed on Kaggle and seeded. This fallback is also the distillation story: the student runs where the teacher cannot.

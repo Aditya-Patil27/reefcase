@@ -74,6 +74,7 @@ class Settings(BaseSettings):
     )
 
     data_dir: Path = DEFAULT_DATA_DIR
+    web_dist: Path | None = None
     segmenter: SegmenterName = "fake"
     sam_model_id: str = DEFAULT_SAM_MODEL_ID
     sam_modal_url: str | None = None
