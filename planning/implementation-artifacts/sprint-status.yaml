@@ -55,7 +55,7 @@ development_status:
   epic-4-retrospective: optional
 
   epic-5: in-progress
-  5-1-frame-assessor: review # B P0
+  5-1-frame-assessor: done # B P0
   5-2-investigator-agent: done # B P0
   5-3-citation-validator-and-repair-loop: backlog # D P0
   5-4-investigate-stage-and-report-persistence: backlog # D P0
