@@ -418,9 +418,14 @@ async def test_all_citations_invalid_produces_partial_with_minimal_content(
 
     investigation, _emitted, _seen = await _run(store, make_settings, steps)
 
-    assert investigation.verdict.startswith("Partial:")
-    assert len(investigation.findings) >= 1
-    assert len(investigation.hypotheses) >= 1
+    assert investigation.verdict == "Partial: Fishing pressure is the main cause."
+    # Nothing survived, so one placeholder of each cites a real frame, not an invented id.
+    assert [f.evidence for f in investigation.findings] == [
+        [EvidenceRef(kind="frame", id="frm_cite_0")]
+    ]
+    assert [(h.cause, h.supporting) for h in investigation.hypotheses] == [
+        (Cause.UNKNOWN, [EvidenceRef(kind="frame", id="frm_cite_0")])
+    ]
 
 
 # ────────── validate() unit tests (direct, no agent) ──────────
@@ -482,3 +487,32 @@ def test_validate_returns_offending_statements_for_unknown_ids() -> None:
     )
     offending = validate(draft, {"frm_1", "tr_1"})
     assert offending == ["Ghost nets observed."]
+
+
+def test_repair_keeps_supported_hypothesis_and_strips_unknown_contradicting() -> None:
+    from reefcase.agent.citations import repair, validate
+
+    draft = InvestigationDraft(
+        findings=[
+            Finding(statement="Bleaching.", evidence=[EvidenceRef(kind="frame", id="frm_1")])
+        ],
+        hypotheses=[
+            Hypothesis(
+                cause=Cause.HEAT_STRESS,
+                confidence=0.8,
+                supporting=[EvidenceRef(kind="tool_result", id="tr_1")],
+                contradicting=[EvidenceRef(kind="tool_result", id="tr_GHOST")],
+                rationale="DHW above threshold.",
+            )
+        ],
+        verdict="Heat stress.",
+        actions=[],
+        uncertain_frames=[],
+    )
+    assert validate(draft, {"frm_1", "tr_1"}) == ["DHW above threshold."]
+
+    repaired = repair(draft, {"frm_1", "tr_1"})
+
+    assert repaired.verdict == "Partial: Heat stress."
+    assert repaired.hypotheses[0].contradicting == []
+    assert validate(repaired, {"frm_1", "tr_1"}) == []

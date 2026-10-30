@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from reefcase.core.ids import FRAME, TOOL_RESULT
 from reefcase.core.schemas import Cause, EvidenceRef, Finding, Hypothesis
 
 if TYPE_CHECKING:
@@ -19,76 +20,65 @@ if TYPE_CHECKING:
 __all__ = ["repair", "validate"]
 
 
+def _cited(refs: list[EvidenceRef], known_ids: set[str]) -> bool:
+    return all(ref.id in known_ids for ref in refs)
+
+
 def validate(draft: InvestigationDraft, known_ids: set[str]) -> list[str]:
-    """Return the list of statements with unknown or missing evidence citations."""
-    offending: list[str] = []
-    for finding in draft.findings:
-        bad = not finding.evidence or any(ref.id not in known_ids for ref in finding.evidence)
-        if bad and finding.statement not in offending:
-            offending.append(finding.statement)
-    for hyp in draft.hypotheses:
-        bad = (
-            not hyp.supporting
-            or any(ref.id not in known_ids for ref in hyp.supporting)
-            or any(ref.id not in known_ids for ref in hyp.contradicting)
-        )
-        if bad and hyp.rationale not in offending:
-            offending.append(hyp.rationale)
-    return offending
+    """Return the statements that cite an ID not in ``known_ids``, in draft order.
+
+    Core schemas already require at least one ref per finding and hypothesis.
+    """
+    offending = [f.statement for f in draft.findings if not _cited(f.evidence, known_ids)]
+    offending += [
+        h.rationale
+        for h in draft.hypotheses
+        if not _cited([*h.supporting, *h.contradicting], known_ids)
+    ]
+    return list(dict.fromkeys(offending))
+
+
+def _fallback_ref(known_ids: set[str]) -> EvidenceRef:
+    """A real ref for the placeholder claim when nothing in the draft survives."""
+    frames = sorted(i for i in known_ids if i.startswith(f"{FRAME}_"))
+    if frames:
+        return EvidenceRef(kind="frame", id=frames[0])
+    results = sorted(i for i in known_ids if i.startswith(f"{TOOL_RESULT}_"))
+    if results:
+        return EvidenceRef(kind="tool_result", id=results[0])
+    raise ValueError("no frame or tool result to cite")
 
 
 def repair(draft: InvestigationDraft, known_ids: set[str]) -> InvestigationDraft:
     """Drop uncited claims and prefix the verdict with ``Partial:``.
 
-    - Findings: keep only those whose every evidence ref is known.
-    - Hypotheses: keep only those whose every supporting ref is known; strip unknown
-      contradicting refs.
-    - If no findings or hypotheses survive, provide a valid fallback citing a known frame so
-      the schema's ``min_length=1`` constraints hold.
+    A hypothesis survives if all its supporting refs are known; unknown contradicting
+    refs are stripped. ``Investigation`` needs at least one finding and one hypothesis,
+    so if none survive a placeholder citing a known frame (or tool result) takes its place.
     """
-    valid_findings: list[Finding] = [
-        f for f in draft.findings if f.evidence and all(r.id in known_ids for r in f.evidence)
+    findings = [f for f in draft.findings if _cited(f.evidence, known_ids)]
+    hypotheses = [
+        h.model_copy(update={"contradicting": [r for r in h.contradicting if r.id in known_ids]})
+        for h in draft.hypotheses
+        if _cited(h.supporting, known_ids)
     ]
-    valid_hypotheses: list[Hypothesis] = []
-    for hyp in draft.hypotheses:
-        if hyp.supporting and all(r.id in known_ids for r in hyp.supporting):
-            clean_contra = [r for r in hyp.contradicting if r.id in known_ids]
-            valid_hypotheses.append(hyp.model_copy(update={"contradicting": clean_contra}))
-
-    fallback_frame = next(
-        (i for i in sorted(known_ids) if i.startswith("frm_")),
-        next(iter(sorted(known_ids)), ""),
-    )
-
-    if not valid_findings:
-        evidence = [EvidenceRef(kind="frame", id=fallback_frame)] if fallback_frame else []
-        valid_findings = [
+    if not findings:
+        findings = [
             Finding(
-                statement="Insufficient evidence to make specific findings.",
-                evidence=evidence if evidence else [EvidenceRef(kind="frame", id="frm_fallback")],
+                statement="No finding could be tied to the evidence.",
+                evidence=[_fallback_ref(known_ids)],
             )
         ]
-
-    if not valid_hypotheses:
-        evidence = [EvidenceRef(kind="frame", id=fallback_frame)] if fallback_frame else []
-        valid_hypotheses = [
+    if not hypotheses:
+        hypotheses = [
             Hypothesis(
                 cause=Cause.UNKNOWN,
                 confidence=0.0,
-                supporting=evidence if evidence else [EvidenceRef(kind="frame", id="frm_fallback")],
-                contradicting=[],
-                rationale="All original hypotheses lacked valid citations.",
+                supporting=[_fallback_ref(known_ids)],
+                rationale="No hypothesis could be tied to the evidence.",
             )
         ]
-
-    verdict = draft.verdict
-    if not verdict.startswith("Partial:"):
-        verdict = f"Partial: {verdict}"
-
+    verdict = draft.verdict if draft.verdict.startswith("Partial:") else f"Partial: {draft.verdict}"
     return draft.model_copy(
-        update={
-            "findings": valid_findings,
-            "hypotheses": valid_hypotheses,
-            "verdict": verdict,
-        }
+        update={"findings": findings, "hypotheses": hypotheses, "verdict": verdict}
     )
