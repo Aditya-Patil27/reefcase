@@ -84,7 +84,7 @@ development_status:
 
   epic-8: in-progress
   8-1-historical-survey-import: done # B P1
-  8-2-telegram-bot: backlog # C P2
+  8-2-telegram-bot: backlog # D P2
   8-3-deployment: review # B P1
   8-4-demo-dataset-and-rehearsal: backlog # C P1
   8-5-readme-and-submission: backlog # B P0
