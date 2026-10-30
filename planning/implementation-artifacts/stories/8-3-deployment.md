@@ -67,6 +67,12 @@ So that I can try the product (Demo 25%).
 5. [x] `uv run poe gate`.
 6. [x] Review against `.opencode/agents/reviewer.md`.
 7. [ ] Human-approved: create the secret, seed, deploy, upload the demo clip (needs 5.4).
+   - [x] 2026-10-30: secret `reefcase` created from `.env`; seed imported HAW-41 2013/2016/2019
+     (92 photos, SAM 3 on Modal); deployed at https://app2732006--reefcase-api-api.us-east.modal.run
+     (`/api/health` sam3_modal + both LLMs, `/` and `/case/...` HTML, `/api/nope` JSON 404,
+     `/api/sites` lists HAW-41).
+   - [ ] Upload the demo clip and time the case file (AC 1): waits for the clip (8.4).
+   - [ ] Redeploy after 4.6 so the map layers are served.
 
 ## Lessons
 
@@ -74,6 +80,11 @@ So that I can try the product (Demo 25%).
   reefcase.api.main:create_app` serves `/` and `/case/...` as the app, `/api/health` as JSON, and
   `/api/nope` as a JSON 404. uvicorn comes in through pydantic-ai's mcp extra, so the laptop
   needs nothing extra.
+- `Image.add_local_python_source` ships only `.py` files by default (`ignore=NON_PYTHON_FILES`):
+  the first seed died on the missing `agent/prompts/investigator.md`, and the API would have
+  died on the missing store migrations. `ignore=[]` ships the package data.
+- The deployed segmenter is pinned to `sam3_modal` in code: the secret is the laptop `.env`,
+  which may say `fake` or `sam3_local`.
 - Status stays `review` until task 7: AC 1 can only be proven on the deployed URL after 5.4.
 
 ## Library check

@@ -28,11 +28,13 @@ def test_api_settings_pin_the_volume_and_web_build(monkeypatch: pytest.MonkeyPat
     # A copied .env in the Modal secret must not move the data off the volume.
     monkeypatch.setenv("REEFCASE_DATA_DIR", "var")
     monkeypatch.setenv("REEFCASE_WEB_DIST", "elsewhere")
+    monkeypatch.setenv("REEFCASE_SEGMENTER", "sam3_local")
 
     settings = api_app.api_settings()
 
     assert settings.data_dir == Path("/data")
     assert settings.web_dist == Path("/app/web/dist")
+    assert settings.segmenter == "sam3_modal"
 
 
 def test_seed_env_uses_the_volume_and_sam3() -> None:
