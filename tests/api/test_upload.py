@@ -1,5 +1,6 @@
 """Story 2.1 — POST /api/surveys: valid upload, field-level 422s, size cap, health."""
 
+import time
 from datetime import date
 from importlib import import_module
 from pathlib import Path
@@ -188,3 +189,28 @@ async def test_media_serves_blobs_and_refuses_escapes(make_settings, tmp_path) -
     assert served.content == b"PNGBYTES"
     assert missing.status_code == 404
     assert escape.status_code == 404
+
+
+def test_server_runs_an_uploaded_survey(make_settings, tmp_path) -> None:
+    # A real server starts the job runner; without it every upload stays queued (8.3 AC 1).
+    ran: list[str] = []
+
+    async def run_stages(_store: Store, survey_id: str) -> None:
+        ran.append(survey_id)
+
+    settings = make_settings(data_dir=str(tmp_path / "var"), segmenter="fake")
+    with TestClient(create_app(settings, run_stages=run_stages)) as client:
+        survey_id = client.post(
+            "/api/surveys",
+            data=GOOD_FIELDS,
+            files={"video": ("clip.mp4", CLIP_BYTES, "video/mp4")},
+        ).json()["id"]
+        status = "queued"
+        for _ in range(200):
+            status = client.get(f"/api/surveys/{survey_id}").json()["status"]
+            if status == "done":
+                break
+            time.sleep(0.02)
+
+    assert status == "done"
+    assert ran == [survey_id]

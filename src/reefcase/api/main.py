@@ -3,13 +3,14 @@
 ``create_app(settings)`` builds the app with its ``Store`` already open —
 ``app.state.store`` must be usable the moment a request arrives, and FastAPI's
 lifespan does not run under ``httpx.ASGITransport`` in tests, so build time is
-the one hook that works in both worlds. The lifespan still closes the store on
-shutdown for real servers.
+the one hook that works in both worlds. On a real server the lifespan runs the
+``JobRunner`` in the background, then stops it and closes the store on shutdown.
 
 Configuration comes only from ``Settings`` (env vars); nothing here reads
 ``.env`` itself.
 """
 
+import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import PurePath
@@ -31,11 +32,24 @@ __all__ = ["create_app"]
 
 
 def _health_payload(settings: Settings) -> dict[str, object]:
-    """Provider configuration status for ``GET /api/health`` (§6.3)."""
+    """Provider configuration status for ``GET /api/health`` (§6.3).
+
+    ``status``, ``detail`` and ``providers`` are the OpenAPI ``Health`` shape the web
+    shell reads; the flat flags stay for scripts that already check them.
+    """
+    agent = settings.llm_role("agent") is not None
+    teacher = settings.llm_role("teacher") is not None
     return {
+        "status": "ok" if agent else "degraded",
+        "detail": "models ok" if agent else "agent model not configured",
+        "providers": {
+            "segmenter": settings.segmenter,
+            "investigator": "configured" if agent else "missing",
+            "assessor": "configured" if teacher else "missing",
+        },
         "segmenter": settings.segmenter,
-        "agent_llm": settings.llm_role("agent") is not None,
-        "teacher_llm": settings.llm_role("teacher") is not None,
+        "agent_llm": agent,
+        "teacher_llm": teacher,
     }
 
 
@@ -51,12 +65,14 @@ def create_app(
     resolved = settings if settings is not None else Settings()
 
     store = Store.open(resolved.data_dir)
-    app = FastAPI(title="ReefCase", lifespan=_lifespan(store))
+    bus = EventBus(store)
+    runner = JobRunner(store, run_stages, bus=bus)
+    app = FastAPI(title="ReefCase", lifespan=_lifespan(store, runner))
     app.state.store = store
     app.state.settings = resolved
     app.state.health = _health_payload(resolved)
-    app.state.bus = EventBus(store)
-    app.state.runner = JobRunner(store, run_stages, bus=app.state.bus)
+    app.state.bus = bus
+    app.state.runner = runner
 
     app.include_router(surveys.router, prefix="/api")
     app.include_router(events.router, prefix="/api")
@@ -90,14 +106,18 @@ def _health_route(request: Request) -> dict[str, object]:
     return health
 
 
-def _lifespan(store: Store):
-    """Close the store when the (real) server shuts down."""
+def _lifespan(store: Store, runner: JobRunner):
+    """Run queued surveys while the (real) server is up; on shutdown let the runs in flight
+    finish, then close the store."""
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
+        task = asyncio.create_task(runner.run_forever())
         try:
             yield
         finally:
+            runner.close()
+            await task
             store.close()
 
     return lifespan
