@@ -1,6 +1,6 @@
 # Story 1.1: Repository scaffold and quality gates
 
-Owner: Opus (lead-b) · Priority: P0 · Depends on: none · Status: in-progress
+Owner: Opus (lead-b) · Priority: P0 · Depends on: none · Status: done
 
 ## Story (verbatim from epics.md)
 
