@@ -14,9 +14,12 @@ from typing import TYPE_CHECKING, Any
 from reefcase.core.errors import NotFoundError
 from reefcase.core.events import Event, EventAdapter
 from reefcase.core.schemas import (
+    Finding,
     Frame,
     FrameAssessment,
     GeoPoint,
+    Hypothesis,
+    Investigation,
     QualityScore,
     SegClass,
     Segmentation,
@@ -33,6 +36,7 @@ __all__ = [
     "AssessmentRepo",
     "EventRepo",
     "FrameRepo",
+    "InvestigationRepo",
     "SegmentationRepo",
     "SiteRepo",
     "SurveyRepo",
@@ -412,6 +416,27 @@ class SegmentationRepo:
             raise NotFoundError(f"no segmentation for frame: {frame_id}")
         return _segmentation_from_row(row)
 
+    async def list_by_survey(self, survey_id: str) -> list[Segmentation]:
+        """Return the survey's segmentations in frame order (t_sec)."""
+        rows = await self._store.fetchall(
+            """
+            SELECT s.id, s.frame_id, s.backend, s.mask_path, s.cover, s.latency_ms
+            FROM segmentations s
+            JOIN frames f ON f.id = s.frame_id
+            WHERE f.survey_id = ?
+            ORDER BY f.t_sec, s.id DESC
+            """,
+            [survey_id],
+        )
+        seen: set[str] = set()
+        result: list[Segmentation] = []
+        for row in rows:
+            seg = _segmentation_from_row(row)
+            if seg.frame_id not in seen:
+                seen.add(seg.frame_id)
+                result.append(seg)
+        return result
+
 
 def _assessment_from_row(row: tuple[Any, ...]) -> FrameAssessment:
     return FrameAssessment(
@@ -529,3 +554,81 @@ class ToolResultRepo:
             [tool, params_key],
         )
         return None if row is None else _tool_result_from_row(row)
+
+
+def _investigation_from_row(row: tuple[Any, ...]) -> Investigation:
+    return Investigation(
+        id=row[0],
+        survey_id=row[1],
+        findings=[Finding.model_validate(f) for f in json.loads(row[2])],
+        hypotheses=[Hypothesis.model_validate(h) for h in json.loads(row[3])],
+        verdict=row[4],
+        actions=json.loads(row[5]),
+        uncertain_frames=json.loads(row[6]),
+        model=row[7],
+    )
+
+
+class InvestigationRepo:
+    """Reads and writes ``investigations`` (§4.2, §5.5, §6.4)."""
+
+    def __init__(self, store: Store) -> None:
+        self._store = store
+
+    async def save(self, investigation: Investigation) -> None:
+        """Insert ``investigation`` or update the row with its id."""
+        await self._store.execute(
+            """
+            INSERT INTO investigations
+                (id, survey_id, findings, hypotheses, verdict, actions, uncertain_frames, model)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (id) DO UPDATE SET
+                survey_id = excluded.survey_id,
+                findings = excluded.findings,
+                hypotheses = excluded.hypotheses,
+                verdict = excluded.verdict,
+                actions = excluded.actions,
+                uncertain_frames = excluded.uncertain_frames,
+                model = excluded.model
+            """,
+            [
+                investigation.id,
+                investigation.survey_id,
+                json.dumps([f.model_dump(mode="json") for f in investigation.findings]),
+                json.dumps([h.model_dump(mode="json") for h in investigation.hypotheses]),
+                investigation.verdict,
+                json.dumps(investigation.actions),
+                json.dumps(investigation.uncertain_frames),
+                investigation.model,
+            ],
+        )
+
+    async def get(self, investigation_id: str) -> Investigation:
+        """Return the investigation, or raise ``NotFoundError``."""
+        row = await self._store.fetchone(
+            """
+            SELECT id, survey_id, findings, hypotheses, verdict, actions, uncertain_frames, model
+            FROM investigations
+            WHERE id = ?
+            """,
+            [investigation_id],
+        )
+        if row is None:
+            raise NotFoundError(f"unknown investigation: {investigation_id}")
+        return _investigation_from_row(row)
+
+    async def get_by_survey(self, survey_id: str) -> Investigation:
+        """Return the survey's investigation, or raise ``NotFoundError``."""
+        row = await self._store.fetchone(
+            """
+            SELECT id, survey_id, findings, hypotheses, verdict, actions, uncertain_frames, model
+            FROM investigations
+            WHERE survey_id = ?
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            [survey_id],
+        )
+        if row is None:
+            raise NotFoundError(f"no investigation for survey: {survey_id}")
+        return _investigation_from_row(row)

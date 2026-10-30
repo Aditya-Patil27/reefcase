@@ -19,7 +19,19 @@ from reefcase.core.events import (
     Segmented,
     SurveyStarted,
 )
-from reefcase.core.schemas import FrameAssessment, GeoPoint, SegClass, Site, Survey, SurveyStatus
+from reefcase.core.schemas import (
+    Cause,
+    EvidenceRef,
+    Finding,
+    FrameAssessment,
+    GeoPoint,
+    Hypothesis,
+    Investigation,
+    SegClass,
+    Site,
+    Survey,
+    SurveyStatus,
+)
 from reefcase.store.db import Store
 
 CREATED_AT = datetime(2026, 10, 26, 12, 0, tzinfo=UTC)
@@ -45,6 +57,17 @@ def make_site(site_id: str = SITE_ID, name: str = "Raja Ampat") -> Site:
     )
 
 
+def make_survey(survey_id: str = SURVEY_ID, site_id: str = SITE_ID) -> Survey:
+    return Survey(
+        id=survey_id,
+        site_id=site_id,
+        dive_date=date(2026, 10, 25),
+        status=SurveyStatus.QUEUED,
+        source="upload",
+        created_at=CREATED_AT,
+    )
+
+
 # --- AC 1: open, spatial, migrations ---------------------------------------
 
 
@@ -57,7 +80,7 @@ async def test_open_creates_db_applies_001_and_loads_spatial(data_dir: Path) -> 
         loaded = await store.fetchall("SELECT extension_name FROM duckdb_extensions() WHERE loaded")
 
     assert (data_dir / "reefcase.duckdb").is_file()
-    assert versions == [("001",), ("002",), ("003",), ("004",), ("005",), ("006",)]
+    assert versions == [("001",), ("002",), ("003",), ("004",), ("005",), ("006",), ("007",)]
     assert "spatial" in {row[0] for row in loaded}
 
 
@@ -75,7 +98,7 @@ async def test_migrations_run_once(data_dir: Path) -> None:
 
     assert applied_at is not None
     assert rows[0] == ("001", applied_at[0])  # 001 ran once, before the reopen
-    assert [version for version, _ in rows] == ["001", "002", "003", "004", "005", "006"]
+    assert [version for version, _ in rows] == ["001", "002", "003", "004", "005", "006", "007"]
     assert reread == site
 
 
@@ -359,4 +382,53 @@ async def test_store_error_wraps_duckdb(data_dir: Path) -> None:
 
         versions = await store.fetchall("SELECT version FROM schema_migrations")
 
-    assert versions == [("001",), ("002",), ("003",), ("004",), ("005",), ("006",)]
+    assert versions == [("001",), ("002",), ("003",), ("004",), ("005",), ("006",), ("007",)]
+
+
+# --- Investigations (§4.2, §5.5, §6.4) --------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_investigation_round_trips(data_dir: Path) -> None:
+    survey = make_survey()
+    inv = Investigation(
+        id="inv_round_trip",
+        survey_id=survey.id,
+        findings=[
+            Finding(
+                statement="Significant coral cover loss.",
+                evidence=[EvidenceRef(kind="frame", id="frm_1")],
+            )
+        ],
+        hypotheses=[
+            Hypothesis(
+                cause=Cause.HEAT_STRESS,
+                confidence=0.85,
+                supporting=[EvidenceRef(kind="tool_result", id="tr_1")],
+                contradicting=[],
+                rationale="Elevated temperature.",
+            )
+        ],
+        verdict="Bleaching caused by thermal stress.",
+        actions=["Re-survey in 3 months."],
+        uncertain_frames=["frm_2"],
+        model="spark-agent",
+    )
+
+    with open_store(data_dir) as store:
+        await store.surveys.save(survey)
+        await store.investigations.save(inv)
+        reread_by_id = await store.investigations.get(inv.id)
+        reread_by_survey = await store.investigations.get_by_survey(survey.id)
+
+    assert reread_by_id == inv
+    assert reread_by_survey == inv
+
+
+@pytest.mark.asyncio
+async def test_investigation_not_found_raises(data_dir: Path) -> None:
+    with open_store(data_dir) as store:
+        with pytest.raises(NotFoundError):
+            await store.investigations.get("inv_missing")
+        with pytest.raises(NotFoundError):
+            await store.investigations.get_by_survey("srv_missing")

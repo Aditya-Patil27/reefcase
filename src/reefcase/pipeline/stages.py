@@ -11,28 +11,52 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import httpx
 import numpy as np
 from PIL import Image
 from pydantic_ai.exceptions import ModelAPIError, UnexpectedModelBehavior
 from pydantic_ai.models import Model
 
+from reefcase.agent.investigator import investigate
 from reefcase.core.config import Settings
 from reefcase.core.errors import ConfigError
-from reefcase.core.events import Assessed, FrameScored, FramesExtracted, Segmented
+from reefcase.core.events import (
+    Assessed,
+    FindingEvent,
+    FrameScored,
+    FramesExtracted,
+    ReportReady,
+    Segmented,
+)
 from reefcase.core.ids import FRAME, SEGMENTATION, new_id
-from reefcase.core.schemas import MASK_INDEX, Frame, FrameAssessment, SegClass, Segmentation
+from reefcase.core.schemas import (
+    MASK_INDEX,
+    Frame,
+    FrameAssessment,
+    Investigation,
+    SegClass,
+    Segmentation,
+)
 from reefcase.ingest.frames import IngestError, extract_candidates
 from reefcase.ingest.quality import QualityError, score
 from reefcase.llm.assess import assess_frame
 from reefcase.llm.providers import build_model
 from reefcase.pipeline.bus import EventBus
+from reefcase.tools.http import ToolContext, build_client
 from reefcase.vision.cover import cover_from_mask
 from reefcase.vision.segmenter import Segmenter, build_segmenter
 
 if TYPE_CHECKING:
     from reefcase.store.db import Store
 
-__all__ = ["ASSESS_CONCURRENCY", "assess_stage", "ingest_stage", "run_stages", "segment_stage"]
+__all__ = [
+    "ASSESS_CONCURRENCY",
+    "assess_stage",
+    "ingest_stage",
+    "investigate_stage",
+    "run_stages",
+    "segment_stage",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -278,12 +302,108 @@ async def assess_stage(
     return [assessment for assessment in results if assessment is not None]
 
 
-async def run_stages(store: Store, survey_id: str) -> None:
+async def investigate_stage(
+    store: Store,
+    survey_id: str,
+    *,
+    frames: list[Frame] | None = None,
+    segs: list[Segmentation] | None = None,
+    assessments: list[FrameAssessment] | None = None,
+    bus: EventBus | None = None,
+    settings: Settings | None = None,
+    model: Model | None = None,
+    http_client: httpx.AsyncClient | None = None,
+) -> Investigation:
+    """Investigate the survey: runs the agent over frames, segs, assessments.
+
+    Persists the resulting ``Investigation``, emits ``finding`` for each finding,
+    and emits ``report_ready``.
+    """
+    event_bus = bus or EventBus(store)
+    cfg = settings or Settings()
+    llm = model or build_model("agent", cfg)
+    if llm is None:
+        raise ConfigError("REEFCASE_LLM_AGENT_* is not configured")
+
+    survey = await store.surveys.get(survey_id)
+    if frames is None:
+        frames = await store.frames.list_by_survey(survey_id)
+    if segs is None:
+        segs = await store.segmentations.list_by_survey(survey_id)
+    if assessments is None:
+        assessments = await store.assessments.list_by_survey(survey_id)
+
+    client = http_client or build_client()
+    close_client = http_client is None
+    try:
+        ctx = ToolContext(http=client, store=store, settings=cfg)
+        investigation = await investigate(
+            survey,
+            frames,
+            segs,
+            assessments,
+            ctx,
+            event_bus.publish,
+            model=llm,
+        )
+    finally:
+        if close_client:
+            await client.aclose()
+
+    await store.investigations.save(investigation)
+
+    for finding in investigation.findings:
+        await event_bus.publish(
+            FindingEvent(
+                survey_id=survey_id,
+                seq=await store.events.next_seq(survey_id),
+                ts=_now(),
+                finding=finding,
+            )
+        )
+
+    await event_bus.publish(
+        ReportReady(
+            survey_id=survey_id,
+            seq=await store.events.next_seq(survey_id),
+            ts=_now(),
+            investigation_id=investigation.id,
+        )
+    )
+
+    return investigation
+
+
+async def run_stages(
+    store: Store,
+    survey_id: str,
+    *,
+    settings: Settings | None = None,
+    teacher_model: Model | None = None,
+    agent_model: Model | None = None,
+    http_client: httpx.AsyncClient | None = None,
+) -> None:
     """Run all pipeline stages in sequence."""
-    settings = Settings()
-    frames = await ingest_stage(store, survey_id, settings=settings)
-    await segment_stage(store, survey_id, frames, settings=settings)
-    if settings.llm_role("teacher") is None:
+    cfg = settings or Settings()
+    frames = await ingest_stage(store, survey_id, settings=cfg)
+    await segment_stage(store, survey_id, frames, settings=cfg)
+    if teacher_model is None and cfg.llm_role("teacher") is None:
         logger.warning("REEFCASE_LLM_TEACHER_* is not configured; skipping frame assessment")
+        assessments: list[FrameAssessment] = []
     else:
-        await assess_stage(store, survey_id, frames, settings=settings)
+        assessments = await assess_stage(
+            store, survey_id, frames, settings=cfg, model=teacher_model
+        )
+
+    if agent_model is None and cfg.llm_role("agent") is None:
+        logger.warning("REEFCASE_LLM_AGENT_* is not configured; skipping investigation")
+    else:
+        await investigate_stage(
+            store,
+            survey_id,
+            frames=frames,
+            assessments=assessments,
+            settings=cfg,
+            model=agent_model,
+            http_client=http_client,
+        )

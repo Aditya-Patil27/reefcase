@@ -14,12 +14,22 @@ from pathlib import PurePosixPath
 from typing import Annotated
 
 from fastapi import APIRouter, Form, HTTPException, Request, UploadFile
+from pydantic import BaseModel
 
 from reefcase.core.errors import NotFoundError
 from reefcase.core.ids import SITE, SURVEY, new_id
-from reefcase.core.schemas import GeoPoint, Site, Survey, SurveyStatus
+from reefcase.core.schemas import (
+    Frame,
+    FrameAssessment,
+    GeoPoint,
+    Investigation,
+    Segmentation,
+    Site,
+    Survey,
+    SurveyStatus,
+)
 
-__all__ = ["MAX_VIDEO_BYTES", "VIDEO_SUFFIXES", "router"]
+__all__ = ["MAX_VIDEO_BYTES", "VIDEO_SUFFIXES", "FrameDetail", "router"]
 
 router = APIRouter()
 
@@ -119,3 +129,62 @@ async def get_survey(survey_id: str, request: Request) -> Survey:
         return await request.app.state.store.surveys.get(survey_id)
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+class FrameDetail(BaseModel):
+    """A frame alongside its segmentation and assessment (Story 5.4, §6.3)."""
+
+    frame: Frame
+    segmentation: Segmentation | None = None
+    assessment: FrameAssessment | None = None
+
+
+@router.get(
+    "/surveys/{survey_id}/investigation",
+    response_model=Investigation,
+    operation_id="getInvestigation",
+    summary="The investigation, once the report is ready",
+    responses={404: {"description": "Not ready yet."}},
+)
+async def get_investigation(survey_id: str, request: Request) -> Investigation:
+    """Return the survey's investigation, or 404 until ready."""
+    store = request.app.state.store
+    try:
+        await store.surveys.get(survey_id)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    try:
+        return await store.investigations.get_by_survey(survey_id)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Not ready yet.") from exc
+
+
+@router.get(
+    "/surveys/{survey_id}/frames",
+    response_model=list[FrameDetail],
+    operation_id="getSurveyFrames",
+    summary="Frames with quality, segmentation and assessment",
+)
+async def get_survey_frames(survey_id: str, request: Request) -> list[FrameDetail]:
+    """Return the survey's frames with quality, segmentation and assessment."""
+    store = request.app.state.store
+    try:
+        await store.surveys.get(survey_id)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    frames = await store.frames.list_by_survey(survey_id)
+    segs = await store.segmentations.list_by_survey(survey_id)
+    assessments = await store.assessments.list_by_survey(survey_id)
+
+    seg_by_frame = {s.frame_id: s for s in segs}
+    assessment_by_frame = {a.frame_id: a for a in assessments}
+
+    return [
+        FrameDetail(
+            frame=frame,
+            segmentation=seg_by_frame.get(frame.id),
+            assessment=assessment_by_frame.get(frame.id),
+        )
+        for frame in frames
+    ]
