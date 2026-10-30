@@ -154,9 +154,12 @@ class JobRunner:
         try:
             if self._run_stages is not None:
                 await self._run_stages(self._store, survey_id)
+            # Stages write the survey too (e.g. its cover); save on top of theirs.
+            survey = await self._store.surveys.get(survey_id)
             survey.status = SurveyStatus.DONE
             await self._store.surveys.save(survey)
         except Exception as exc:
+            survey = await self._store.surveys.get(survey_id)
             survey.status = SurveyStatus.FAILED
             survey.failure_reason = str(exc)
             await self._store.surveys.save(survey)

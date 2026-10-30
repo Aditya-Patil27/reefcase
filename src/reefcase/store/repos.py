@@ -18,6 +18,7 @@ from reefcase.core.schemas import (
     GeoPoint,
     QualityScore,
     SegClass,
+    Segmentation,
     Site,
     Survey,
     ToolResult,
@@ -26,7 +27,14 @@ from reefcase.core.schemas import (
 if TYPE_CHECKING:
     from reefcase.store.db import Store
 
-__all__ = ["EventRepo", "FrameRepo", "SiteRepo", "SurveyRepo", "ToolResultRepo"]
+__all__ = [
+    "EventRepo",
+    "FrameRepo",
+    "SegmentationRepo",
+    "SiteRepo",
+    "SurveyRepo",
+    "ToolResultRepo",
+]
 
 #: Columns ``events`` stores as its own fields; the rest goes to ``data`` as JSON.
 _EVENT_OWN_COLUMNS = frozenset({"survey_id", "seq", "ts", "type"})
@@ -315,6 +323,64 @@ class FrameRepo:
             [survey_id],
         )
         return [_frame_from_row(row) for row in rows]
+
+
+def _segmentation_from_row(row: tuple[Any, ...]) -> Segmentation:
+    cover = _decode_cover(row[4])
+    assert cover is not None  # the column is NOT NULL
+    return Segmentation(
+        id=row[0],
+        frame_id=row[1],
+        backend=row[2],
+        mask_path=row[3],
+        cover=cover,
+        latency_ms=row[5],
+    )
+
+
+class SegmentationRepo:
+    """Reads and writes ``segmentations`` (§4.2, §6.4)."""
+
+    def __init__(self, store: Store) -> None:
+        self._store = store
+
+    async def save(self, segmentation: Segmentation) -> None:
+        """Insert ``segmentation`` or update the row with its id."""
+        await self._store.execute(
+            """
+            INSERT INTO segmentations (id, frame_id, backend, mask_path, cover, latency_ms)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT (id) DO UPDATE SET
+                frame_id = excluded.frame_id,
+                backend = excluded.backend,
+                mask_path = excluded.mask_path,
+                cover = excluded.cover,
+                latency_ms = excluded.latency_ms
+            """,
+            [
+                segmentation.id,
+                segmentation.frame_id,
+                segmentation.backend,
+                segmentation.mask_path,
+                _encode_cover(segmentation.cover),
+                segmentation.latency_ms,
+            ],
+        )
+
+    async def get_by_frame(self, frame_id: str) -> Segmentation:
+        """Return the frame's latest segmentation, or raise ``NotFoundError``."""
+        row = await self._store.fetchone(
+            """
+            SELECT id, frame_id, backend, mask_path, cover, latency_ms FROM segmentations
+            WHERE frame_id = ?
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            [frame_id],
+        )
+        if row is None:
+            raise NotFoundError(f"no segmentation for frame: {frame_id}")
+        return _segmentation_from_row(row)
 
 
 def _tool_result_from_row(row: tuple[Any, ...]) -> ToolResult:

@@ -21,6 +21,7 @@ from reefcase.store.blobs import Blobs
 from reefcase.store.repos import (
     EventRepo,
     FrameRepo,
+    SegmentationRepo,
     SiteRepo,
     SurveyRepo,
     ToolResultRepo,
@@ -85,6 +86,7 @@ class Store:
         self.surveys = SurveyRepo(self)
         self.events = EventRepo(self)
         self.frames = FrameRepo(self)
+        self.segmentations = SegmentationRepo(self)
         self.tool_results = ToolResultRepo(self)
 
     @classmethod
