@@ -1,0 +1,251 @@
+interactions:
+- request:
+    body: '{"geojson":{"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[[[-155.99,19.819864],[-155.952702,19.816404],[-155.916841,19.806158],[-155.883801,19.78952],[-155.854853,19.767133],[-155.831112,19.739857],[-155.813487,19.708745],[-155.802654,19.674993],[-155.799026,19.639899],[-155.802736,19.604813],[-155.813638,19.571083],[-155.831309,19.540003],[-155.855067,19.512767],[-155.883999,19.490417],[-155.916993,19.473813],[-155.952784,19.463588],[-155.99,19.460136],[-156.027216,19.463588],[-156.063007,19.473813],[-156.096001,19.490417],[-156.124933,19.512767],[-156.148691,19.540003],[-156.166362,19.571083],[-156.177264,19.604813],[-156.180974,19.639899],[-156.177346,19.674993],[-156.166513,19.708745],[-156.148888,19.739857],[-156.125147,19.767133],[-156.096199,19.78952],[-156.063159,19.806158],[-156.027298,19.816404],[-155.99,19.819864]]]}}]}}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-length:
+      - '914'
+      content-type:
+      - application/json
+      host:
+      - gateway.api.globalfishingwatch.org
+      user-agent:
+      - python-httpx/0.28.1
+    method: POST
+    uri: https://gateway.api.globalfishingwatch.org/v3/4wings/report?format=JSON&group-by=FLAG&temporal-resolution=ENTIRE&spatial-resolution=HIGH&date-range=2024-01-01%2C2024-12-31&datasets%5B0%5D=public-global-sar-presence%3Alatest
+  response:
+    body:
+      string: '{"total":1,"limit":null,"offset":null,"nextOffset":null,"metadata":{},"entries":[{"public-global-sar-presence:v5.0":[{"date":"2024-01-01,2024-12-31","detections":2,"flag":"USA","lat":19.58,"lon":-156,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"USA","lat":19.61,"lon":-156.01,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"USA","lat":19.59,"lon":-156.1,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"USA","lat":19.55,"lon":-156.01,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"USA","lat":19.61,"lon":-156,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"BHS","lat":19.47,"lon":-156,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.64,"lon":-156.04,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.69,"lon":-156.06,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":2,"flag":"USA","lat":19.58,"lon":-156.01,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"NLD","lat":19.63,"lon":-156.03,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.64,"lon":-156.03,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.58,"lon":-156.02,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"USA","lat":19.55,"lon":-155.99,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"USA","lat":19.59,"lon":-156.01,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":2,"flag":"USA","lat":19.63,"lon":-156,"vesselIDs":2},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.57,"lon":-155.99,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.58,"lon":-156,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.58,"lon":-156.01,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"USA","lat":19.56,"lon":-155.99,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":2,"flag":"USA","lat":19.6,"lon":-156.01,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"USA","lat":19.59,"lon":-156,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.55,"lon":-155.97,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"USA","lat":19.57,"lon":-156.01,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"USA","lat":19.56,"lon":-156,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"USA","lat":19.72,"lon":-156.07,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":2,"flag":"","lat":19.63,"lon":-156,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.55,"lon":-155.99,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"USA","lat":19.58,"lon":-156.02,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"USA","lat":19.59,"lon":-155.99,"vesselIDs":1}]}]}'
+    headers:
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Accept,Content-Type,cookie,refresh-token,Accept-Encoding,Authorization,origin,referer,user-agent,Access-Control-Allow-Origin,indexes-0,indexes-1,indexes-2,indexes-3,indexes-4,indexes-5,indexes-6,indexes-7,x-workspace-password
+      access-control-allow-methods:
+      - GET,POST,PUT,PATCH,DELETE,OPTIONS
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - indexes-0,indexes-1,indexes-2,indexes-3,indexes-4,indexes-5,indexes-6,indexes-7,x-deprecated-dataset,x-ratelimit-daily-current-usage,x-ratelimit-daily-limit-requests,x-ratelimit-daily-remaining-requests,x-ratelimit-daily-reset-hours,x-ratelimit-monthly-current-usage,x-ratelimit-monthly-limit-requests,x-ratelimit-monthly-remaining-requests,x-ratelimit-monthly-reset-days,timestamp-base
+      - x-last-report-uri,x-rows,x-columns,x-offset,x-scale,x-empty-value,x-bins-0,x-bins-count-0
+      cache:
+      - 'true'
+      cache-control:
+      - private, max-age=604800
+      cache-duration:
+      - '14400'
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a52912aaef026145-BOM
+      connection:
+      - keep-alive
+      content-length:
+      - '2993'
+      content-type:
+      - application/json; charset=utf-8
+      date:
+      - Fri, 30 Oct 2026 08:33:04 GMT
+      origin:
+      - GFW API Gateway
+      server:
+      - cloudflare
+      transaction-id:
+      - 228d3cf9-3d3c-4d7a-8953-2b4ab0420937
+      vary:
+      - Accept-Encoding
+      x-cloud-trace-context:
+      - 7593ee5152e944d093707a87e2449f01
+      x-datasets:
+      - public-global-sar-presence:v5.0
+      x-ratelimit-daily-current-usage:
+      - '0'
+      x-ratelimit-daily-limit-requests:
+      - '50000'
+      x-ratelimit-daily-remaining-requests:
+      - '50000'
+      x-ratelimit-daily-reset-hours:
+      - '0'
+      x-ratelimit-monthly-current-usage:
+      - '0'
+      x-ratelimit-monthly-limit-requests:
+      - '1500000'
+      x-ratelimit-monthly-remaining-requests:
+      - '1500000'
+      x-ratelimit-monthly-reset-days:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"geojson":{"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[[[-155.99,19.819864],[-155.952702,19.816404],[-155.916841,19.806158],[-155.883801,19.78952],[-155.854853,19.767133],[-155.831112,19.739857],[-155.813487,19.708745],[-155.802654,19.674993],[-155.799026,19.639899],[-155.802736,19.604813],[-155.813638,19.571083],[-155.831309,19.540003],[-155.855067,19.512767],[-155.883999,19.490417],[-155.916993,19.473813],[-155.952784,19.463588],[-155.99,19.460136],[-156.027216,19.463588],[-156.063007,19.473813],[-156.096001,19.490417],[-156.124933,19.512767],[-156.148691,19.540003],[-156.166362,19.571083],[-156.177264,19.604813],[-156.180974,19.639899],[-156.177346,19.674993],[-156.166513,19.708745],[-156.148888,19.739857],[-156.125147,19.767133],[-156.096199,19.78952],[-156.063159,19.806158],[-156.027298,19.816404],[-155.99,19.819864]]]}}]}}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-length:
+      - '914'
+      content-type:
+      - application/json
+      host:
+      - gateway.api.globalfishingwatch.org
+      user-agent:
+      - python-httpx/0.28.1
+    method: POST
+    uri: https://gateway.api.globalfishingwatch.org/v3/4wings/report?format=JSON&group-by=FLAG&temporal-resolution=ENTIRE&spatial-resolution=HIGH&date-range=2024-01-01%2C2024-12-31&datasets%5B0%5D=public-global-sar-presence%3Alatest&filters%5B0%5D=matched%3D%27false%27
+  response:
+    body:
+      string: '{"total":1,"limit":null,"offset":null,"nextOffset":null,"metadata":{},"entries":[{"public-global-sar-presence:v5.0":[{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.64,"lon":-156.04,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.69,"lon":-156.06,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.57,"lon":-155.99,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.64,"lon":-156.03,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.58,"lon":-156.02,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.58,"lon":-156.01,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.55,"lon":-155.97,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.58,"lon":-156,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":1,"flag":"","lat":19.55,"lon":-155.99,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","detections":2,"flag":"","lat":19.63,"lon":-156,"vesselIDs":1}]}]}'
+    headers:
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Accept,Content-Type,cookie,refresh-token,Accept-Encoding,Authorization,origin,referer,user-agent,Access-Control-Allow-Origin,indexes-0,indexes-1,indexes-2,indexes-3,indexes-4,indexes-5,indexes-6,indexes-7,x-workspace-password
+      access-control-allow-methods:
+      - GET,POST,PUT,PATCH,DELETE,OPTIONS
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - indexes-0,indexes-1,indexes-2,indexes-3,indexes-4,indexes-5,indexes-6,indexes-7,x-deprecated-dataset,x-ratelimit-daily-current-usage,x-ratelimit-daily-limit-requests,x-ratelimit-daily-remaining-requests,x-ratelimit-daily-reset-hours,x-ratelimit-monthly-current-usage,x-ratelimit-monthly-limit-requests,x-ratelimit-monthly-remaining-requests,x-ratelimit-monthly-reset-days,timestamp-base
+      - x-last-report-uri,x-rows,x-columns,x-offset,x-scale,x-empty-value,x-bins-0,x-bins-count-0
+      cache:
+      - 'true'
+      cache-control:
+      - private, max-age=604800
+      cache-duration:
+      - '14400'
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a52912b59d1d6145-BOM
+      connection:
+      - keep-alive
+      content-length:
+      - '1094'
+      content-type:
+      - application/json; charset=utf-8
+      date:
+      - Fri, 30 Oct 2026 08:33:05 GMT
+      origin:
+      - GFW API Gateway
+      server:
+      - cloudflare
+      transaction-id:
+      - 05c69774-5701-401f-838b-88f845cf0958
+      vary:
+      - Accept-Encoding
+      x-cloud-trace-context:
+      - 6def765c5e03be6393707a87e244934a
+      x-datasets:
+      - public-global-sar-presence:v5.0
+      x-ratelimit-daily-current-usage:
+      - '0'
+      x-ratelimit-daily-limit-requests:
+      - '50000'
+      x-ratelimit-daily-remaining-requests:
+      - '50000'
+      x-ratelimit-daily-reset-hours:
+      - '0'
+      x-ratelimit-monthly-current-usage:
+      - '0'
+      x-ratelimit-monthly-limit-requests:
+      - '1500000'
+      x-ratelimit-monthly-remaining-requests:
+      - '1500000'
+      x-ratelimit-monthly-reset-days:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"geojson":{"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[[[-155.99,19.819864],[-155.952702,19.816404],[-155.916841,19.806158],[-155.883801,19.78952],[-155.854853,19.767133],[-155.831112,19.739857],[-155.813487,19.708745],[-155.802654,19.674993],[-155.799026,19.639899],[-155.802736,19.604813],[-155.813638,19.571083],[-155.831309,19.540003],[-155.855067,19.512767],[-155.883999,19.490417],[-155.916993,19.473813],[-155.952784,19.463588],[-155.99,19.460136],[-156.027216,19.463588],[-156.063007,19.473813],[-156.096001,19.490417],[-156.124933,19.512767],[-156.148691,19.540003],[-156.166362,19.571083],[-156.177264,19.604813],[-156.180974,19.639899],[-156.177346,19.674993],[-156.166513,19.708745],[-156.148888,19.739857],[-156.125147,19.767133],[-156.096199,19.78952],[-156.063159,19.806158],[-156.027298,19.816404],[-155.99,19.819864]]]}}]}}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-length:
+      - '914'
+      content-type:
+      - application/json
+      host:
+      - gateway.api.globalfishingwatch.org
+      user-agent:
+      - python-httpx/0.28.1
+    method: POST
+    uri: https://gateway.api.globalfishingwatch.org/v3/4wings/report?format=JSON&group-by=FLAG&temporal-resolution=ENTIRE&spatial-resolution=HIGH&date-range=2024-01-01%2C2024-12-31&datasets%5B0%5D=public-global-fishing-effort%3Alatest
+  response:
+    body:
+      string: '{"total":1,"limit":null,"offset":null,"nextOffset":null,"metadata":{},"entries":[{"public-global-fishing-effort:v5.0":[{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.0661111111111111,"lat":19.53,"lon":-155.98,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.9483333333333334,"lat":19.47,"lon":-156.04,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":2.5230555555555556,"lat":19.61,"lon":-156.01,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.9997222222222222,"lat":19.54,"lon":-156.02,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":6.5472222222222225,"lat":19.61,"lon":-156,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.0261111111111112,"lat":19.51,"lon":-156.12,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":6.815833333333334,"lat":19.62,"lon":-156.01,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.23388888888888887,"lat":19.61,"lon":-156.08,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.0663888888888888,"lat":19.54,"lon":-156.05,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.08333333333333333,"lat":19.58,"lon":-156.08,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.776111111111111,"lat":19.57,"lon":-156.1,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":5.519722222222222,"lat":19.59,"lon":-156.12,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.20527777777777778,"lat":19.67,"lon":-156.02,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":2.0411111111111113,"lat":19.52,"lon":-156.1,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.2927777777777778,"lat":19.58,"lon":-156.03,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.3913888888888889,"lat":19.57,"lon":-156.09,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":2.506666666666667,"lat":19.55,"lon":-156.08,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":10.7,"lat":19.62,"lon":-156,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.723611111111111,"lat":19.65,"lon":-156.02,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.9169444444444443,"lat":19.64,"lon":-156.1,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.9247222222222223,"lat":19.63,"lon":-156.13,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.0005555555555554,"lat":19.55,"lon":-156.11,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.9274999999999999,"lat":19.52,"lon":-156.02,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.7411111111111112,"lat":19.56,"lon":-156.12,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.23194444444444445,"lat":19.58,"lon":-155.99,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.5083333333333333,"lat":19.58,"lon":-156.11,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":6.658611111111111,"lat":19.63,"lon":-156.01,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.20027777777777778,"lat":19.64,"lon":-156.12,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.0694444444444444,"lat":19.61,"lon":-155.99,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.30027777777777775,"lat":19.52,"lon":-156.12,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.0744444444444445,"lat":19.64,"lon":-156.02,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.0588888888888888,"lat":19.51,"lon":-156.02,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.125833333333333,"lat":19.49,"lon":-156.04,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.7847222222222222,"lat":19.51,"lon":-156.09,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":5.0841666666666665,"lat":19.63,"lon":-156,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.12472222222222223,"lat":19.54,"lon":-156.14,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.275,"lat":19.59,"lon":-156.02,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1,"lat":19.5,"lon":-156.01,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.7497222222222222,"lat":19.55,"lon":-156.06,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.9066666666666666,"lat":19.61,"lon":-156.09,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.991388888888889,"lat":19.56,"lon":-156.11,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":3.5825,"lat":19.6,"lon":-156,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.7330555555555555,"lat":19.59,"lon":-156.03,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.8333333333333334,"lat":19.6,"lon":-156.08,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":2.1750000000000003,"lat":19.53,"lon":-156.13,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.39999999999999997,"lat":19.57,"lon":-156.07,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.7483333333333333,"lat":19.6,"lon":-156.01,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.2416666666666667,"lat":19.54,"lon":-156.11,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.4094444444444443,"lat":19.6,"lon":-156.07,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.4488888888888889,"lat":19.63,"lon":-156.02,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.0086111111111111,"lat":19.53,"lon":-156.08,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.7583333333333333,"lat":19.57,"lon":-156.03,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.2013888888888889,"lat":19.52,"lon":-156.13,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.5405555555555557,"lat":19.58,"lon":-156.09,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.40055555555555555,"lat":19.56,"lon":-156.04,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.6169444444444445,"lat":19.64,"lon":-156.01,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.007777777777778,"lat":19.54,"lon":-156.03,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.43249999999999994,"lat":19.66,"lon":-156.03,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.2491666666666668,"lat":19.56,"lon":-156.03,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.28194444444444444,"lat":19.51,"lon":-156.11,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.5938888888888888,"lat":19.57,"lon":-156.11,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.5163888888888889,"lat":19.6,"lon":-155.99,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.2336111111111111,"lat":19.52,"lon":-156.11,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.9497222222222224,"lat":19.54,"lon":-156.08,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.5330555555555555,"lat":19.56,"lon":-156.08,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.5994444444444447,"lat":19.53,"lon":-156.06,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.9675000000000002,"lat":19.55,"lon":-156.05,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":1.7255555555555555,"lat":19.55,"lon":-156.02,"vesselIDs":1},{"date":"2024-01-01,2024-12-31","flag":"USA","hours":0.6741666666666666,"lat":19.53,"lon":-156.11,"vesselIDs":1}]}]}'
+    headers:
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Accept,Content-Type,cookie,refresh-token,Accept-Encoding,Authorization,origin,referer,user-agent,Access-Control-Allow-Origin,indexes-0,indexes-1,indexes-2,indexes-3,indexes-4,indexes-5,indexes-6,indexes-7,x-workspace-password
+      access-control-allow-methods:
+      - GET,POST,PUT,PATCH,DELETE,OPTIONS
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - indexes-0,indexes-1,indexes-2,indexes-3,indexes-4,indexes-5,indexes-6,indexes-7,x-deprecated-dataset,x-ratelimit-daily-current-usage,x-ratelimit-daily-limit-requests,x-ratelimit-daily-remaining-requests,x-ratelimit-daily-reset-hours,x-ratelimit-monthly-current-usage,x-ratelimit-monthly-limit-requests,x-ratelimit-monthly-remaining-requests,x-ratelimit-monthly-reset-days,timestamp-base
+      - x-last-report-uri,x-rows,x-columns,x-offset,x-scale,x-empty-value,x-bins-0,x-bins-count-0
+      cache:
+      - 'true'
+      cache-control:
+      - private, max-age=604800
+      cache-duration:
+      - '14400'
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a52912bc58196145-BOM
+      connection:
+      - keep-alive
+      content-length:
+      - '7844'
+      content-type:
+      - application/json; charset=utf-8
+      date:
+      - Fri, 30 Oct 2026 08:33:07 GMT
+      origin:
+      - GFW API Gateway
+      server:
+      - cloudflare
+      transaction-id:
+      - 38cc8c0c-e755-432d-bb3c-eeb3c0398e04
+      vary:
+      - Accept-Encoding
+      x-cloud-trace-context:
+      - f60a6bc144a4695905c357b1b18df838
+      x-datasets:
+      - public-global-fishing-effort:v5.0
+      x-ratelimit-daily-current-usage:
+      - '0'
+      x-ratelimit-daily-limit-requests:
+      - '50000'
+      x-ratelimit-daily-remaining-requests:
+      - '50000'
+      x-ratelimit-daily-reset-hours:
+      - '0'
+      x-ratelimit-monthly-current-usage:
+      - '0'
+      x-ratelimit-monthly-limit-requests:
+      - '1500000'
+      x-ratelimit-monthly-remaining-requests:
+      - '1500000'
+      x-ratelimit-monthly-reset-days:
+      - '0'
+    status:
+      code: 200
+      message: OK
+version: 1

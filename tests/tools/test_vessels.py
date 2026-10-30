@@ -44,8 +44,9 @@ from reefcase.tools.vessels import (
 
 CASSETTE_DIR = Path(__file__).resolve().parents[1] / "cassettes" / "vessels"
 KAILUA = GeoPoint(lat=19.64, lon=-155.99)
-SAR = "public-global-sar-presence:v3.0"
-EFFORT = "public-global-fishing-effort:v3.0"
+# The versions ":latest" resolved to when the Kona cassette was recorded.
+SAR = "public-global-sar-presence:v5.0"
+EFFORT = "public-global-fishing-effort:v5.0"
 
 
 @pytest.fixture
@@ -387,9 +388,12 @@ async def test_recorded_report_kona(store: Store, make_settings: Any, record_mod
         ctx = ToolContext(http=http_client, store=store, settings=make_settings(gfw_token=token))
         result = await vessel_activity(params, ctx)
 
+    # Recorded 2026-10-30: 29 SAR rows, 10 unmatched rows, 69 fishing-effort rows.
     sar = result.data["sar_detections"]
-    assert sar["total"] >= sar["unmatched_to_ais"]["count"] >= 0
-    assert result.data["fishing_hours"] >= 0.0
+    assert sar["total"] == 34
+    assert sar["unmatched_to_ais"]["count"] == 11
+    assert len(sar["unmatched_to_ais"]["points"]) == 10
+    assert result.data["fishing_hours"] == pytest.approx(98.99)
     for point in sar["unmatched_to_ais"]["points"]:
         assert set(point) == {"lat", "lon"}
         # Every cell centre lies within the 20 km circle (plus half a 0.01° cell).
