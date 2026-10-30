@@ -34,10 +34,11 @@ function SiteRoute() {
   const site = siteDetail?.site;
   const surveys = siteDetail?.surveys ?? [];
 
-  // Sort chronological ascending to find first and latest surveys
-  const sortedSurveys = [...surveys].sort((a, b) =>
-    a.dive_date.localeCompare(b.dive_date)
-  );
+  // Sort chronological ascending to find first and latest surveys; a survey still running
+  // (or failed) has no cover yet and must not read as 0% live coral.
+  const sortedSurveys = surveys
+    .filter((survey) => survey.cover)
+    .sort((a, b) => a.dive_date.localeCompare(b.dive_date));
 
   const firstSurvey = sortedSurveys[0];
   const latestSurvey = sortedSurveys[sortedSurveys.length - 1];

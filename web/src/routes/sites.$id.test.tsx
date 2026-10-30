@@ -121,6 +121,33 @@ describe("SiteTimelineRoute", () => {
     expect(caseFileLinks.length).toBeGreaterThan(0);
   });
 
+  it("leaves a survey without cover out of the key figures", async () => {
+    mockData = {
+      site: mockSiteDetail.site,
+      surveys: [
+        {
+          ...mockSiteDetail.surveys[0]!,
+          id: "srv_04",
+          dive_date: "2026-10-30",
+          status: "running",
+          cover: null,
+        },
+        ...mockSiteDetail.surveys,
+      ],
+    };
+
+    const Component = (Route as any).options.component;
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Component />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByLabelText("Site key figures")).toHaveTextContent(
+      /LIVE CORAL 37% \(−11\.4 pp since 2021\) · 3 SURVEYS · LATEST DIVE 2026-10-21/,
+    );
+  });
+
   it("renders empty state when site has no surveys", async () => {
     mockData = {
       site: mockSiteDetail.site,
