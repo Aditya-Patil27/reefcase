@@ -71,7 +71,15 @@ So that I can try the product (Demo 25%).
      (92 photos, SAM 3 on Modal); deployed at https://app2732006--reefcase-api-api.us-east.modal.run
      (`/api/health` sam3_modal + both LLMs, `/` and `/case/...` HTML, `/api/nope` JSON 404,
      `/api/sites` lists HAW-41).
-   - [ ] Upload the demo clip and time the case file (AC 1): waits for the clip (8.4).
+   - [x] 2026-10-30: demo clip built (`scripts/build_demo_clip.py`: NCRMP 2024 OCC-HAW-002,
+     30 photos x 0.5 s = 15 s, 1920x1280, 25.6 MB) and uploaded (lat 20.268249, lon
+     -155.860434, 2024-07-06); it joined HAW-41. It sat `queued` until the runner fix below,
+     then ran on the redeploy: case file ready, 8 cited findings, 5 tools.
+   - [ ] AC 1 timing NOT met yet: 256 s from first poll to case file (12 s cold start + 240 s
+     run) against NFR1's 180 s, for a 15 s clip. Run breakdown: ingest + scoring 9 s, segment
+     (SAM 3, 24 frames, T4 cold) 84 s, assess (teacher, 4 at once) 104 s, investigate 43 s. The
+     upload itself took 124 s over a home uplink (25.6 MB). Levers, for the stage owners:
+     segment concurrency, `ASSESS_CONCURRENCY`, fewer `keep_frames`, a warm SAM 3 before the demo.
    - [ ] Redeploy after 4.6 so the map layers are served.
 
 ## Lessons
@@ -85,6 +93,10 @@ So that I can try the product (Demo 25%).
   died on the missing store migrations. `ignore=[]` ships the package data.
 - The deployed segmenter is pinned to `sam3_modal` in code: the secret is the laptop `.env`,
   which may say `fake` or `sam3_local`.
+- Nothing started the `JobRunner` on a real server: `create_app` built it but the lifespan only
+  closed the store, so every upload stayed `queued`. Tests use `httpx.ASGITransport`, which skips
+  the lifespan, so nothing caught it until the first live upload. Fixed in `api/main.py` with a
+  `TestClient` (lifespan-running) test.
 - Status stays `review` until task 7: AC 1 can only be proven on the deployed URL after 5.4.
 
 ## Library check
