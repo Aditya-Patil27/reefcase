@@ -71,12 +71,16 @@ if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
 
     @app.cls(
         gpu="T4",
+        # The 0.125-core default starves kernel launches: 0.8 s inference took 25-60 s.
+        cpu=2.0,
         image=image,
         secrets=[modal.Secret.from_name("huggingface")],
         volumes={"/root/.cache/huggingface": hf_cache},
         max_containers=1,
         scaledown_window=30,
         timeout=60,
+        # The first cold start downloads the weights; startup otherwise inherits 60 s.
+        startup_timeout=600,
     )
     class Sam3Endpoint:
         @modal.enter()
