@@ -14,7 +14,7 @@
 # Priority: P0 by Sat Oct 31, P1 by Mon Nov 2, P2 by Tue Nov 3; freeze Wed Nov 4
 
 generated: 2026-10-26
-last_updated: 2026-10-28
+last_updated: 2026-10-30
 project: met
 project_key: NOKEY
 tracking_system: file-system
@@ -46,12 +46,12 @@ development_status:
   epic-3-retrospective: optional
 
   epic-4: backlog
-  4-1-tool-framework-and-result-cache: backlog # B P0
-  4-2-heat-stress-noaa-crw: backlog # B P0
-  4-3-vessel-activity-gfw: backlog # B P0
-  4-4-reef-map-and-mpa-boundary: backlog # B P0
-  4-5-site-history: backlog # B P0
-  4-6-map-layer-endpoints: backlog # B P0
+  4-1-tool-framework-and-result-cache: backlog # C P0
+  4-2-heat-stress-noaa-crw: backlog # C P0
+  4-3-vessel-activity-gfw: backlog # C P0
+  4-4-reef-map-and-mpa-boundary: backlog # C P0
+  4-5-site-history: backlog # C P0
+  4-6-map-layer-endpoints: backlog # C P0
   epic-4-retrospective: optional
 
   epic-5: backlog
