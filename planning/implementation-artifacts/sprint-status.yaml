@@ -33,7 +33,7 @@ development_status:
   2-1-survey-upload-endpoint: done # B P0
   2-2-job-runner-event-bus-and-sse: done # B P0
   2-3-frame-extraction: done # B P0
-  2-4-quality-scoring-and-fail-fast: backlog # B P0
+  2-4-quality-scoring-and-fail-fast: done # B P0
   2-5-site-matching: backlog # B P0
   epic-2-retrospective: optional
 

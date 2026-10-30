@@ -17,6 +17,7 @@ from fastapi import FastAPI, Request
 
 from reefcase.api.routes import events, surveys, tool_results
 from reefcase.core.config import Settings
+from reefcase.pipeline import stages
 from reefcase.pipeline.bus import EventBus
 from reefcase.pipeline.runner import JobRunner, RunStages
 from reefcase.store.db import Store
@@ -35,12 +36,12 @@ def _health_payload(settings: Settings) -> dict[str, object]:
 
 def create_app(
     settings: Settings | None = None,
-    run_stages: RunStages | None = None,
+    run_stages: RunStages | None = stages.run_stages,
 ) -> FastAPI:
     """Build the API app: open the store, mount the routers, wire the lifespan.
 
-    ``run_stages`` is injected for tests (2.2's SSE tests stub the stage
-    chain); production wires the real chain when the stage stories land.
+    ``run_stages`` defaults to the real stage chain (``pipeline.stages``);
+    tests inject a stub (2.2's SSE tests) or ``None`` for no stages.
     """
     resolved = settings if settings is not None else Settings()
 

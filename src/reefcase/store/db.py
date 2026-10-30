@@ -18,7 +18,13 @@ import duckdb
 
 from reefcase.core.errors import StoreError
 from reefcase.store.blobs import Blobs
-from reefcase.store.repos import EventRepo, SiteRepo, SurveyRepo, ToolResultRepo
+from reefcase.store.repos import (
+    EventRepo,
+    FrameRepo,
+    SiteRepo,
+    SurveyRepo,
+    ToolResultRepo,
+)
 
 __all__ = ["DB_FILENAME", "MIGRATIONS_DIR", "SPATIAL_BOOTSTRAP", "Store"]
 
@@ -78,6 +84,7 @@ class Store:
         self.sites = SiteRepo(self)
         self.surveys = SurveyRepo(self)
         self.events = EventRepo(self)
+        self.frames = FrameRepo(self)
         self.tool_results = ToolResultRepo(self)
 
     @classmethod
