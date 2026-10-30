@@ -49,7 +49,7 @@ development_status:
   4-1-tool-framework-and-result-cache: done # C P0
   4-2-heat-stress-noaa-crw: backlog # C P0
   4-3-vessel-activity-gfw: review # D P0
-  4-4-reef-map-and-mpa-boundary: backlog # D P0
+  4-4-reef-map-and-mpa-boundary: done # D P0
   4-5-site-history: backlog # C P0
   4-6-map-layer-endpoints: backlog # C P0
   epic-4-retrospective: optional
