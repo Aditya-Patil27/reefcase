@@ -10,7 +10,7 @@
 # Story: backlog -> ready-for-dev -> in-progress -> review -> done
 # Retrospective: optional <-> done
 #
-# Owners: A = vision ML, B = agent/backend (Aditya), C = frontend/demo, Opus = orchestrator
+# Owners: A = vision ML, B = agent/backend (Aditya), C = frontend/demo + Epic 4, D = Antigravity (4-3, 4-4), Opus = orchestrator
 # Priority: P0 by Sat Oct 31, P1 by Mon Nov 2, P2 by Tue Nov 3; freeze Wed Nov 4
 
 generated: 2026-10-26
@@ -48,8 +48,8 @@ development_status:
   epic-4: backlog
   4-1-tool-framework-and-result-cache: backlog # C P0
   4-2-heat-stress-noaa-crw: backlog # C P0
-  4-3-vessel-activity-gfw: backlog # C P0
-  4-4-reef-map-and-mpa-boundary: backlog # C P0
+  4-3-vessel-activity-gfw: backlog # D P0
+  4-4-reef-map-and-mpa-boundary: backlog # D P0
   4-5-site-history: backlog # C P0
   4-6-map-layer-endpoints: backlog # C P0
   epic-4-retrospective: optional
