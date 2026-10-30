@@ -13,12 +13,12 @@ from typing import TYPE_CHECKING, Any
 
 from reefcase.core.errors import NotFoundError
 from reefcase.core.events import Event, EventAdapter
-from reefcase.core.schemas import GeoPoint, SegClass, Site, Survey
+from reefcase.core.schemas import GeoPoint, SegClass, Site, Survey, ToolResult
 
 if TYPE_CHECKING:
     from reefcase.store.db import Store
 
-__all__ = ["EventRepo", "SiteRepo", "SurveyRepo"]
+__all__ = ["EventRepo", "SiteRepo", "SurveyRepo", "ToolResultRepo"]
 
 #: Columns ``events`` stores as its own fields; the rest goes to ``data`` as JSON.
 _EVENT_OWN_COLUMNS = frozenset({"survey_id", "seq", "ts", "type"})
@@ -244,3 +244,61 @@ class EventRepo:
             )
             for row in rows
         ]
+
+
+def _tool_result_from_row(row: tuple[Any, ...]) -> ToolResult:
+    return ToolResult(
+        id=row[0],
+        tool=row[1],
+        params=json.loads(row[2]),
+        data=json.loads(row[3]),
+        source_url=row[4],
+        retrieved_at=row[5],
+    )
+
+
+class ToolResultRepo:
+    """Persists and caches tool results by ``(tool, canonical params)`` (§5.4)."""
+
+    _SELECT = "SELECT id, tool, params, data, source_url, retrieved_at FROM tool_results"
+
+    def __init__(self, store: Store) -> None:
+        self._store = store
+
+    async def save(self, result: ToolResult, params_key: str) -> None:
+        """Insert ``result``; a duplicate ``(tool, params_key)`` keeps the first row."""
+        await self._store.execute(
+            """
+            INSERT INTO tool_results
+                (id, tool, params_key, params, data, source_url, retrieved_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (tool, params_key) DO NOTHING
+            """,
+            [
+                result.id,
+                result.tool,
+                params_key,
+                json.dumps(result.params),
+                json.dumps(result.data),
+                result.source_url,
+                result.retrieved_at,
+            ],
+        )
+
+    async def get(self, tool_result_id: str) -> ToolResult:
+        """Return the result, or raise ``NotFoundError``."""
+        row = await self._store.fetchone(
+            f"{self._SELECT} WHERE id = ?",
+            [tool_result_id],
+        )
+        if row is None:
+            raise NotFoundError(f"unknown tool result: {tool_result_id}")
+        return _tool_result_from_row(row)
+
+    async def find(self, tool: str, params_key: str) -> ToolResult | None:
+        """Return the cached result for ``(tool, params_key)``, or ``None``."""
+        row = await self._store.fetchone(
+            f"{self._SELECT} WHERE tool = ? AND params_key = ?",
+            [tool, params_key],
+        )
+        return None if row is None else _tool_result_from_row(row)

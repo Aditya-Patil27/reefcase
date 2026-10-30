@@ -15,7 +15,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 
-from reefcase.api.routes import events, surveys
+from reefcase.api.routes import events, surveys, tool_results
 from reefcase.core.config import Settings
 from reefcase.pipeline.bus import EventBus
 from reefcase.pipeline.runner import JobRunner, RunStages
@@ -54,6 +54,7 @@ def create_app(
 
     app.include_router(surveys.router, prefix="/api")
     app.include_router(events.router, prefix="/api")
+    app.include_router(tool_results.router, prefix="/api")
     app.get("/api/health")(_health_route)
 
     return app

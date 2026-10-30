@@ -57,7 +57,7 @@ async def test_open_creates_db_applies_001_and_loads_spatial(data_dir: Path) -> 
         loaded = await store.fetchall("SELECT extension_name FROM duckdb_extensions() WHERE loaded")
 
     assert (data_dir / "reefcase.duckdb").is_file()
-    assert versions == [("001",), ("002",), ("003",)]
+    assert versions == [("001",), ("002",), ("003",), ("005",)]
     assert "spatial" in {row[0] for row in loaded}
 
 
@@ -75,7 +75,7 @@ async def test_migrations_run_once(data_dir: Path) -> None:
 
     assert applied_at is not None
     assert rows[0] == ("001", applied_at[0])  # 001 ran once, before the reopen
-    assert [version for version, _ in rows] == ["001", "002", "003"]
+    assert [version for version, _ in rows] == ["001", "002", "003", "005"]
     assert reread == site
 
 
@@ -359,4 +359,4 @@ async def test_store_error_wraps_duckdb(data_dir: Path) -> None:
 
         versions = await store.fetchall("SELECT version FROM schema_migrations")
 
-    assert versions == [("001",), ("002",), ("003",)]
+    assert versions == [("001",), ("002",), ("003",), ("005",)]
