@@ -2,6 +2,7 @@
 import type { LiveState } from "./reducer";
 import { initialLiveState, liveReducer } from "./reducer";
 import type { components } from "../api/schema";
+import { api } from "../api/client";
 import { config } from "../config";
 
 type Event = components["schemas"]["Event"];
@@ -87,6 +88,19 @@ export function useEventStream(surveyId: string | undefined): UseEventStreamResu
         if (isCancelled) return;
         setStatus("reconnecting");
         setReconnectSeq(lastSeqRef.current);
+        // The server also ends the stream of a survey that finished without a terminal
+        // event (imported historical surveys stop after segmentation); stop there.
+        void api
+          .GET("/api/surveys/{survey_id}", { params: { path: { survey_id: id } } })
+          .then(({ data }) => {
+            if (isCancelled || es !== eventSource) return;
+            if (data?.status === "done" || data?.status === "failed") {
+              es.close();
+              setStatus("closed");
+              setReconnectSeq(null);
+            }
+          })
+          .catch(() => {}); // a failed check leaves EventSource to retry
       };
     }
 

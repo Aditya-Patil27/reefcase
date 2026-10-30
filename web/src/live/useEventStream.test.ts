@@ -3,6 +3,9 @@ import { renderHook, act } from "@testing-library/react";
 import { useEventStream } from "./useEventStream";
 import type { components } from "../api/schema";
 
+const { getSurvey } = vi.hoisted(() => ({ getSurvey: vi.fn() }));
+vi.mock("../api/client", () => ({ api: { GET: getSurvey } }));
+
 type Event = components["schemas"]["Event"];
 
 class MockEventSource {
@@ -56,6 +59,8 @@ describe("useEventStream", () => {
   beforeEach(() => {
     MockEventSource.instances = [];
     vi.stubGlobal("EventSource", MockEventSource);
+    getSurvey.mockReset();
+    getSurvey.mockResolvedValue({ data: { status: "running" } });
   });
 
   afterEach(() => {
@@ -165,5 +170,38 @@ describe("useEventStream", () => {
     expect(es.closed).toBe(true);
     expect(result.current.status).toBe("closed");
     expect(result.current.reconnectSeq).toBeNull();
+  });
+
+  it("stops reconnecting when the stream ends on a finished survey without a report", async () => {
+    // Imported historical surveys are done after segmentation: no report_ready ever arrives.
+    getSurvey.mockResolvedValue({ data: { status: "done" } });
+    const { result } = renderHook(() => useEventStream("srv_hist"));
+    const es = MockEventSource.instances[0]!;
+
+    await act(async () => {
+      es.simulateOpen();
+      es.simulateError();
+    });
+
+    expect(getSurvey).toHaveBeenCalledWith("/api/surveys/{survey_id}", {
+      params: { path: { survey_id: "srv_hist" } },
+    });
+    expect(es.closed).toBe(true);
+    expect(result.current.status).toBe("closed");
+    expect(result.current.reconnectSeq).toBeNull();
+  });
+
+  it.each(["running", "queued"])("keeps reconnecting while the survey is %s", async (status) => {
+    getSurvey.mockResolvedValue({ data: { status } });
+    const { result } = renderHook(() => useEventStream("srv_live"));
+    const es = MockEventSource.instances[0]!;
+
+    await act(async () => {
+      es.simulateOpen();
+      es.simulateError();
+    });
+
+    expect(es.closed).toBe(false);
+    expect(result.current.status).toBe("reconnecting");
   });
 });
