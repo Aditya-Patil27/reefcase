@@ -1,0 +1,23 @@
+{
+  "rows": 3366,
+  "frames": 1683,
+  "source": "Coralscapes train + val, left and right 1024x1024 halves (never the test split)",
+  "teacher": "meta-models/muse-spark-open-1026",
+  "input_tokens": 7947440,
+  "output_tokens": 763476,
+  "usd_estimate": 13.18,
+  "bleaching_severity": {
+    "0": 2362,
+    "1": 670,
+    "2": 182,
+    "3": 84,
+    "4": 68
+  },
+  "damage": {
+    "none": 3275,
+    "broken": 80,
+    "anchor_scar": 7,
+    "disease": 3
+  },
+  "volume": "reefcase-assessments:/muse (assessments.jsonl, images/, LICENSE-MUSE.md, USAGE_POLICY.md)"
+}
