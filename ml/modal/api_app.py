@@ -71,6 +71,9 @@ if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
         modal.Image.debian_slim(python_version="3.14")
         .uv_sync(frozen=True, extra_options="--no-dev --group gpu")
         .workdir(APP_DIR)
+        # torch sizes its pool to the host's cores, not the container's 2; ReefStudent was
+        # benchmarked at 807 ms a frame on 2 threads.
+        .env({"OMP_NUM_THREADS": "2"})
         # The geo tools read data/geo/*.parquet relative to the working directory.
         .add_local_dir("data/geo", f"{APP_DIR}/data/geo", ignore=["raw"])
         .add_local_file(
@@ -104,7 +107,7 @@ if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
 
         return create_app(api_settings())
 
-    @app.function(image=image, volumes={DATA_DIR: data}, secrets=secrets, timeout=3600)
+    @app.function(image=image, cpu=2.0, volumes={DATA_DIR: data}, secrets=secrets, timeout=3600)
     def seed() -> None:
         """Import the historical surveys (8.1) onto the volume."""
         subprocess.run(
