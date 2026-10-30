@@ -1,39 +1,57 @@
 {
   "classes": [
+    "other",
     "live_coral",
     "bleached_coral",
     "algae",
     "rubble",
-    "sand",
-    "other"
+    "sand"
   ],
-  "student": {
-    "per_class_iou": {
-      "live_coral": 0.71,
-      "bleached_coral": 0.64,
-      "algae": 0.69,
-      "rubble": 0.66,
-      "sand": 0.81,
-      "other": 0.92
+  "frames": 392,
+  "shipped": "supervised",
+  "students": {
+    "distilled": {
+      "per_class_iou": {
+        "other": 0.60620168782134,
+        "live_coral": 0.39427079164144957,
+        "bleached_coral": 0.11062785901672754,
+        "algae": 0.0,
+        "rubble": 0.0,
+        "sand": 0.6357988877243249
+      },
+      "miou": 0.29114987103397366,
+      "ms_per_frame": {
+        "kaggle_t4": 160.64264567263038
+      }
     },
-    "miou": 0.7383333333,
-    "ms_per_frame": {
-      "kaggle_t4": 23.4,
-      "rtx_3050": 31.7
+    "supervised": {
+      "per_class_iou": {
+        "other": 0.8127522210586777,
+        "live_coral": 0.7147082418799305,
+        "bleached_coral": 0.5774464927409527,
+        "algae": 0.5605758717970978,
+        "rubble": 0.637172374176654,
+        "sand": 0.7967038852814462
+      },
+      "miou": 0.6832265144891264,
+      "ms_per_frame": {
+        "kaggle_t4": 161.20063259846629,
+        "rtx_3050": 135.4
+      }
     }
   },
   "sam3": {
     "per_class_iou": {
-      "live_coral": 0.79,
-      "bleached_coral": 0.68,
-      "algae": 0.74,
-      "rubble": 0.71,
-      "sand": 0.86,
-      "other": 0.95
+      "other": 0.5988095165934502,
+      "live_coral": 0.3657990907749742,
+      "bleached_coral": 0.1112299513222941,
+      "algae": 0.02349702238347011,
+      "rubble": 0.053023600517902385,
+      "sand": 0.6497939325941718
     },
-    "miou": 0.7883333333,
+    "miou": 0.30035885236437715,
     "ms_per_frame": {
-      "kaggle_t4": 412.8
+      "kaggle_t4": 1247.1303543222512
     }
   }
 }
