@@ -22,6 +22,7 @@ from pydantic_ai import Agent, ModelRetry, RunContext, Tool
 from pydantic_ai.models import Model
 from pydantic_ai.toolsets import FunctionToolset
 
+from reefcase.agent.citations import repair, validate
 from reefcase.core.errors import ReefCaseError
 from reefcase.core.events import Event, ToolCalled, ToolReturned
 from reefcase.core.ids import INVESTIGATION, new_id
@@ -70,11 +71,12 @@ class InvestigationDraft(BaseModel):
     uncertain_frames: list[str] = Field(description="Frame IDs that could not be judged")
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class _Deps:
     survey_id: str
     ctx: ToolContext
     emit: Emit
+    known_ids: set[str]
 
 
 INVESTIGATOR_AGENT = Agent(
@@ -83,6 +85,20 @@ INVESTIGATOR_AGENT = Agent(
     deps_type=_Deps,
     retries=2,
 )
+
+
+@INVESTIGATOR_AGENT.output_validator
+def _validate_citations(ctx: RunContext[_Deps], draft: InvestigationDraft) -> InvestigationDraft:
+    offending = validate(draft, ctx.deps.known_ids)
+    if not offending:
+        return draft
+    if ctx.retry >= ctx.max_retries:
+        return repair(draft, ctx.deps.known_ids)
+    bullet_list = "\n".join(f"- {s}" for s in offending)
+    raise ModelRetry(
+        f"The following statements cite unknown or missing evidence IDs:\n{bullet_list}\n"
+        "Every statement must cite only valid frame IDs or tool_result IDs from this survey."
+    )
 
 
 def _now() -> datetime:
@@ -117,6 +133,7 @@ def _agent_tool(spec: ToolSpec) -> Tool[_Deps]:
             return {"error": str(exc)}
         summary = json.dumps(result.data, separators=(",", ":"), default=str)[:SUMMARY_CHARS]
         await _emit(deps, ToolReturned, call_id=call_id, tool_result_id=result.id, summary=summary)
+        deps.known_ids.add(result.id)
         return result.model_dump(mode="json", exclude={"params"})
 
     return Tool[_Deps].from_schema(
@@ -181,10 +198,12 @@ async def investigate(
     model: Model,
 ) -> Investigation:
     """Run the agent over the survey's evidence and return its ``Investigation``."""
+    known_ids = {frame.id for frame in frames}
+    deps = _Deps(survey_id=survey.id, ctx=ctx, emit=emit, known_ids=known_ids)
     result = await INVESTIGATOR_AGENT.run(
         _prompt(survey, frames, segs, assessments),
         model=model,
-        deps=_Deps(survey_id=survey.id, ctx=ctx, emit=emit),
+        deps=deps,
         toolsets=[FunctionToolset(_tools())],
     )
     return Investigation(

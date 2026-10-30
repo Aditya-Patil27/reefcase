@@ -111,6 +111,10 @@ def _assessments(frames: list[Frame]) -> list[FrameAssessment]:
 
 
 def _draft(frame_id: str, tr_ids: list[str]) -> dict[str, Any]:
+    def _ref(ref_id: str) -> dict[str, str]:
+        kind = "frame" if ref_id.startswith("frm_") else "tool_result"
+        return {"kind": kind, "id": ref_id}
+
     return {
         "findings": [
             {
@@ -122,14 +126,14 @@ def _draft(frame_id: str, tr_ids: list[str]) -> dict[str, Any]:
             {
                 "cause": "heat_stress",
                 "confidence": 0.8,
-                "supporting": [{"kind": "tool_result", "id": tr_ids[0]}],
+                "supporting": [_ref(tr_ids[0])],
                 "contradicting": [],
                 "rationale": "Degree heating weeks peaked above 8.",
             },
             {
                 "cause": "fishing_pressure",
                 "confidence": 0.1,
-                "supporting": [{"kind": "tool_result", "id": tr_ids[1]}],
+                "supporting": [_ref(tr_ids[1])],
                 "contradicting": [],
                 "rationale": "Little vessel activity nearby.",
             },
@@ -307,10 +311,10 @@ async def test_heat_then_vessels_emits_ordered_events_and_returns_investigation(
 async def test_prompts_carry_instructions_and_frame_evidence(
     store: Store, make_settings: Any
 ) -> None:
-    heat, vessel = await _seed(store)
+    await _seed(store)
 
     _, _, seen = await _run(
-        store, make_settings, [_final(_draft("frm_inv_1", [heat.id, vessel.id]))]
+        store, make_settings, [_final(_draft("frm_inv_1", ["frm_inv_0", "frm_inv_1"]))]
     )
 
     request = seen[0][0][0]
@@ -343,12 +347,12 @@ def test_system_prompt_covers_causes_citations_and_vessel_names() -> None:
 
 @pytest.mark.asyncio
 async def test_invalid_params_retry_without_events(store: Store, make_settings: Any) -> None:
-    heat, vessel = await _seed(store)
+    heat, _ = await _seed(store)
     bad = {**HEAT_ARGS, "end": "2026-01-01"}  # end before start
     steps = [
         _call("heat_stress", bad, "call_bad"),
         _call("heat_stress", HEAT_ARGS, "call_good"),
-        _final(_draft("frm_inv_0", [heat.id, vessel.id])),
+        _final(_draft("frm_inv_0", [heat.id, "frm_inv_1"])),
     ]
 
     _, emitted, seen = await _run(store, make_settings, steps)
@@ -364,11 +368,11 @@ async def test_invalid_params_retry_without_events(store: Store, make_settings: 
 async def test_failed_tool_reports_error_to_model_and_keeps_going(
     store: Store, make_settings: Any
 ) -> None:
-    heat, vessel = await _seed(store)
+    await _seed(store)
     missing = {**HEAT_ARGS, "site_id": "site_missing"}  # NotFoundError before any HTTP
     steps = [
         _call("heat_stress", missing, "call_missing"),
-        _final(_draft("frm_inv_0", [heat.id, vessel.id])),
+        _final(_draft("frm_inv_0", ["frm_inv_0", "frm_inv_1"])),
     ]
 
     investigation, emitted, seen = await _run(store, make_settings, steps)
