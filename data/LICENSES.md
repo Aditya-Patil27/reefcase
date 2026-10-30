@@ -15,6 +15,16 @@ licence and the obligation we carry. Demo and test fixtures are listed under
 | SAM 3 | SAM License | acknowledge SAM; include licence if redistributing |
 | Muse Spark Open / Glimmer-Reef | Muse Model License | "Built with Muse Spark Open"; ship licence + Usage Policy |
 
+## Shipped geo data
+
+Built by `scripts/build_geo.py` for West Hawaii (bbox −156.10, 19.40, −155.80, 20.30). These are clipped
+subsets only; the raw downloads stay in the gitignored `data/geo/raw/`.
+
+| File | Source URL | Licence |
+|---|---|---|
+| `data/geo/mpa.parquet` | https://data-gis.unep-wcmc.org/server/rest/services/ProtectedSites/The_World_Database_of_Protected_Areas/MapServer/1 (WDPA, non-terrestrial) | WDPA terms, non-commercial; cite UNEP-WCMC & IUCN, Protected Planet |
+| `data/geo/reef_map.parquet` | https://allencoralatlas.org/geoserver/ows (`coral-atlas:geomorphic_data_verbose`, `coral-atlas:benthic_data_verbose`) | CC BY 4.0; cite Allen Coral Atlas, doi:10.5281/zenodo.3833242 |
+
 ## Local fixtures
 
 | Fixture | Source URL | Licence |

@@ -163,11 +163,12 @@ async def _await_last_report(ctx: ToolContext, headers: Mapping[str, str]) -> ob
                 url=GFW_LAST_REPORT_URL,
             )
         payload = _extract_json_from_response(response.content)
-        status = cast(dict[str, object], payload).get("status") if isinstance(payload, dict) else None
+        fields = _fields(payload)
+        status = fields.get("status")
         if status == "running":
             continue
         if status is not None:
-            message = cast(dict[str, object], payload).get("message")
+            message = fields.get("message")
             raise ExternalServiceError(
                 f"GFW report failed ({status}): {message}",
                 status_code=status if isinstance(status, int) else None,
@@ -181,13 +182,18 @@ async def _await_last_report(ctx: ToolContext, headers: Mapping[str, str]) -> ob
     )
 
 
+def _fields(payload: object) -> dict[str, object]:
+    """A JSON object's fields, or none for any other JSON value."""
+    return cast(dict[str, object], payload) if isinstance(payload, dict) else {}
+
+
 def _report_rows(payload: object) -> list[dict[str, object]]:
     """Flatten a 4Wings report, ``{"total": n, "entries": [{"<dataset>:vN": [row, ...]}]}``.
 
     Each row is one grid cell (and flag), e.g. ``{"lat", "lon", "flag", "detections"}`` for SAR
     or ``{"lat", "lon", "flag", "hours", "vesselIDs"}`` for fishing effort.
     """
-    entries = cast(dict[str, object], payload).get("entries") if isinstance(payload, dict) else None
+    entries = _fields(payload).get("entries")
     if not isinstance(entries, list):
         raise ExternalServiceError("GFW report has no entries list", url=GFW_REPORT_URL)
     rows: list[dict[str, object]] = []
@@ -220,9 +226,9 @@ def _cell_points(rows: list[dict[str, object]]) -> list[dict[str, float]]:
     cells: set[tuple[float, float]] = set()
     for row in rows:
         lat, lon = row.get("lat"), row.get("lon")
-        if isinstance(lat, int | float) and isinstance(lon, int | float):
-            if _number(row, "detections") > 0:
-                cells.add((float(lat), float(lon)))
+        has_cell = isinstance(lat, int | float) and isinstance(lon, int | float)
+        if has_cell and _number(row, "detections") > 0:
+            cells.add((float(cast(float, lat)), float(cast(float, lon))))
     return [{"lat": lat, "lon": lon} for lat, lon in sorted(cells)]
 
 

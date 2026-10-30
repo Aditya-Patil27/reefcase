@@ -6,6 +6,11 @@ AC 2: Given radius_km > 20, validation fails before any HTTP call.
 AC 3: Serialized result contains no vessel names, MMSI, or IMO numbers.
 AC 4: Two concurrent calls are requested one at a time via asyncio.Semaphore(1),
       and a 524 status is recovered via the last-report endpoint.
+
+The MockTransport payloads follow the documented 4Wings report shape,
+``{"total": n, "entries": [{"<dataset>:vN": [row, ...]}]}``. ``test_recorded_report_kona``
+replays a real GFW response from tests/cassettes/vessels/; it skips until that cassette is
+recorded (ops/lead-d/handoff.md).
 """
 
 from __future__ import annotations
@@ -13,17 +18,21 @@ from __future__ import annotations
 import asyncio
 import io
 import json
+import math
+import os
 import zipfile
 from datetime import UTC, date, datetime
+from pathlib import Path
 from typing import Any
 
 import httpx
 import pytest
 from pydantic import ValidationError
 
-from reefcase.core.errors import NotFoundError
+from reefcase.core.errors import ConfigError, ExternalServiceError, NotFoundError
 from reefcase.core.schemas import GeoPoint, Site, ToolResult
 from reefcase.store.db import Store
+from reefcase.tools import vessels
 from reefcase.tools.http import ToolContext
 from reefcase.tools.registry import registry
 from reefcase.tools.vessels import (
@@ -33,24 +42,57 @@ from reefcase.tools.vessels import (
     vessel_activity,
 )
 
+CASSETTE_DIR = Path(__file__).resolve().parents[1] / "cassettes" / "vessels"
+KAILUA = GeoPoint(lat=19.64, lon=-155.99)
+SAR = "public-global-sar-presence:v3.0"
+EFFORT = "public-global-fishing-effort:v3.0"
 
-def _make_zip_payload(data: Any) -> bytes:
-    """Pack data into an in-memory zip archive containing report.json."""
+
+@pytest.fixture
+def vcr_cassette_dir() -> str:
+    return str(CASSETTE_DIR)
+
+
+@pytest.fixture
+def vcr_config() -> dict[str, Any]:
+    return {"filter_headers": ["authorization"], "decode_compressed_response": True}
+
+
+@pytest.fixture(autouse=True)
+def _fast_polling(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(vessels, "LAST_REPORT_POLL_SECONDS", 0.0)
+
+
+def _report(dataset: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
+    return {"total": len(rows), "entries": [{dataset: rows}]}
+
+
+def _zipped(data: Any) -> bytes:
+    """Pack data into an in-memory zip archive, as GFW returns format=JSON."""
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("report.json", json.dumps(data).encode("utf-8"))
     return buf.getvalue()
 
 
-async def _create_test_site(store: Store, site_id: str = "site_01") -> Site:
-    site = Site(
-        id=site_id,
-        name="Kailua Bay",
-        location=GeoPoint(lat=19.64, lon=-155.99),
-        created_at=datetime.now(UTC),
-    )
+def _respond(data: Any) -> httpx.Response:
+    return httpx.Response(200, content=_zipped(data), headers={"Content-Type": "application/zip"})
+
+
+EMPTY_SAR = _report(SAR, [])
+EMPTY_EFFORT = _report(EFFORT, [])
+
+
+async def _create_test_site(store: Store, site_id: str, location: GeoPoint = KAILUA) -> Site:
+    site = Site(id=site_id, name="Kailua Bay", location=location, created_at=datetime.now(UTC))
     await store.sites.save(site)
     return site
+
+
+def _params(site_id: str, radius_km: float = 10.0) -> VesselActivityParams:
+    return VesselActivityParams(
+        site_id=site_id, radius_km=radius_km, start=date(2025, 1, 1), end=date(2025, 1, 31)
+    )
 
 
 @pytest.mark.asyncio
@@ -59,180 +101,179 @@ async def test_vessel_activity_success(store: Store, make_settings: Any) -> None
     site = await _create_test_site(store, "site_ac1")
     settings = make_settings(gfw_token="test_gfw_token")
 
-    total_sar_payload = {
-        "entries": [
-            {"count": 12, "flag": "USA"},
+    sar_total = _report(
+        SAR,
+        [
+            {"date": "2025", "detections": 7, "flag": "USA", "lat": 19.64, "lon": -155.99},
+            {"date": "2025", "detections": 3, "flag": None, "lat": 19.65, "lon": -155.98},
+            {"date": "2025", "detections": 2, "flag": None, "lat": 19.63, "lon": -155.97},
         ],
-        "total": 12,
-    }
-    unmatched_sar_payload = {
-        "entries": [
-            {
-                "lat": 19.641,
-                "lon": -155.991,
-                "matched": False,
-                "vessel_name": "SENSITIVE_VESSEL_1",
-                "mmsi": "111222333",
-            },
-            {
-                "lat": 19.645,
-                "lon": -155.985,
-                "matched": False,
-                "mmsi": "444555666",
-            },
+    )
+    sar_unmatched = _report(
+        SAR,
+        [
+            {"date": "2025", "detections": 3, "flag": None, "lat": 19.65, "lon": -155.98},
+            {"date": "2025", "detections": 2, "flag": None, "lat": 19.63, "lon": -155.97},
         ],
-        "total": 2,
-    }
-    fishing_effort_payload = {
-        "entries": [
-            {"hours": 15.5, "flag": "USA"},
-            {"hours": 27.0, "flag": "JPN"},
-        ]
-    }
+    )
+    effort = _report(
+        EFFORT,
+        [
+            {"date": "2025", "flag": "USA", "hours": 15.5, "lat": 19.64, "lon": -155.99},
+            {"date": "2025", "flag": "JPN", "hours": 27.0, "lat": 19.62, "lon": -156.01},
+        ],
+    )
 
-    def transport_handler(request: httpx.Request) -> httpx.Response:
-        url_str = str(request.url)
+    def handler(request: httpx.Request) -> httpx.Response:
         assert request.headers.get("authorization") == "Bearer test_gfw_token"
         assert request.method == "POST"
-        body = json.loads(request.content)
-        assert "geojson" in body
+        assert str(request.url).startswith(GFW_REPORT_URL)
+        assert "geojson" in json.loads(request.content)
+        query = request.url.params
+        assert query["format"] == "JSON"
+        assert query["group-by"] == "FLAG"
+        assert query["date-range"] == "2025-01-01,2025-01-31"
+        if query.get("filters[0]") == "matched='false'":
+            return _respond(sar_unmatched)
+        if query["datasets[0]"] == "public-global-fishing-effort:latest":
+            return _respond(effort)
+        assert query["datasets[0]"] == "public-global-sar-presence:latest"
+        return _respond(sar_total)
 
-        if "filters" in url_str or "matched" in url_str:
-            return httpx.Response(
-                200,
-                content=_make_zip_payload(unmatched_sar_payload),
-                headers={"Content-Type": "application/zip"},
-            )
-        elif "public-global-fishing-effort" in url_str:
-            return httpx.Response(
-                200,
-                content=_make_zip_payload(fishing_effort_payload),
-                headers={"Content-Type": "application/zip"},
-            )
-        elif "public-global-sar-presence" in url_str:
-            return httpx.Response(
-                200,
-                content=_make_zip_payload(total_sar_payload),
-                headers={"Content-Type": "application/zip"},
-            )
-        return httpx.Response(404)
-
-    transport = httpx.MockTransport(transport_handler)
-    async with httpx.AsyncClient(transport=transport) as http_client:
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
         ctx = ToolContext(http=http_client, store=store, settings=settings)
-        params = VesselActivityParams(
-            site_id=site.id,
-            radius_km=15.0,
-            start=date(2025, 1, 1),
-            end=date(2025, 1, 31),
-        )
-        result = await vessel_activity(params, ctx)
+        result = await vessel_activity(_params(site.id, radius_km=15.0), ctx)
 
     assert isinstance(result, ToolResult)
     assert result.tool == "vessel_activity"
     assert result.source_url == GFW_REPORT_URL
     assert result.id.startswith("tr_")
+    assert result.data == {
+        "sar_detections": {
+            "total": 12,
+            "unmatched_to_ais": {
+                "count": 5,
+                "points": [{"lat": 19.63, "lon": -155.97}, {"lat": 19.65, "lon": -155.98}],
+            },
+        },
+        "fishing_hours": 42.5,
+    }
 
-    data = result.data
-    assert "sar_detections" in data
-    assert data["sar_detections"]["total"] == 12
 
-    unmatched = data["sar_detections"]["unmatched_to_ais"]
-    assert unmatched["count"] == 2
-    assert len(unmatched["points"]) == 2
-    assert unmatched["points"][0] == {"lat": 19.641, "lon": -155.991}
-    assert unmatched["points"][1] == {"lat": 19.645, "lon": -155.985}
+@pytest.mark.asyncio
+async def test_rows_across_several_entries_are_summed(store: Store, make_settings: Any) -> None:
+    """A report may split rows over several entries; every one counts."""
+    site = await _create_test_site(store, "site_multi")
+    split = {
+        "total": 2,
+        "entries": [
+            {SAR: [{"detections": 4, "lat": 19.6, "lon": -156.0}]},
+            {SAR: [{"detections": 1, "lat": 19.7, "lon": -156.0}]},
+        ],
+    }
 
-    assert data["fishing_hours"] == 42.5
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.params["datasets[0]"].startswith("public-global-fishing-effort"):
+            return _respond(EMPTY_EFFORT)
+        return _respond(split)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        ctx = ToolContext(http=http_client, store=store, settings=make_settings(gfw_token="t"))
+        result = await vessel_activity(_params(site.id), ctx)
+
+    assert result.data["sar_detections"]["total"] == 5
+    assert result.data["sar_detections"]["unmatched_to_ais"]["count"] == 5
+    assert result.data["fishing_hours"] == 0.0
+
+
+@pytest.mark.asyncio
+async def test_unexpected_report_shape_raises(store: Store, make_settings: Any) -> None:
+    """A payload without an entries list is an error, not a silent zero."""
+    site = await _create_test_site(store, "site_shape")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return _respond({"data": [{"count": 12}]})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        ctx = ToolContext(http=http_client, store=store, settings=make_settings(gfw_token="t"))
+        with pytest.raises(ExternalServiceError, match="entries"):
+            await vessel_activity(_params(site.id), ctx)
 
 
 @pytest.mark.asyncio
 async def test_radius_validation_fails_before_http(store: Store, make_settings: Any) -> None:
     """AC 2: When radius_km > 20, validation fails before any HTTP call."""
     site = await _create_test_site(store, "site_ac2")
-    settings = make_settings()
-
     requests_seen: list[httpx.Request] = []
 
-    def transport_handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx.Request) -> httpx.Response:
         requests_seen.append(request)
         return httpx.Response(200)
 
-    transport = httpx.MockTransport(transport_handler)
-    async with httpx.AsyncClient(transport=transport) as http_client:
-        ctx = ToolContext(http=http_client, store=store, settings=settings)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        ctx = ToolContext(http=http_client, store=store, settings=make_settings(gfw_token="t"))
 
-        # 1. Direct model instantiation fails
         with pytest.raises(ValidationError):
-            VesselActivityParams(
-                site_id=site.id,
-                radius_km=25.0,
-                start=date(2025, 1, 1),
-                end=date(2025, 1, 31),
-            )
+            _params(site.id, radius_km=25.0)
 
-        # 2. Registry call with dict params fails validation before HTTP
         with pytest.raises(ValidationError):
             await registry.call(
                 "vessel_activity",
-                {
-                    "site_id": site.id,
-                    "radius_km": 20.1,
-                    "start": "2025-01-01",
-                    "end": "2025-01-31",
-                },
+                {"site_id": site.id, "radius_km": 20.1, "start": "2025-01-01", "end": "2025-01-31"},
                 ctx,
             )
 
-    assert len(requests_seen) == 0
+    assert requests_seen == []
+
+
+@pytest.mark.asyncio
+async def test_missing_token_fails_before_http(store: Store, make_settings: Any) -> None:
+    site = await _create_test_site(store, "site_notoken")
+    requests_seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests_seen.append(request)
+        return httpx.Response(200)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        ctx = ToolContext(http=http_client, store=store, settings=make_settings())
+        with pytest.raises(ConfigError, match="REEFCASE_GFW_TOKEN"):
+            await vessel_activity(_params(site.id), ctx)
+
+    assert requests_seen == []
 
 
 @pytest.mark.asyncio
 async def test_result_serialization_anonymizes_vessels(store: Store, make_settings: Any) -> None:
     """AC 3: When serialized, contains no vessel names, MMSI, or IMO numbers."""
     site = await _create_test_site(store, "site_ac3")
-    settings = make_settings(gfw_token="token")
-
-    sar_unmatched_with_pii = {
-        "entries": [
-            {
-                "lat": 19.64,
-                "lon": -155.99,
-                "vessel_name": "SECRET_NAME_TITANIC",
-                "mmsi": "999888777",
-                "imo": "1234567",
-                "shipname": "TOP_SECRET_BOAT",
-            }
-        ],
-        "total": 1,
+    # Vessel-grouped rows carry identity fields; none may leave the tool.
+    identified = {
+        "detections": 1,
+        "lat": 19.64,
+        "lon": -155.99,
+        "shipName": "SECRET_NAME_TITANIC",
+        "mmsi": "999888777",
+        "imo": "1234567",
+        "callsign": "TOPSECRET",
+        "vesselId": "abc-123-vessel",
+        "vesselIDs": 1,
     }
 
-    def transport_handler(request: httpx.Request) -> httpx.Response:
-        url_str = str(request.url)
-        if "filters[0]=matched" in url_str:
-            return httpx.Response(200, content=_make_zip_payload(sar_unmatched_with_pii))
-        return httpx.Response(200, content=_make_zip_payload({"entries": [], "total": 0}))
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.params["datasets[0]"].startswith("public-global-fishing-effort"):
+            return _respond(_report(EFFORT, [{**identified, "hours": 2.0}]))
+        return _respond(_report(SAR, [identified]))
 
-    transport = httpx.MockTransport(transport_handler)
-    async with httpx.AsyncClient(transport=transport) as http_client:
-        ctx = ToolContext(http=http_client, store=store, settings=settings)
-        params = VesselActivityParams(
-            site_id=site.id,
-            radius_km=10.0,
-            start=date(2025, 1, 1),
-            end=date(2025, 1, 31),
-        )
-        result = await vessel_activity(params, ctx)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        ctx = ToolContext(http=http_client, store=store, settings=make_settings(gfw_token="t"))
+        result = await vessel_activity(_params(site.id), ctx)
 
     serialized = result.model_dump_json()
-    assert "SECRET_NAME_TITANIC" not in serialized
-    assert "999888777" not in serialized
-    assert "1234567" not in serialized
-    assert "TOP_SECRET_BOAT" not in serialized
-    assert "vessel_name" not in serialized
-    assert "mmsi" not in serialized
-    assert "imo" not in serialized
-    assert "shipname" not in serialized
+    for leaked in ("SECRET_NAME_TITANIC", "999888777", "1234567", "TOPSECRET", "abc-123-vessel"):
+        assert leaked not in serialized
+    for key in ("shipName", "mmsi", "imo", "callsign", "vesselId", "vesselIDs"):
+        assert key not in serialized
 
 
 @pytest.mark.asyncio
@@ -241,75 +282,117 @@ async def test_concurrent_calls_serialized_and_524_recovered(
 ) -> None:
     """AC 4: Two concurrent calls serialize, and 524 recovers via last-report."""
     site = await _create_test_site(store, "site_ac4")
-    settings = make_settings(gfw_token="test_token")
 
     active_reports = 0
     max_concurrent_reports = 0
-    recovered_524 = False
+    timed_out = False
+    polls = 0
 
-    async def transport_handler(request: httpx.Request) -> httpx.Response:
-        nonlocal active_reports, max_concurrent_reports, recovered_524
-        url_str = str(request.url)
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal active_reports, max_concurrent_reports, timed_out, polls
+        url = str(request.url)
 
-        if url_str.startswith(GFW_REPORT_URL):
+        if url.startswith(GFW_REPORT_URL):
             active_reports += 1
-            if active_reports > max_concurrent_reports:
-                max_concurrent_reports = active_reports
+            max_concurrent_reports = max(max_concurrent_reports, active_reports)
             await asyncio.sleep(0.05)
             active_reports -= 1
-
-            # Simulate 524 for public-global-fishing-effort on first call
-            if "public-global-fishing-effort" in url_str and not recovered_524:
+            dataset = request.url.params["datasets[0]"]
+            if dataset.startswith("public-global-fishing-effort") and not timed_out:
+                timed_out = True
                 return httpx.Response(524, content=b"Gateway Timeout")
+            return _respond(EMPTY_EFFORT if "fishing-effort" in dataset else EMPTY_SAR)
 
-            return httpx.Response(200, content=_make_zip_payload({"entries": [], "total": 0}))
-
-        elif url_str.startswith(GFW_LAST_REPORT_URL):
+        if url.startswith(GFW_LAST_REPORT_URL):
             assert request.method == "GET"
-            recovered_524 = True
-            return httpx.Response(
-                200, content=_make_zip_payload({"entries": [{"hours": 10.0}], "total": 1})
-            )
+            polls += 1
+            if polls < 3:
+                return httpx.Response(
+                    200,
+                    json={"uri": "/v3/4wings/report?...", "status": "running", "lastUpdate": "x"},
+                )
+            return _respond(_report(EFFORT, [{"hours": 10.0, "lat": 19.64, "lon": -155.99}]))
 
         return httpx.Response(404)
 
-    transport = httpx.MockTransport(transport_handler)
-    async with httpx.AsyncClient(transport=transport) as http_client:
-        ctx = ToolContext(http=http_client, store=store, settings=settings)
-
-        params1 = VesselActivityParams(
-            site_id=site.id,
-            radius_km=5.0,
-            start=date(2025, 1, 1),
-            end=date(2025, 1, 10),
-        )
-        params2 = VesselActivityParams(
-            site_id=site.id,
-            radius_km=10.0,
-            start=date(2025, 1, 11),
-            end=date(2025, 1, 20),
-        )
-
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        ctx = ToolContext(http=http_client, store=store, settings=make_settings(gfw_token="t"))
         res1, res2 = await asyncio.gather(
-            vessel_activity(params1, ctx),
-            vessel_activity(params2, ctx),
+            vessel_activity(_params(site.id, radius_km=5.0), ctx),
+            vessel_activity(_params(site.id, radius_km=10.0), ctx),
         )
 
-    assert max_concurrent_reports <= 1
-    assert recovered_524 is True
-    assert res1.data["fishing_hours"] == 10.0 or res2.data["fishing_hours"] == 10.0
+    assert max_concurrent_reports == 1
+    assert polls == 3  # two "running" answers, then the finished report
+    assert sorted([res1.data["fishing_hours"], res2.data["fishing_hours"]]) == [0.0, 10.0]
+
+
+@pytest.mark.asyncio
+async def test_failed_report_after_524_raises(store: Store, make_settings: Any) -> None:
+    site = await _create_test_site(store, "site_524_fail")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if str(request.url).startswith(GFW_LAST_REPORT_URL):
+            return httpx.Response(200, json={"message": {"detail": "boom"}, "status": 422})
+        return httpx.Response(524)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        ctx = ToolContext(http=http_client, store=store, settings=make_settings(gfw_token="t"))
+        with pytest.raises(ExternalServiceError, match="422") as excinfo:
+            await vessel_activity(_params(site.id), ctx)
+
+    assert excinfo.value.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_report_still_running_gives_up(
+    store: Store, make_settings: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(vessels, "LAST_REPORT_MAX_POLLS", 2)
+    site = await _create_test_site(store, "site_524_slow")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if str(request.url).startswith(GFW_LAST_REPORT_URL):
+            return httpx.Response(200, json={"status": "running"})
+        return httpx.Response(524)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        ctx = ToolContext(http=http_client, store=store, settings=make_settings(gfw_token="t"))
+        with pytest.raises(ExternalServiceError, match="still running"):
+            await vessel_activity(_params(site.id), ctx)
 
 
 @pytest.mark.asyncio
 async def test_unknown_site_raises_not_found(store: Store, make_settings: Any) -> None:
     """Querying an unknown site_id raises NotFoundError."""
-    settings = make_settings()
-    ctx = ToolContext(http=httpx.AsyncClient(), store=store, settings=settings)
+    async with httpx.AsyncClient() as http_client:
+        ctx = ToolContext(http=http_client, store=store, settings=make_settings(gfw_token="t"))
+        with pytest.raises(NotFoundError):
+            await vessel_activity(_params("site_nonexistent"), ctx)
+
+
+@pytest.mark.vcr
+@pytest.mark.asyncio
+async def test_recorded_report_kona(store: Store, make_settings: Any, record_mode: str) -> None:
+    """Replay a real GFW response (three reports, 20 km around Kailua-Kona, all of 2024)."""
+    if record_mode == "none" and not (CASSETTE_DIR / "test_recorded_report_kona.yaml").is_file():
+        pytest.skip("cassette not recorded yet; see ops/lead-d/handoff.md")
+    token = os.environ.get("REEFCASE_GFW_TOKEN", "replayed-token")
+    site = await _create_test_site(store, "site_kona_live")
     params = VesselActivityParams(
-        site_id="site_nonexistent",
-        radius_km=5.0,
-        start=date(2025, 1, 1),
-        end=date(2025, 1, 10),
+        site_id=site.id, radius_km=20.0, start=date(2024, 1, 1), end=date(2024, 12, 31)
     )
-    with pytest.raises(NotFoundError):
-        await vessel_activity(params, ctx)
+
+    async with httpx.AsyncClient(timeout=120.0) as http_client:
+        ctx = ToolContext(http=http_client, store=store, settings=make_settings(gfw_token=token))
+        result = await vessel_activity(params, ctx)
+
+    sar = result.data["sar_detections"]
+    assert sar["total"] >= sar["unmatched_to_ais"]["count"] >= 0
+    assert result.data["fishing_hours"] >= 0.0
+    for point in sar["unmatched_to_ais"]["points"]:
+        assert set(point) == {"lat", "lon"}
+        # Every cell centre lies within the 20 km circle (plus half a 0.01° cell).
+        dlat = math.radians(point["lat"] - KAILUA.lat)
+        dlon = math.radians(point["lon"] - KAILUA.lon) * math.cos(math.radians(KAILUA.lat))
+        assert 6371.0 * math.hypot(dlat, dlon) <= 21.0

@@ -80,6 +80,14 @@ def _write_collection(path: Path, features: list[tuple[dict[str, Any], dict[str,
     )
 
 
+def _run_build(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, "scripts/build_geo.py", "--offline", *args],
+        capture_output=True,
+        text=True,
+    )
+
+
 def test_build_geo_clips_to_region(tmp_path: Path) -> None:
     """AC 1: build_geo.py turns the raw downloads into two GeoParquet files clipped to the box."""
     raw = tmp_path / "raw"
@@ -108,12 +116,7 @@ def test_build_geo_clips_to_region(tmp_path: Path) -> None:
         ],
     )
 
-    result = subprocess.run(
-        [sys.executable, "scripts/build_geo.py", "--offline", "--bbox", "0,0,1,1"]
-        + ["--raw-dir", str(raw), "--out-dir", str(tmp_path)],
-        capture_output=True,
-        text=True,
-    )
+    result = _run_build("--bbox", "0,0,1,1", "--raw-dir", str(raw), "--out-dir", str(tmp_path))
     assert result.returncode == 0, f"build_geo.py failed: {result.stderr}\n{result.stdout}"
 
     con = duckdb.connect()
@@ -135,12 +138,7 @@ def test_build_geo_clips_to_region(tmp_path: Path) -> None:
 
 
 def test_build_geo_offline_requires_raw_files(tmp_path: Path) -> None:
-    result = subprocess.run(
-        [sys.executable, "scripts/build_geo.py", "--offline", "--raw-dir", str(tmp_path)]
-        + ["--out-dir", str(tmp_path)],
-        capture_output=True,
-        text=True,
-    )
+    result = _run_build("--raw-dir", str(tmp_path), "--out-dir", str(tmp_path))
     assert result.returncode == 1
     assert "missing" in result.stderr
 
