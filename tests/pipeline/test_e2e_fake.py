@@ -13,6 +13,7 @@ Verifies the full pipeline:
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -120,14 +121,15 @@ async def test_e2e_fake_survey_pipeline(make_settings, tmp_path: Path) -> None:
         frame_ids = re.findall(r"frm_[A-Za-z0-9]+", prompt_text)
         assert frame_ids, "Agent did not receive frame IDs in prompt"
 
-        # Find tool result id from ToolReturnPart
+        # The cited tool result id is the one the tool actually returned (the seeded cache hit).
+        returned = [
+            part.content
+            for msg in messages
+            for part in msg.parts
+            if isinstance(part, ToolReturnPart) and isinstance(part.content, dict)
+        ]
+        assert [r.get("id") for r in returned] == ["tr_heat_e2e"]
         tr_id = "tr_heat_e2e"
-        for msg in messages:
-            for part in msg.parts:
-                if isinstance(part, ToolReturnPart):
-                    content = part.content
-                    if isinstance(content, dict) and "id" in content:
-                        tr_id = str(content["id"])
 
         draft = {
             "findings": [
@@ -156,15 +158,20 @@ async def test_e2e_fake_survey_pipeline(make_settings, tmp_path: Path) -> None:
 
     agent_model = FunctionModel(agent_respond, model_name="spark-agent-fake")
 
-    # Wire stages runner using these models
+    def offline(request: httpx.Request) -> httpx.Response:
+        raise AssertionError(f"unexpected HTTP call: {request.url}")
+
+    # Wire stages runner using these models; tools get a client that refuses the network.
     async def custom_run_stages(store: Store, survey_id: str) -> None:
-        await stages.run_stages(
-            store,
-            survey_id,
-            settings=settings,
-            teacher_model=teacher_model,
-            agent_model=agent_model,
-        )
+        async with httpx.AsyncClient(transport=httpx.MockTransport(offline)) as tool_http:
+            await stages.run_stages(
+                store,
+                survey_id,
+                settings=settings,
+                teacher_model=teacher_model,
+                agent_model=agent_model,
+                http_client=tool_http,
+            )
 
     app = create_app(settings, run_stages=custom_run_stages)
     store = app.state.store
@@ -243,6 +250,7 @@ async def test_e2e_fake_survey_pipeline(make_settings, tmp_path: Path) -> None:
         assert inv_resp.status_code == 200
         inv_data = inv_resp.json()
         assert inv_data["survey_id"] == survey_id
+        assert json.loads(records[-1]["data"])["investigation_id"] == inv_data["id"]
         assert (
             inv_data["verdict"] == "Acute thermal bleaching driven by elevated ocean temperatures."
         )

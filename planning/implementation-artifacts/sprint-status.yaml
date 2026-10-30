@@ -58,7 +58,7 @@ development_status:
   5-1-frame-assessor: done # B P0
   5-2-investigator-agent: done # B P0
   5-3-citation-validator-and-repair-loop: done # D P0
-  5-4-investigate-stage-and-report-persistence: review # D P0
+  5-4-investigate-stage-and-report-persistence: done # D P0
   5-5-teacher-student-disagreement: backlog # B P1
   epic-5-retrospective: optional
 
