@@ -56,7 +56,7 @@ development_status:
 
   epic-5: in-progress
   5-1-frame-assessor: review # B P0
-  5-2-investigator-agent: backlog # B P0
+  5-2-investigator-agent: done # B P0
   5-3-citation-validator-and-repair-loop: backlog # B P0
   5-4-investigate-stage-and-report-persistence: backlog # B P0
   5-5-teacher-student-disagreement: backlog # B P1
