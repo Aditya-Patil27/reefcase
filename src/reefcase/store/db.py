@@ -19,6 +19,7 @@ import duckdb
 from reefcase.core.errors import StoreError
 from reefcase.store.blobs import Blobs
 from reefcase.store.repos import (
+    AssessmentRepo,
     EventRepo,
     FrameRepo,
     SegmentationRepo,
@@ -87,6 +88,7 @@ class Store:
         self.events = EventRepo(self)
         self.frames = FrameRepo(self)
         self.segmentations = SegmentationRepo(self)
+        self.assessments = AssessmentRepo(self)
         self.tool_results = ToolResultRepo(self)
 
     @classmethod

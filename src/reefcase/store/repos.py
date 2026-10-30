@@ -15,6 +15,7 @@ from reefcase.core.errors import NotFoundError
 from reefcase.core.events import Event, EventAdapter
 from reefcase.core.schemas import (
     Frame,
+    FrameAssessment,
     GeoPoint,
     QualityScore,
     SegClass,
@@ -29,6 +30,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "SITE_MATCH_RADIUS_M",
+    "AssessmentRepo",
     "EventRepo",
     "FrameRepo",
     "SegmentationRepo",
@@ -409,6 +411,66 @@ class SegmentationRepo:
         if row is None:
             raise NotFoundError(f"no segmentation for frame: {frame_id}")
         return _segmentation_from_row(row)
+
+
+def _assessment_from_row(row: tuple[Any, ...]) -> FrameAssessment:
+    return FrameAssessment(
+        id=row[0],
+        frame_id=row[1],
+        model=row[2],
+        bleaching_severity=row[3],
+        morphology=json.loads(row[4]),
+        damage=json.loads(row[5]),
+        notes=row[6],
+    )
+
+
+class AssessmentRepo:
+    """Reads and writes ``assessments`` (§4.2, §5.3)."""
+
+    def __init__(self, store: Store) -> None:
+        self._store = store
+
+    async def save(self, assessment: FrameAssessment) -> None:
+        """Insert ``assessment`` or update the row with its id."""
+        await self._store.execute(
+            """
+            INSERT INTO assessments
+                (id, frame_id, model, bleaching_severity, morphology, damage, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (id) DO UPDATE SET
+                frame_id = excluded.frame_id,
+                model = excluded.model,
+                bleaching_severity = excluded.bleaching_severity,
+                morphology = excluded.morphology,
+                damage = excluded.damage,
+                notes = excluded.notes
+            """,
+            [
+                assessment.id,
+                assessment.frame_id,
+                assessment.model,
+                assessment.bleaching_severity,
+                json.dumps(assessment.morphology),
+                json.dumps(assessment.damage),
+                assessment.notes,
+            ],
+        )
+
+    async def list_by_survey(self, survey_id: str) -> list[FrameAssessment]:
+        """Return the survey's assessments in frame order (``t_sec``)."""
+        rows = await self._store.fetchall(
+            """
+            SELECT a.id, a.frame_id, a.model, a.bleaching_severity, a.morphology,
+                   a.damage, a.notes
+            FROM assessments a
+            JOIN frames f ON f.id = a.frame_id
+            WHERE f.survey_id = ?
+            ORDER BY f.t_sec, a.id
+            """,
+            [survey_id],
+        )
+        return [_assessment_from_row(row) for row in rows]
 
 
 def _tool_result_from_row(row: tuple[Any, ...]) -> ToolResult:

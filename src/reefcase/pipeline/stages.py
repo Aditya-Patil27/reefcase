@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import io
+import logging
 import time
 from collections import Counter
 from datetime import UTC, datetime
@@ -12,13 +13,18 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from PIL import Image
+from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic_ai.models import Model
 
 from reefcase.core.config import Settings
-from reefcase.core.events import FrameScored, FramesExtracted, Segmented
+from reefcase.core.errors import ConfigError
+from reefcase.core.events import Assessed, FrameScored, FramesExtracted, Segmented
 from reefcase.core.ids import FRAME, SEGMENTATION, new_id
-from reefcase.core.schemas import MASK_INDEX, Frame, SegClass, Segmentation
+from reefcase.core.schemas import MASK_INDEX, Frame, FrameAssessment, SegClass, Segmentation
 from reefcase.ingest.frames import IngestError, extract_candidates
 from reefcase.ingest.quality import QualityError, score
+from reefcase.llm.assess import assess_frame
+from reefcase.llm.providers import build_model
 from reefcase.pipeline.bus import EventBus
 from reefcase.vision.cover import cover_from_mask
 from reefcase.vision.segmenter import Segmenter, build_segmenter
@@ -26,7 +32,12 @@ from reefcase.vision.segmenter import Segmenter, build_segmenter
 if TYPE_CHECKING:
     from reefcase.store.db import Store
 
-__all__ = ["ingest_stage", "run_stages", "segment_stage"]
+__all__ = ["ASSESS_CONCURRENCY", "assess_stage", "ingest_stage", "run_stages", "segment_stage"]
+
+logger = logging.getLogger(__name__)
+
+#: Frames assessed at once (Story 5.1); bounds load on the LLM endpoint.
+ASSESS_CONCURRENCY = 4
 
 # Mask PNG palette: the reef colours from docs/agents/ui.md, by §4.2 class id, so
 # the web can overlay the mask as-is while its pixel values stay class ids.
@@ -215,8 +226,61 @@ async def segment_stage(
     return survey_cover
 
 
+async def assess_stage(
+    store: Store,
+    survey_id: str,
+    frames: list[Frame],
+    *,
+    bus: EventBus | None = None,
+    settings: Settings | None = None,
+    model: Model | None = None,
+) -> list[FrameAssessment]:
+    """Assess each segmented frame with the teacher model, ``ASSESS_CONCURRENCY`` at a time.
+
+    Stores each ``FrameAssessment`` and emits ``assessed``. A frame whose model
+    output is invalid twice is skipped with a warning; the rest carry on. Returns
+    the assessments in frame order.
+    """
+    event_bus = bus or EventBus(store)
+    llm = model or build_model("teacher", settings or Settings())
+    if llm is None:  # build_model only returns None for "student"
+        raise ConfigError("REEFCASE_LLM_TEACHER_* is not configured")
+
+    limit = asyncio.Semaphore(ASSESS_CONCURRENCY)
+    # next_seq + publish is not atomic, so results are stored one at a time.
+    publish_lock = asyncio.Lock()
+
+    async def assess_one(frame: Frame) -> FrameAssessment | None:
+        seg = await store.segmentations.get_by_frame(frame.id)
+        image_bytes = store.blobs.read(frame.image_path)
+        async with limit:
+            try:
+                assessment = await assess_frame(llm, frame, image_bytes, seg)
+            except UnexpectedModelBehavior as exc:
+                logger.warning("skipping frame %s: invalid assessment output (%s)", frame.id, exc)
+                return None
+        async with publish_lock:
+            await store.assessments.save(assessment)
+            await event_bus.publish(
+                Assessed(
+                    survey_id=survey_id,
+                    seq=await store.events.next_seq(survey_id),
+                    ts=_now(),
+                    assessment=assessment,
+                )
+            )
+        return assessment
+
+    results = await asyncio.gather(*(assess_one(frame) for frame in frames))
+    return [assessment for assessment in results if assessment is not None]
+
+
 async def run_stages(store: Store, survey_id: str) -> None:
     """Run all pipeline stages in sequence."""
     settings = Settings()
     frames = await ingest_stage(store, survey_id, settings=settings)
     await segment_stage(store, survey_id, frames, settings=settings)
+    if settings.llm_role("teacher") is None:
+        logger.warning("REEFCASE_LLM_TEACHER_* is not configured; skipping frame assessment")
+    else:
+        await assess_stage(store, survey_id, frames, settings=settings)
