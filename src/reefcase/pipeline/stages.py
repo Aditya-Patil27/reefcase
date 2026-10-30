@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from PIL import Image
-from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic_ai.exceptions import ModelAPIError, UnexpectedModelBehavior
 from pydantic_ai.models import Model
 
 from reefcase.core.config import Settings
@@ -258,6 +258,9 @@ async def assess_stage(
                 assessment = await assess_frame(llm, frame, image_bytes, seg)
             except UnexpectedModelBehavior as exc:
                 logger.warning("skipping frame %s: invalid assessment output (%s)", frame.id, exc)
+                return None
+            except ModelAPIError as exc:  # HTTP error, timeout, refused connection
+                logger.warning("skipping frame %s: model API error (%s)", frame.id, exc)
                 return None
         async with publish_lock:
             await store.assessments.save(assessment)
