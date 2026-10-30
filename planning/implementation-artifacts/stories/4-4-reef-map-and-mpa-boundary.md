@@ -1,6 +1,6 @@
 # Story 4.4: reef_map and mpa_boundary (offline GeoParquet)
 
-Owner: D (lead-d) · Priority: P0 · Depends on: 4.1 · Status: backlog
+Owner: D (lead-d) · Priority: P0 · Depends on: 4.1 · Status: in-progress
 
 ## Story (verbatim from epics.md)
 
