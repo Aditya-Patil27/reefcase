@@ -17,13 +17,6 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
-def _offline_transport() -> httpx.MockTransport:
-    def handler(request: httpx.Request) -> httpx.Response:
-        raise AssertionError(f"unexpected network call: {request.url}")
-
-    return httpx.MockTransport(handler)
-
-
 def build_app(make_settings, tmp_path: Path):
     settings = make_settings(data_dir=str(tmp_path / "var"))
     return create_app(settings)
@@ -69,6 +62,7 @@ async def test_get_geo_mpa_without_bbox_returns_all_features(make_settings, tmp_
     assert "geometry" in feature
     assert "properties" in feature
     assert "name" in feature["properties"]
+    assert all(f["properties"]["no_take"] in (True, False, None) for f in data["features"])
 
 
 @pytest.mark.asyncio
@@ -105,7 +99,7 @@ async def test_get_geo_reef_with_bbox(make_settings, tmp_path: Path) -> None:
     assert len(data["features"]) > 0
     for feat in data["features"][:5]:
         assert feat["type"] == "Feature"
-        assert "class_name" in feat["properties"]
+        assert set(feat["properties"]) == {"layer", "class_name"}
 
 
 @pytest.mark.asyncio
@@ -127,11 +121,14 @@ async def test_get_geo_vessels_unknown_survey_returns_404(make_settings, tmp_pat
     assert resp.status_code == 404
 
 
-@pytest.mark.asyncio
-async def test_get_geo_vessels_returns_detection_points(make_settings, tmp_path: Path) -> None:
-    app = build_app(make_settings, tmp_path)
-    store = app.state.store
+async def _seed_vessel_survey(
+    store, survey_id: str, points: list[dict[str, float]], *, returned: bool = True
+) -> str:
+    """A Kona survey whose vessel_activity result holds ``points``; returns the result id.
 
+    With ``returned=False`` the result is only in the shared cache, as if another survey's
+    agent had fetched it.
+    """
     site = Site(
         id="site_geo_test",
         name="Kona Reef",
@@ -139,18 +136,16 @@ async def test_get_geo_vessels_returns_detection_points(make_settings, tmp_path:
         created_at=_now(),
     )
     await store.sites.save(site)
-
-    survey = Survey(
-        id="srv_vessel_test",
-        site_id=site.id,
-        dive_date=date(2026, 10, 25),
-        status=SurveyStatus.DONE,
-        source="upload",
-        created_at=_now(),
+    await store.surveys.save(
+        Survey(
+            id=survey_id,
+            site_id=site.id,
+            dive_date=date(2026, 10, 25),
+            status=SurveyStatus.DONE,
+            source="upload",
+            created_at=_now(),
+        )
     )
-    await store.surveys.save(survey)
-
-    # Seed tool result with detection points
     params = VesselActivityParams(
         site_id=site.id,
         radius_km=10.0,
@@ -158,19 +153,13 @@ async def test_get_geo_vessels_returns_detection_points(make_settings, tmp_path:
         end=date(2026, 10, 25),
     )
     result = ToolResult(
-        id="tr_vessel_test_01",
+        id=f"tr_{survey_id}",
         tool="vessel_activity",
         params=params.model_dump(mode="json"),
         data={
             "sar_detections": {
-                "total": 3,
-                "unmatched_to_ais": {
-                    "count": 2,
-                    "points": [
-                        {"lat": 19.641, "lon": -155.991},
-                        {"lat": 19.645, "lon": -155.985},
-                    ],
-                },
+                "total": len(points) + 1,
+                "unmatched_to_ais": {"count": len(points), "points": points},
             },
             "fishing_hours": 1.5,
         },
@@ -178,101 +167,77 @@ async def test_get_geo_vessels_returns_detection_points(make_settings, tmp_path:
         retrieved_at=_now(),
     )
     await store.tool_results.save(result, canonical_params(params))
+    if returned:
+        await store.events.append(
+            ToolCalled(
+                survey_id=survey_id,
+                seq=await store.events.next_seq(survey_id),
+                ts=_now(),
+                call_id="call_v_01",
+                tool="vessel_activity",
+                params=params.model_dump(mode="json"),
+            )
+        )
+        await store.events.append(
+            ToolReturned(
+                survey_id=survey_id,
+                seq=await store.events.next_seq(survey_id),
+                ts=_now(),
+                call_id="call_v_01",
+                tool_result_id=result.id,
+                summary="vessels found",
+            )
+        )
+    return result.id
 
-    # Append events so survey history points to tool result
-    await store.events.append(
-        ToolCalled(
-            survey_id=survey.id,
-            seq=await store.events.next_seq(survey.id),
-            ts=_now(),
-            call_id="call_v_01",
-            tool="vessel_activity",
-            params=params.model_dump(mode="json"),
-        )
-    )
-    await store.events.append(
-        ToolReturned(
-            survey_id=survey.id,
-            seq=await store.events.next_seq(survey.id),
-            ts=_now(),
-            call_id="call_v_01",
-            tool_result_id=result.id,
-            summary="vessels found",
-        )
-    )
+
+@pytest.mark.asyncio
+async def test_get_geo_vessels_returns_detection_points(make_settings, tmp_path: Path) -> None:
+    app = build_app(make_settings, tmp_path)
+    points = [{"lat": 19.641, "lon": -155.991}, {"lat": 19.645, "lon": -155.985}]
+    result_id = await _seed_vessel_survey(app.state.store, "srv_vessel_test", points)
 
     async with client_for(app) as client:
-        resp = await client.get(f"/api/geo/vessels?survey_id={survey.id}")
+        resp = await client.get("/api/geo/vessels?survey_id=srv_vessel_test")
     assert resp.status_code == 200
     data = resp.json()
     assert data["type"] == "FeatureCollection"
-    assert len(data["features"]) == 2
+    assert [f["geometry"] for f in data["features"]] == [
+        {"type": "Point", "coordinates": [-155.991, 19.641]},
+        {"type": "Point", "coordinates": [-155.985, 19.645]},
+    ]
+    assert data["features"][0]["properties"] == {
+        "unmatched_to_ais": True,
+        "tool_result_id": result_id,
+    }
 
-    p1 = data["features"][0]
-    assert p1["type"] == "Feature"
-    assert p1["geometry"]["type"] == "Point"
-    assert p1["geometry"]["coordinates"] == [-155.991, 19.641]
-    assert p1["properties"]["unmatched_to_ais"] is True
 
-    p2 = data["features"][1]
-    assert p2["geometry"]["coordinates"] == [-155.985, 19.645]
+@pytest.mark.asyncio
+async def test_get_geo_vessels_ignores_results_the_survey_did_not_get(
+    make_settings, tmp_path: Path
+) -> None:
+    app = build_app(make_settings, tmp_path)
+    store = app.state.store
+    # Another survey at the same site fetched vessel activity; this one never called the tool.
+    await _seed_vessel_survey(store, "srv_other", [{"lat": 19.641, "lon": -155.991}])
+    await _seed_vessel_survey(store, "srv_quiet", [], returned=False)
+
+    async with client_for(app) as client:
+        resp = await client.get("/api/geo/vessels?survey_id=srv_quiet")
+    assert resp.status_code == 200
+    assert resp.json()["features"] == []
 
 
 @pytest.mark.asyncio
 async def test_get_geo_vessels_filtered_by_bbox(make_settings, tmp_path: Path) -> None:
     app = build_app(make_settings, tmp_path)
-    store = app.state.store
-
-    site = Site(
-        id="site_geo_bbox",
-        name="Kona Reef",
-        location=GeoPoint(lat=19.64, lon=-155.99),
-        created_at=_now(),
-    )
-    await store.sites.save(site)
-
-    survey = Survey(
-        id="srv_vessel_bbox",
-        site_id=site.id,
-        dive_date=date(2026, 10, 25),
-        status=SurveyStatus.DONE,
-        source="upload",
-        created_at=_now(),
-    )
-    await store.surveys.save(survey)
-
-    params = VesselActivityParams(
-        site_id=site.id,
-        radius_km=10.0,
-        start=date(2026, 9, 25),
-        end=date(2026, 10, 25),
-    )
-    result = ToolResult(
-        id="tr_vessel_bbox_01",
-        tool="vessel_activity",
-        params=params.model_dump(mode="json"),
-        data={
-            "sar_detections": {
-                "total": 2,
-                "unmatched_to_ais": {
-                    "count": 2,
-                    "points": [
-                        {"lat": 19.641, "lon": -155.991},
-                        {"lat": 19.700, "lon": -155.900},
-                    ],
-                },
-            },
-            "fishing_hours": 0.0,
-        },
-        source_url="https://gateway.api.globalfishingwatch.org/v3/4wings/report",
-        retrieved_at=_now(),
-    )
-    await store.tool_results.save(result, canonical_params(params))
+    points = [{"lat": 19.641, "lon": -155.991}, {"lat": 19.700, "lon": -155.900}]
+    await _seed_vessel_survey(app.state.store, "srv_vessel_bbox", points)
 
     # Query with bbox that only covers the first point
     bbox = "-156.0,19.6,-155.95,19.65"
     async with client_for(app) as client:
-        resp = await client.get(f"/api/geo/vessels?survey_id={survey.id}&bbox={bbox}")
+        resp = await client.get(f"/api/geo/vessels?survey_id=srv_vessel_bbox&bbox={bbox}")
     assert resp.status_code == 200
     features = resp.json()["features"]
     assert len(features) == 1

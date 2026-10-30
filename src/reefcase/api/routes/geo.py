@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 from enum import StrEnum
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 from fastapi import APIRouter, HTTPException, Request
@@ -19,6 +18,8 @@ from pydantic import BaseModel, Field
 from reefcase.core.errors import NotFoundError
 from reefcase.core.events import ToolReturned
 from reefcase.core.schemas import ToolResult
+from reefcase.tools.mpa import DEFAULT_MPA_PARQUET
+from reefcase.tools.reef_map import DEFAULT_REEF_PARQUET
 
 if TYPE_CHECKING:
     from reefcase.store.db import Store
@@ -27,9 +28,7 @@ __all__ = ["GeoJsonFeature", "GeoJsonFeatureCollection", "GeoLayer", "router"]
 
 router = APIRouter()
 
-DEFAULT_MPA_PARQUET = Path("data/geo/mpa.parquet")
-DEFAULT_REEF_PARQUET = Path("data/geo/reef_map.parquet")
-
+#: WDPA NO_TAKE, mapped as the mpa_boundary tool does: 'Part' and 'Not Reported' become null.
 _NO_TAKE: dict[str, bool] = {"All": True, "None": False}
 
 
@@ -141,14 +140,12 @@ async def _get_mpa_layer(
         geom = json.loads(geojson_str)
         if not geom or not geom.get("coordinates"):
             continue
-        no_take_raw = row[2]
-        no_take_val = _NO_TAKE.get(no_take_raw, no_take_raw) if no_take_raw is not None else None
         features.append(
             GeoJsonFeature(
                 properties={
                     "name": row[0],
                     "designation": row[1],
-                    "no_take": no_take_val,
+                    "no_take": _NO_TAKE.get(row[2]),
                     "wdpa_id": row[3],
                     "marine_area_km2": row[4],
                 },
@@ -195,7 +192,6 @@ async def _get_reef_layer(
                 properties={
                     "layer": row[0],
                     "class_name": row[1],
-                    "benthic_class": row[1],
                 },
                 geometry=geom,
             )
@@ -212,76 +208,40 @@ async def _get_vessels_layer(
         return GeoJsonFeatureCollection()
 
     try:
-        survey = await store.surveys.get(survey_id)
+        await store.surveys.get(survey_id)
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    # Search in events first
-    vessel_results: list[ToolResult] = []
-    events = await store.events.list(survey_id)
-    for e in events:
-        if isinstance(e, ToolReturned) and e.tool_result_id:
-            try:
-                tr = await store.tool_results.get(e.tool_result_id)
-                if tr.tool == "vessel_activity":
-                    vessel_results.append(tr)
-            except NotFoundError:
-                pass
-
-    # If no vessel results in event stream, check tool_results table for survey's site
-    if not vessel_results:
-        rows = await store.fetchall(
-            """
-            SELECT id, tool, params, data, source_url, retrieved_at
-            FROM tool_results WHERE tool = 'vessel_activity'
-            """,
-        )
-        for row in rows:
-            params_dict = json.loads(row[2])
-            if params_dict.get("site_id") == survey.site_id:
-                vessel_results.append(
-                    ToolResult(
-                        id=row[0],
-                        tool=row[1],
-                        params=params_dict,
-                        data=json.loads(row[3]),
-                        source_url=row[4],
-                        retrieved_at=row[5],
-                    )
-                )
-
+    # Only the results this survey's agent got back; another survey's calls are not its evidence.
     features: list[GeoJsonFeature] = []
-    for tr in vessel_results:
-        sar = cast(dict[str, Any], tr.data.get("sar_detections", {}))
-        unmatched = cast(dict[str, Any], sar.get("unmatched_to_ais", {}))
-        points: list[Any] = unmatched.get("points", [])
-        if not points and "points" in tr.data:
-            points = cast(list[Any], tr.data.get("points", []))
-
-        for raw_pt in points:
-            if not isinstance(raw_pt, dict):
-                continue
-            pt_dict = cast(dict[str, object], raw_pt)
-            lat_val = pt_dict.get("lat")
-            lon_val = pt_dict.get("lon")
-            if not isinstance(lat_val, int | float) or not isinstance(lon_val, int | float):
-                continue
-            lat = float(lat_val)
-            lon = float(lon_val)
-            if bbox is not None:
-                w, s, e, n = bbox
-                if not (w <= lon <= e and s <= lat <= n):
-                    continue
-
-            props: dict[str, object] = {
-                str(k): v for k, v in pt_dict.items() if str(k) not in ("lat", "lon")
-            }
-            props["unmatched_to_ais"] = True
-            features.append(
-                GeoJsonFeature(
-                    properties=props,
-                    geometry={"type": "Point", "coordinates": [lon, lat]},
-                )
-            )
-
+    seen: set[str] = set()
+    for event in await store.events.list(survey_id):
+        if not isinstance(event, ToolReturned) or event.tool_result_id in seen:
+            continue
+        seen.add(event.tool_result_id)
+        result = await store.tool_results.get(event.tool_result_id)
+        if result.tool == "vessel_activity":
+            features.extend(_vessel_features(result, bbox))
     return GeoJsonFeatureCollection(features=features)
+
+
+def _vessel_features(
+    result: ToolResult, bbox: tuple[float, float, float, float] | None
+) -> list[GeoJsonFeature]:
+    """Point features for the SAR detections unmatched to AIS (tools/vessels.py data shape)."""
+    sar = cast(dict[str, Any], result.data.get("sar_detections", {}))
+    unmatched = cast(dict[str, Any], sar.get("unmatched_to_ais", {}))
+    features: list[GeoJsonFeature] = []
+    for point in cast(list[dict[str, float]], unmatched.get("points", [])):
+        lat, lon = point["lat"], point["lon"]
+        if bbox is not None:
+            w, s, e, n = bbox
+            if not (w <= lon <= e and s <= lat <= n):
+                continue
+        features.append(
+            GeoJsonFeature(
+                properties={"unmatched_to_ais": True, "tool_result_id": result.id},
+                geometry={"type": "Point", "coordinates": [lon, lat]},
+            )
+        )
+    return features
