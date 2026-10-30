@@ -1,0 +1,58 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      host:
+      - pae-paha.pacioos.hawaii.edu
+      user-agent:
+      - python-httpx/0.28.1
+    method: GET
+    uri: https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.json?CRW_DHW%5B(2019-09-01):1:(2019-09-07)%5D%5B(19.6)%5D%5B(-155.5)%5D,CRW_SSTANOMALY%5B(2019-09-01):1:(2019-09-07)%5D%5B(19.6)%5D%5B(-155.5)%5D,CRW_BAA%5B(2019-09-01):1:(2019-09-07)%5D%5B(19.6)%5D%5B(-155.5)%5D
+  response:
+    body:
+      string: "{\n  \"table\": {\n    \"columnNames\": [\"time\", \"latitude\", \"longitude\",
+        \"CRW_DHW\", \"CRW_SSTANOMALY\", \"CRW_BAA\"],\n    \"columnTypes\": [\"String\",
+        \"float\", \"float\", \"double\", \"double\", \"ubyte\"],\n    \"columnUnits\":
+        [\"UTC\", \"degrees_north\", \"degrees_east\", \"Celsius weeks\", \"Celsius\",
+        \"1\"],\n    \"rows\": [\n      [\"2019-09-01T12:00:00Z\", 19.575, -155.475,
+        null, null, null],\n      [\"2019-09-02T12:00:00Z\", 19.575, -155.475, null,
+        null, null],\n      [\"2019-09-03T12:00:00Z\", 19.575, -155.475, null, null,
+        null],\n      [\"2019-09-04T12:00:00Z\", 19.575, -155.475, null, null, null],\n
+        \     [\"2019-09-05T12:00:00Z\", 19.575, -155.475, null, null, null],\n      [\"2019-09-06T12:00:00Z\",
+        19.575, -155.475, null, null, null],\n      [\"2019-09-07T12:00:00Z\", 19.575,
+        -155.475, null, null, null]\n    ]\n  }\n}\n"
+    headers:
+      access-control-allow-origin:
+      - '*'
+      connection:
+      - Keep-Alive
+      content-disposition:
+      - attachment;filename=dhw_5km_d502_3033_45bc.json
+      content-length:
+      - '782'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Fri, 30 Oct 2026 06:21:12 GMT
+      erddap-server:
+      - 2.29.0
+      keep-alive:
+      - timeout=5, max=100
+      last-modified:
+      - Fri, 30 Oct 2026 06:21:12 GMT
+      server:
+      - Apache/2.4.29 (Ubuntu)
+      transfer-encoding:
+      - chunked
+      xdods-server:
+      - dods/3.7
+    status:
+      code: 200
+      message: ''
+version: 1
