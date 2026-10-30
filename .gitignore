@@ -23,4 +23,5 @@ var/
 *.duckdb.wal
 .scratch/
 data/geo/raw/
+data/demo/history/
 .playwright-mcp/
