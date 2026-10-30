@@ -58,21 +58,21 @@ describe("CaseFile", () => {
       screen.getByText(/Thermal stress drove most of the bleaching/i),
     ).toBeInTheDocument();
 
-    // FINDINGS
-    expect(screen.getByRole("heading", { name: "FINDINGS" })).toBeInTheDocument();
+    // Findings
+    expect(screen.getByRole("heading", { name: "Findings" })).toBeInTheDocument();
     expect(
       screen.getByText(/Bleaching detected across transect frames./i),
     ).toBeInTheDocument();
 
-    // HYPOTHESES with confidence bars
-    expect(screen.getByRole("heading", { name: "HYPOTHESES" })).toBeInTheDocument();
+    // Hypotheses with confidence bars
+    expect(screen.getByRole("heading", { name: "Hypotheses" })).toBeInTheDocument();
     expect(screen.getByText("Heat stress")).toBeInTheDocument();
     expect(screen.getByText("62%")).toBeInTheDocument();
     expect(screen.getByText("Fishing pressure")).toBeInTheDocument();
     expect(screen.getByText("24%")).toBeInTheDocument();
 
-    // ACTIONS
-    expect(screen.getByRole("heading", { name: "ACTIONS" })).toBeInTheDocument();
+    // Actions
+    expect(screen.getByRole("heading", { name: "Actions" })).toBeInTheDocument();
     expect(
       screen.getByText(/Re-survey the same transect in February 2027./i),
     ).toBeInTheDocument();
@@ -103,5 +103,21 @@ describe("CaseFile", () => {
     fireEvent.click(toolChip!);
 
     expect(handleOpenEvidence).toHaveBeenCalledWith({ kind: "tool_result", id: "tr_01JA7" });
+  });
+
+  it("draws an uncited finding as pending and shows a proven alert", () => {
+    render(
+      <CaseFile
+        investigation={{
+          ...mockInvestigation,
+          findings: [{ statement: "Turbidity hides the deeper colonies.", evidence: [] }],
+        }}
+        onOpenEvidence={vi.fn()}
+        alert="Bleaching alert level 1 · peak 6.8 °C-weeks"
+      />,
+    );
+
+    expect(screen.getByText("No evidence cited yet")).toBeInTheDocument();
+    expect(screen.getByText("Bleaching alert level 1 · peak 6.8 °C-weeks")).toBeInTheDocument();
   });
 });

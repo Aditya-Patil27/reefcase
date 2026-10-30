@@ -21,15 +21,15 @@ test("/surveys/$id displays CaseFile on report ready and opens EvidenceDrawer", 
     page.getByText(/Thermal stress drove most of the bleaching/i),
   ).toBeVisible({ timeout: 15_000 });
 
-  // FINDINGS
-  await expect(page.getByRole("heading", { name: "FINDINGS" }).first()).toBeVisible();
+  // Findings
+  await expect(page.getByRole("heading", { name: "Findings" }).first()).toBeVisible();
 
-  // HYPOTHESES with confidence percentage
-  await expect(page.getByRole("heading", { name: "HYPOTHESES" })).toBeVisible();
+  // Hypotheses with confidence percentage
+  await expect(page.getByRole("heading", { name: "Hypotheses" })).toBeVisible();
   await expect(page.getByText("62%")).toBeVisible();
 
-  // ACTIONS
-  await expect(page.getByRole("heading", { name: "ACTIONS" })).toBeVisible();
+  // Actions
+  await expect(page.getByRole("heading", { name: "Actions" })).toBeVisible();
   await expect(
     page.getByText(/Re-survey the same transect in February 2027/i),
   ).toBeVisible();

@@ -546,8 +546,9 @@ export const handlers = [
   http.get("/api/surveys/:survey_id/frames", () => HttpResponse.json(frames)),
 
   http.get("/api/surveys/:survey_id", ({ params }) => {
-    if (params.survey_id !== MOCK_SURVEY_ID) return notFound("No such survey.");
-    return HttpResponse.json(survey);
+    const found = lizardHistory.find((candidate) => candidate.id === params.survey_id);
+    if (!found) return notFound("No such survey.");
+    return HttpResponse.json(found);
   }),
 
   http.get("/api/sites", () => HttpResponse.json(sites)),

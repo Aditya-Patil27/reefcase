@@ -12,5 +12,5 @@ export const config = {
   /** MapLibre style for the reef map. */
   BASEMAP_STYLE:
     env.VITE_BASEMAP_STYLE ??
-    "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+    "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
 } as const;

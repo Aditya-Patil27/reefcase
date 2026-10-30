@@ -16,10 +16,10 @@ export type RouteCase = {
 
 /** Every route Story 6.1 renders inside AppShell (docs/agents/ui.md). */
 export const ROUTES: readonly RouteCase[] = [
-  { path: "/", heading: "SITES", slug: "root" },
-  { path: "/upload", heading: "CLIP", slug: "upload" },
-  { path: `/surveys/${SURVEY_ID}`, heading: "FRAMES", slug: "surveys" },
-  { path: `/sites/${SITE_ID}`, heading: "COVER OVER TIME", slug: "sites" },
+  { path: "/", heading: "Sites", slug: "root" },
+  { path: "/upload", heading: "Clip", slug: "upload" },
+  { path: `/surveys/${SURVEY_ID}`, heading: "Frames", slug: "surveys" },
+  { path: `/sites/${SITE_ID}`, heading: "Cover over time", slug: "sites" },
 ];
 
 /**

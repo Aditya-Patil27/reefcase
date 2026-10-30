@@ -14,9 +14,9 @@ test("/upload renders form, handles clip drop, shows progress and navigates", as
 
   await page.goto("/upload");
 
-  // Assert section labels
-  await expect(page.getByRole("heading", { name: /CLIP/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /SITE/i })).toBeVisible();
+  // Section headings
+  await expect(page.getByRole("heading", { name: "Clip", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Site", exact: true })).toBeVisible();
 
   // Map group with aria-label="Dive site map"
   await expect(page.getByRole("group", { name: "Dive site map" })).toBeVisible();

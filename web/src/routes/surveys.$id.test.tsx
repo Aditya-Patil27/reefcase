@@ -1,6 +1,9 @@
-vi.mock("../api/client", () => ({
+vi.mock("../api/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../api/client")>()),
   api: {
     GET: vi.fn((path: string) => {
+      if (path.endsWith("/frames")) return Promise.resolve({ data: mocks.frames });
+      if (path === "/api/surveys/{survey_id}") return Promise.resolve({ data: mocks.survey });
       if (path.includes("/api/surveys/") && path.includes("/investigation")) {
         return Promise.resolve({
           data: {
@@ -41,6 +44,8 @@ import type { UseEventStreamResult } from "../live/useEventStream";
 const mocks = vi.hoisted(() => ({
   surveyId: "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
   useEventStream: vi.fn(),
+  survey: null as unknown,
+  frames: null as unknown,
 }));
 
 vi.mock("../live/useEventStream", () => ({
@@ -51,6 +56,11 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@tanstack/react-router")>();
   return {
     ...actual,
+    Link: ({ to, children, ...props }: any) => (
+      <a href={typeof to === "string" ? to : "#"} {...props}>
+        {children}
+      </a>
+    ),
     createFileRoute: () => (opts: Record<string, unknown>) => ({
       ...opts,
       useParams: () => ({ id: mocks.surveyId }),
@@ -69,6 +79,8 @@ describe("SurveyRoute", () => {
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
+    mocks.survey = null;
+    mocks.frames = null;
   });
 
   it("renders header strip with survey id, stage stepper, and frames + trace sections", async () => {
@@ -127,15 +139,15 @@ describe("SurveyRoute", () => {
     expect(screen.getAllByText("Frames").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Segment").length).toBeGreaterThan(0);
 
-    // FRAMES section
-    expect(screen.getAllByRole("heading", { name: "FRAMES" }).length).toBeGreaterThan(0);
+    // Frames section
+    expect(screen.getAllByRole("heading", { name: "Frames" }).length).toBeGreaterThan(0);
 
-    // TRACE section
-    expect(screen.getAllByRole("heading", { name: "TRACE" }).length).toBeGreaterThan(0);
+    // Trace section
+    expect(screen.getAllByRole("heading", { name: "Trace" }).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Heat stress").length).toBeGreaterThan(0);
 
-    // FINDINGS section
-    expect(screen.getAllByRole("heading", { name: "FINDINGS" }).length).toBeGreaterThan(0);
+    // Findings section
+    expect(screen.getAllByRole("heading", { name: "Findings" }).length).toBeGreaterThan(0);
     expect(
       screen.getAllByText(/Bleaching detected across transect frames./i).length,
     ).toBeGreaterThan(0);
@@ -185,7 +197,103 @@ describe("SurveyRoute", () => {
     expect(
       await screen.findByText(/Thermal stress drove most of the bleaching/i),
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "HYPOTHESES" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "ACTIONS" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Hypotheses" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Actions" })).toBeInTheDocument();
+
+    // The case file owns the findings once it is ready; Trace does not repeat them.
+    expect(screen.getAllByText("Bleaching detected across transect frames.")).toHaveLength(1);
+  });
+
+  it("names the stage a failed run stopped at and offers a fresh upload", () => {
+    mocks.useEventStream.mockReturnValue({
+      state: {
+        surveyId: "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3",
+        lastSeq: 4,
+        frames: [{ id: "frm_01", thumbUrl: "/media/frames/01.jpg" }],
+        toolCalls: [],
+        findings: [],
+        investigationId: null,
+        reportReady: false,
+        failed: "SAM 3 timed out on frame 03",
+      },
+      status: "connected",
+      reconnectSeq: null,
+    } as UseEventStreamResult);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SurveyRouteComponent />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText("Stopped at Frames")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("The run stopped: SAM 3 timed out on frame 03");
+    expect(screen.getByRole("link", { name: "Upload the clip again" })).toHaveAttribute("href", "/upload");
+    expect(screen.getByText("The agent did not start.")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Elapsed time")).not.toBeInTheDocument();
+  });
+  it("shows an imported record's stored frames and says it was never investigated", async () => {
+    const cover = { live_coral: 0.31, bleached_coral: 0.22, algae: 0.1, rubble: 0.15, sand: 0.2, other: 0.02 };
+    mocks.survey = {
+      id: mocks.surveyId,
+      site_id: "site_haw_41",
+      dive_date: "2016-07-12",
+      status: "done",
+      source: "historical",
+      video_path: null,
+      cover,
+      failure_reason: null,
+      created_at: "2016-07-12T08:00:00Z",
+    };
+    mocks.frames = [
+      {
+        frame: {
+          id: "frm_a",
+          survey_id: mocks.surveyId,
+          t_sec: 1,
+          image_path: `blobs/${mocks.surveyId}/frames/frm_a.jpg`,
+          quality: { blur: 0.1, color_cast: 0.1, turbidity: 0.1, passed: true, reason: null },
+        },
+        segmentation: {
+          id: "seg_a",
+          frame_id: "frm_a",
+          backend: "sam3",
+          mask_path: `blobs/${mocks.surveyId}/masks/frm_a.png`,
+          cover,
+          latency_ms: 900,
+        },
+        assessment: null,
+      },
+    ];
+    // An imported record streams segmented events only: covers, no thumbnails.
+    mocks.useEventStream.mockReturnValue({
+      state: {
+        surveyId: mocks.surveyId,
+        lastSeq: 1,
+        frames: [{ id: "frm_a", thumbUrl: "", cover }],
+        toolCalls: [],
+        findings: [],
+        investigationId: null,
+        reportReady: false,
+        failed: null,
+      },
+      status: "closed",
+      reconnectSeq: null,
+    } as UseEventStreamResult);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SurveyRouteComponent />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("Imported survey · segmented only, no investigation")).toBeInTheDocument();
+    expect(await screen.findByAltText("Frame 01")).toHaveAttribute(
+      "src",
+      `/media/${mocks.surveyId}/frames/frm_a.jpg`,
+    );
+    expect(screen.queryByRole("heading", { name: "Trace" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Awaiting tool calls/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Elapsed time")).not.toBeInTheDocument();
   });
 });

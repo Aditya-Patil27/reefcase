@@ -84,7 +84,7 @@ describe("CoverChart", () => {
     expect(screen.getByText("Algae")).toBeInTheDocument();
     expect(screen.getByText("Rubble")).toBeInTheDocument();
     expect(screen.getByText("Sand")).toBeInTheDocument();
-    expect(screen.getByText("Other")).toBeInTheDocument();
+    expect(screen.getByText("Rock and unclassified")).toBeInTheDocument();
 
     // Bars with dive dates
     expect(screen.getByText("2021-11-03")).toBeInTheDocument();

@@ -8,12 +8,12 @@ import {
   type FieldName,
   type UploadProgress,
 } from "../api/upload";
-import { Button } from "../components/arc/button/button";
 import { DatePicker } from "../components/arc/date-picker/date-picker";
 import { FileDropzone } from "../components/arc/file-dropzone/file-dropzone";
 import { Input } from "../components/arc/input/input";
 import { NumberField } from "../components/arc/number-field/number-field";
 import { SitePicker, clampDiveSite, formatLatitude, formatLongitude } from "../components/SitePicker";
+import { BUTTON_PRIMARY, RULE_CITED } from "../components/strobe";
 
 export const Route = createFileRoute("/upload")({
   component: UploadRoute,
@@ -77,11 +77,11 @@ function Field(props: { name: FieldName; label: string; error?: string; children
       aria-label={label}
       aria-invalid={error ? true : undefined}
       aria-describedby={error ? errorId : undefined}
-      className="grid min-w-0 gap-1 outline-none"
+      className={`grid min-w-0 gap-1 outline-none ${error ? RULE_CITED : ""}`}
     >
       {children}
       {error ? (
-        <p id={errorId} className="text-body text-danger">
+        <p id={errorId} className="text-body font-bold text-fg">
           {error}
         </p>
       ) : null}
@@ -89,7 +89,7 @@ function Field(props: { name: FieldName; label: string; error?: string; children
   );
 }
 
-/** A 2px accent bar and the mono readout. Arc's progress draws a 7px track, which this route may not restyle. */
+/** An 8px deep-water bar and its readout. Arc's progress draws its own track, which this route may not restyle. */
 function UploadBar({ progress }: { progress: UploadProgress }) {
   const percent =
     progress.total > 0 ? Math.min(100, Math.round((progress.loaded / progress.total) * 100)) : 0;
@@ -104,16 +104,16 @@ function UploadBar({ progress }: { progress: UploadProgress }) {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}
-        className="h-0.5 w-full overflow-hidden rounded-full bg-sunken"
+        className="h-2 w-full overflow-hidden bg-sunken"
       >
         <span
           aria-hidden="true"
-          className="block h-full origin-left bg-accent motion-safe:transition-transform motion-safe:duration-200"
+          className="block h-full origin-left bg-deep motion-safe:transition-transform motion-safe:duration-200"
           style={{ transform: `scaleX(${percent / 100})` }}
         />
       </div>
-      <p className="font-mono text-label text-muted tabular-nums">
-        {`${percent}% · ${loaded} / ${formatBytes(progress.total)}`}
+      <p className="text-label font-semibold text-fg">
+        {`Uploading ${percent}% · ${loaded} / ${formatBytes(progress.total)}`}
       </p>
     </div>
   );
@@ -228,11 +228,21 @@ function UploadRoute() {
   const durationText = formatDuration(duration);
 
   return (
-    <form className="grid gap-4 p-4 lg:grid-cols-2" onSubmit={handleSubmit} noValidate>
-      <section aria-labelledby="clip-heading" className="grid min-w-0 content-start gap-3">
-        <h1 id="clip-heading" className="font-mono text-label uppercase text-muted">
-          CLIP
-        </h1>
+    // No proven alert lives on this form, so Arc's error red draws in ink here.
+    <form
+      className="grid w-full max-w-6xl gap-x-10 gap-y-8 px-4 py-7 [--danger:var(--foreground)] sm:px-7 lg:grid-cols-2"
+      onSubmit={handleSubmit}
+      noValidate
+    >
+      <section aria-labelledby="clip-heading" className="grid min-w-0 content-start gap-4">
+        <div className="grid gap-1">
+          <h1 id="clip-heading" className="text-display font-bold text-fg">
+            Clip
+          </h1>
+          <p className="text-body text-secondary">
+            One diver clip from one dive. SAM 3 reads its frames; the agent writes the case file.
+          </p>
+        </div>
         <Field name="video" label="Dive clip" error={errors.video}>
           <FileDropzone
             accept="video/*"
@@ -247,8 +257,8 @@ function UploadRoute() {
           />
           {clip ? (
             <div className="mt-1 grid min-w-0 gap-1">
-              <p className="truncate text-ui text-fg">{clip.name}</p>
-              <p className="font-mono text-label text-muted tabular-nums">
+              <p className="truncate text-ui font-bold text-fg">{clip.name}</p>
+              <p className="text-label text-secondary">
                 {`${formatBytes(clip.size)} · ${durationText}`}
               </p>
             </div>
@@ -268,10 +278,15 @@ function UploadRoute() {
         </Field>
       </section>
 
-      <section aria-labelledby="site-heading" className="grid min-w-0 content-start gap-3">
-        <h2 id="site-heading" className="font-mono text-label uppercase text-muted">
-          SITE
-        </h2>
+      <section aria-labelledby="site-heading" className="grid min-w-0 content-start gap-4">
+        <div className="grid gap-1">
+          <h2 id="site-heading" className="text-display font-bold text-fg">
+            Site
+          </h2>
+          <p className="text-body text-secondary">
+            Drop the pin where you dived. A pin within 500 m of a known site joins its record.
+          </p>
+        </div>
         <SitePicker value={site} onChange={movePin} />
         <div className="grid grid-cols-2 gap-3">
           <Field name="lat" label="Latitude" error={errors.lat}>
@@ -289,7 +304,7 @@ function UploadRoute() {
                 clearError("lat");
               }}
             />
-            <p className="font-mono text-label text-muted tabular-nums">{formatLatitude(site.lat)}</p>
+            <p className="text-label text-secondary">{formatLatitude(site.lat)}</p>
           </Field>
           <Field name="lon" label="Longitude" error={errors.lon}>
             <NumberField
@@ -306,7 +321,7 @@ function UploadRoute() {
                 clearError("lon");
               }}
             />
-            <p className="font-mono text-label text-muted tabular-nums">{formatLongitude(site.lon)}</p>
+            <p className="text-label text-secondary">{formatLongitude(site.lon)}</p>
           </Field>
         </div>
         <Input
@@ -337,21 +352,16 @@ function UploadRoute() {
 
       <div className="grid min-w-0 gap-2 lg:col-span-2">
         {formError ? (
-          <p role="alert" className="text-body text-danger">
+          <p role="alert" className="text-body font-bold text-fg">
             {formError}
           </p>
         ) : null}
         {inFlight && progress ? (
           <UploadBar progress={progress} />
         ) : (
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={inFlight}
-            className="w-full bg-accent! text-on-accent!"
-          >
+          <button type="submit" disabled={inFlight} className={`${BUTTON_PRIMARY} w-full`}>
             Start investigation
-          </Button>
+          </button>
         )}
       </div>
     </form>

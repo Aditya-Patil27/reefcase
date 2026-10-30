@@ -35,7 +35,7 @@ const sampleFindings: Finding[] = [
 describe("TracePanel", () => {
   it("renders TRACE heading and tool calls", () => {
     render(<TracePanel toolCalls={sampleCalls} findings={[]} />);
-    expect(screen.getByRole("heading", { name: "TRACE" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Trace" })).toBeInTheDocument();
     expect(screen.getByText("Heat stress")).toBeInTheDocument();
     expect(screen.getByText("Vessel activity")).toBeInTheDocument();
     expect(screen.getByText("running")).toBeInTheDocument();
@@ -67,7 +67,7 @@ describe("TracePanel", () => {
 
   it("renders FINDINGS when findings are emitted", () => {
     render(<TracePanel toolCalls={sampleCalls} findings={sampleFindings} frameIds={["frm_01"]} />);
-    expect(screen.getByRole("heading", { name: "FINDINGS" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Findings" })).toBeInTheDocument();
     expect(
       screen.getByText(/Live coral cover averages 37% with bleaching on five frames./i),
     ).toBeInTheDocument();

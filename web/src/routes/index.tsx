@@ -1,12 +1,13 @@
-﻿import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { api } from "../api/client";
+import { api, dataOrNull } from "../api/client";
 import type { components } from "../api/schema";
 import { humanize } from "../format";
 import { ReefMap, type LayerVisibility } from "../map/ReefMap";
 import { CoverStrip } from "../components/CoverStrip";
 import { Switch } from "../components/arc/switch/switch";
+import { SECTION_HEADING } from "../components/strobe";
 
 type SiteSummary = components["schemas"]["SiteSummary"];
 
@@ -15,8 +16,7 @@ export const Route = createFileRoute("/")({
 });
 
 async function fetchSites(): Promise<SiteSummary[]> {
-  const { data } = await api.GET("/api/sites");
-  return data ?? [];
+  return dataOrNull(await api.GET("/api/sites")) ?? [];
 }
 
 async function fetchGeo(layer: "mpa" | "reef" | "vessels"): Promise<unknown> {
@@ -42,18 +42,29 @@ function MapRoute() {
   const sites = sitesQuery.data ?? [];
 
   return (
-    <div className="relative flex h-[calc(100vh-48px-32px)] flex-col-reverse md:flex-row bg-bg text-fg overflow-hidden">
-      {/* Left panel: 320px desktop, bottom sheet at 40% vh on mobile */}
+    // The shell's 56px bar and 35px footer sit outside the map's height.
+    <div className="relative flex h-[calc(100dvh-91px)] flex-col-reverse overflow-hidden bg-bg text-fg md:flex-row">
       <aside
         aria-label="Sites and layers"
-        className="z-10 flex h-[40vh] w-full shrink-0 flex-col border-t border-hairline bg-surface/95 md:h-full md:w-80 md:border-r md:border-t-0 overflow-y-auto"
+        className="z-10 flex h-[40vh] w-full shrink-0 flex-col overflow-y-auto border-t border-border bg-surface md:h-full md:w-80 md:border-t-0 md:border-r"
       >
-        <div className="p-4">
-          <h2 id="sites-heading" className="font-mono text-label uppercase text-muted">
-            SITES
+        <div className="px-4 py-5 sm:px-5">
+          <h2 id="sites-heading" className="text-title font-bold text-fg">
+            Sites
           </h2>
+          {sitesQuery.isPending ? (
+            <p className="mt-3 text-body text-secondary">Loading sites…</p>
+          ) : sitesQuery.isError ? (
+            <p role="alert" className="mt-3 text-body text-fg">
+              Sites did not load. Check the API and reload the page.
+            </p>
+          ) : sites.length === 0 ? (
+            <p className="mt-3 text-body text-secondary">
+              No sites yet. Upload a dive to put the first one on the map.
+            </p>
+          ) : null}
 
-          <div role="list" aria-labelledby="sites-heading" className="mt-3 space-y-1">
+          <div role="list" aria-labelledby="sites-heading" className="mt-3 divide-y divide-hairline border-y border-hairline">
             {sites.map((site) => {
               const isSelected = selectedSite?.id === site.id;
               const livePercent = Math.round(site.latest_cover.live_coral * 100);
@@ -71,35 +82,37 @@ function MapRoute() {
                   }}
                   tabIndex={0}
                   aria-current={isSelected ? "true" : undefined}
-                  className={`cursor-pointer rounded-sm px-3 py-2 transition-colors ${
-                    isSelected ? "bg-raised text-fg" : "text-secondary hover:bg-raised/40 hover:text-fg"
+                  className={`-mx-2 cursor-pointer border-l-[3px] px-2 py-3 transition-colors ${
+                    isSelected
+                      ? "border-deep bg-raised"
+                      : "border-transparent hover:bg-raised"
                   }`}
                 >
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-ui font-medium text-fg">{site.name}</span>
+                    <span className="min-w-0 truncate text-ui font-bold text-fg">{site.name}</span>
+                    <span className="shrink-0 text-ui font-bold whitespace-nowrap text-fg">{livePercent}% live</span>
                   </div>
 
-                  <div className="mt-1 flex items-baseline justify-between gap-2 font-mono text-label tabular-nums">
-                    <span className="font-semibold text-fg">{livePercent}% live</span>
-                    <span className="text-muted">{humanize(site.trend)}</span>
-                  </div>
+                  <p className="mt-0.5 text-label text-secondary">
+                    {humanize(site.trend)} · latest dive {site.latest_dive_date}
+                  </p>
 
                   <div className="mt-1.5">
-                    <CoverStrip cover={site.latest_cover} className="h-1.5 w-full rounded" />
+                    <CoverStrip cover={site.latest_cover} className="h-2 w-full" />
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="mt-6 border-t border-hairline pt-4">
-            <h2 id="layers-heading" className="font-mono text-label uppercase text-muted">
-              LAYERS
+          <div className="mt-7">
+            <h2 id="layers-heading" className={SECTION_HEADING}>
+              Layers
             </h2>
 
-            <div className="mt-3 space-y-3 font-mono text-label">
+            <div className="mt-3 space-y-3">
               <div className="flex items-center justify-between">
-                <label htmlFor="mpa-switch" className="cursor-pointer text-body text-secondary hover:text-fg">
+                <label htmlFor="mpa-switch" className="cursor-pointer text-ui text-secondary hover:text-fg">
                   MPA boundaries
                 </label>
                 <Switch
@@ -113,7 +126,7 @@ function MapRoute() {
               </div>
 
               <div className="flex items-center justify-between">
-                <label htmlFor="reef-switch" className="cursor-pointer text-body text-secondary hover:text-fg">
+                <label htmlFor="reef-switch" className="cursor-pointer text-ui text-secondary hover:text-fg">
                   Reef extent
                 </label>
                 <Switch
@@ -127,7 +140,7 @@ function MapRoute() {
               </div>
 
               <div className="flex items-center justify-between">
-                <label htmlFor="vessel-switch" className="cursor-pointer text-body text-secondary hover:text-fg">
+                <label htmlFor="vessel-switch" className="cursor-pointer text-ui text-secondary hover:text-fg">
                   Vessel activity
                 </label>
                 <Switch
@@ -144,8 +157,7 @@ function MapRoute() {
         </div>
       </aside>
 
-      {/* Main map view: visible above bottom sheet at 390px, fills area to right on desktop */}
-      <div className="relative flex-1 h-[60vh] md:h-full">
+      <div className="relative h-[60vh] flex-1 md:h-full">
         <ReefMap
           sites={sites}
           selectedSite={selectedSite}

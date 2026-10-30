@@ -5,6 +5,7 @@ type Cover = components["schemas"]["Cover"];
 type QualityScore = components["schemas"]["QualityScore"];
 type FrameAssessment = components["schemas"]["FrameAssessment"];
 type Finding = components["schemas"]["Finding"];
+type FrameDetail = components["schemas"]["FrameDetail"];
 
 /** A frame as the live view shows it: ordered by arrival, enriched as events land. */
 export type FrameView = {
@@ -15,6 +16,18 @@ export type FrameView = {
   maskUrl?: string;
   assessment?: FrameAssessment;
 };
+
+/** A stored frame as the views show it. Frame and mask URLs come from the ids, the way the media mount serves them. */
+export function toFrameView(surveyId: string, detail: FrameDetail): FrameView {
+  return {
+    id: detail.frame.id,
+    thumbUrl: `/media/${surveyId}/frames/${detail.frame.id}.jpg`,
+    quality: detail.frame.quality,
+    cover: detail.segmentation?.cover,
+    maskUrl: detail.segmentation ? `/media/${surveyId}/masks/${detail.frame.id}.png` : undefined,
+    assessment: detail.assessment ?? undefined,
+  };
+}
 
 /** One tool call in the trace panel. */
 export type ToolCallView = {

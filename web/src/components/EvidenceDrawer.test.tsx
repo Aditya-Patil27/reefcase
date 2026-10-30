@@ -18,7 +18,8 @@ const mockToolResult = {
   retrieved_at: "2026-10-21T09:14:02Z",
 };
 
-vi.mock("../api/client", () => ({
+vi.mock("../api/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../api/client")>()),
   api: {
     GET: vi.fn((path: string) => {
       if (path.includes("/api/tool-results/")) {
@@ -95,6 +96,6 @@ describe("EvidenceDrawer", () => {
         "https://coralreefwatch.noaa.gov/product/vs/gauges/lizard_island.php",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText("PARAMETERS")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Parameters" })).toBeInTheDocument();
   });
 });

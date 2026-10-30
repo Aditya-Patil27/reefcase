@@ -1,13 +1,15 @@
 import SegmentedControl from "../components/arc/segmented-control/segmented-control";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../api/client";
+import { api, dataOrNull } from "../api/client";
 import type { components } from "../api/schema";
 import { useEventStream } from "../live/useEventStream";
 import { FrameGrid } from "../components/FrameGrid";
 import { TracePanel } from "../components/TracePanel";
-import { CaseFile } from "../components/CaseFile";
+import { CaseFile, useCitedToolResults } from "../components/CaseFile";
+import { BUTTON_PRIMARY, CHIP, RULE_CITED } from "../components/strobe";
+import { toFrameView, type FrameView } from "../live/reducer";
 import { EvidenceDrawer, type EvidenceItem } from "../components/EvidenceDrawer";
 import { CopyButton } from "../components/arc/copy-button/copy-button";
 import { Stepper, type StepperStep } from "../components/arc/stepper/stepper";
@@ -130,6 +132,19 @@ function SurveyRouteComponent() {
   });
   const site = siteQuery.data?.site;
 
+  // An imported record was only ever segmented, so its frames come from the API, not the event stream.
+  const historical = survey?.source === "historical";
+  const framesQuery = useQuery({
+    queryKey: ["frames", id],
+    queryFn: async (): Promise<FrameView[]> => {
+      const data = dataOrNull(
+        await api.GET("/api/surveys/{survey_id}/frames", { params: { path: { survey_id: id } } }),
+      );
+      return (data ?? []).map((detail) => toFrameView(id, detail));
+    },
+    enabled: historical,
+  });
+  const frames = historical ? (framesQuery.data ?? []) : state.frames;
 
   const hasTools = state.toolCalls.length > 0 || state.findings.length > 0;
   const hasAssessments = state.frames.some((f) => f.assessment !== undefined);
@@ -145,140 +160,177 @@ function SurveyRouteComponent() {
   );
 
   const activeStageLabel = PIPELINE_STAGES[currentStage]?.label ?? "Processing";
+  // A failed run stops at the stage that was in progress.
+  const stepperSteps = state.failed
+    ? PIPELINE_STAGES.map((stage, i) => (i === currentStage ? { ...stage, error: "Stopped here" } : stage))
+    : PIPELINE_STAGES;
+  const { alert } = useCitedToolResults(investigation ?? undefined);
+
+  // The frame under the strobe: the one just opened as evidence, else the most bleached.
+  const openedFrameId = selectedEvidence?.kind === "frame" ? selectedEvidence.id : undefined;
+  const mostBleached = frames.reduce<FrameView | undefined>(
+    (worst, f) =>
+      f.cover && f.cover.bleached_coral > (worst?.cover?.bleached_coral ?? -1) ? f : worst,
+    undefined,
+  );
+  const litId = openedFrameId ?? mostBleached?.id;
+
+  let framesDescription: string;
+  if (historical) {
+    framesDescription = framesQuery.isPending
+      ? "Loading the frames from this dive…"
+      : framesQuery.isError
+        ? "The frames for this dive did not load. Reload the page to try again."
+        : frames.length === 0
+          ? "This record came without frames."
+          : "Frames from the imported record, each with its segmentation mask. Open one to see it in true colour.";
+  } else {
+    framesDescription = hasFrames
+      ? "Frames arrive as the clip is sampled. Open one to see it in true colour with its SAM 3 mask."
+      : state.failed
+        ? "No frames were read before the run stopped."
+        : "Waiting for the first frame from the clip…";
+  }
+
+  const frameGrid = (
+    <FrameGrid
+      frames={frames}
+      litId={litId}
+      onOpenFrame={(frameId) => handleOpenEvidence({ kind: "frame", id: frameId })}
+      description={framesDescription}
+    />
+  );
+
+  const work =
+    state.reportReady && investigation ? (
+      <div className="space-y-5">
+        <SegmentedControl
+          label="Show"
+          options={[
+            { value: "report", label: "Case file" },
+            { value: "frames", label: "Frames" },
+          ]}
+          value={viewMode}
+          onValueChange={(val: string) => setViewMode(val as "report" | "frames")}
+        />
+        {viewMode === "report" ? (
+          <CaseFile
+            investigation={investigation}
+            onOpenEvidence={handleOpenEvidence}
+            frames={state.frames}
+            toolCalls={state.toolCalls}
+            alert={alert}
+          />
+        ) : (
+          frameGrid
+        )}
+      </div>
+    ) : (
+      frameGrid
+    );
+
+  const trace = (
+    <TracePanel
+      toolCalls={state.toolCalls}
+      // Once the case file is ready it owns the findings; Trace keeps the tool calls.
+      findings={state.reportReady ? [] : state.findings}
+      stopped={Boolean(state.failed)}
+      status={status}
+      reconnectSeq={reconnectSeq}
+      frameIds={state.frames.map((f) => f.id)}
+      onSelectEvidence={(kind, evId) => handleOpenEvidence({ kind, id: evId })}
+    />
+  );
 
   return (
-    <div className="flex min-h-[calc(100vh-48px-32px)] flex-col bg-bg text-fg">
-      {/* Header strip */}
-      <header className="border-b border-hairline bg-surface px-4 py-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h1 className="text-title font-semibold text-fg">{site?.name ?? "Survey"}</h1>
-            <span className="font-mono text-label text-secondary tabular-nums">
-              {[site ? formatCoordinates(site.location) : null, survey?.dive_date]
-                .filter(Boolean)
-                .join(" · ")}
-            </span>
-            <span className="flex items-center gap-1 font-mono text-label text-muted">
-              {id}
-              <CopyButton value={id} iconOnly />
-            </span>
+    <div className="flex flex-1 flex-col bg-bg text-fg">
+      <header className="border-b border-hairline bg-surface px-4 py-5 sm:px-7">
+        <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+          <div className="min-w-0 space-y-1">
+            <h1 className="text-display font-extrabold text-fg">{site?.name ?? "Survey"}</h1>
+            <p className="flex flex-wrap items-center gap-x-2 text-label text-secondary tabular-nums">
+              {site ? <span>{formatCoordinates(site.location)}</span> : null}
+              {survey?.dive_date ? <span>Dive {survey.dive_date}</span> : null}
+              <span className="flex items-center gap-1">
+                {id}
+                <CopyButton value={id} iconOnly />
+              </span>
+            </p>
           </div>
 
-          <time className="font-mono text-label text-muted tabular-nums" aria-label="Elapsed time">
-            {elapsed}
-          </time>
+          <div role="status" className="flex items-center gap-3 text-ui">
+            {historical ? (
+              <span className={CHIP}>Imported record</span>
+            ) : state.failed ? (
+              <span className="font-bold text-fg">Stopped at {activeStageLabel}</span>
+            ) : state.reportReady ? (
+              <span className={CHIP}>Case file ready</span>
+            ) : (
+              <>
+                <span className="font-bold text-fg">
+                  <TextShimmer active>{activeStageLabel}</TextShimmer>
+                </span>
+                <span className="text-label text-secondary sm:hidden">
+                  Stage {currentStage + 1} of {PIPELINE_STAGES.length}
+                </span>
+              </>
+            )}
+            {state.failed || historical ? null : (
+              <time className="text-label font-bold text-secondary tabular-nums" aria-label="Elapsed time">
+                {elapsed}
+              </time>
+            )}
+          </div>
         </div>
 
-        {/* Stepper row */}
-        <div className="mt-3 flex items-center justify-between gap-4">
-          {/* Wide stepper */}
-          <div className="hidden sm:block sm:flex-1">
-            <Stepper
-              steps={PIPELINE_STAGES}
-              current={currentStage}
-              className="w-full max-w-3xl"
-            />
+        {historical ? (
+          <div className="mt-4 max-w-3xl">
+            <p className="text-ui font-bold text-fg">Imported survey · segmented only, no investigation</p>
+            <p className="mt-1 text-body text-secondary">
+              The frames were segmented when this record was imported. The agent never investigated the dive, so
+              it has no case file and no trace.
+            </p>
           </div>
-
-          {/* Narrow collapsed stepper readout */}
-          <div className="flex items-center gap-2 font-mono text-label text-secondary sm:hidden">
-            <span>{`Stage ${currentStage + 1}/6 · `}</span>
-            <span className="text-accent">
-              <TextShimmer active={!state.reportReady}>{activeStageLabel}</TextShimmer>
-            </span>
+        ) : (
+          <div className="mt-4 hidden sm:block">
+            {/* A stopped stage is not a proven alert, so the stepper's error mark draws in deep, not red. */}
+            <Stepper steps={stepperSteps} current={currentStage} className="w-full max-w-3xl [--danger:var(--deep)]" />
           </div>
+        )}
 
-          {/* Running status badge */}
-          {!state.reportReady ? (
-            <div className="hidden items-center gap-1 font-mono text-label text-accent sm:flex">
-              <TextShimmer active>{activeStageLabel}</TextShimmer>
-            </div>
-          ) : (
-            <span className="font-mono text-label text-success">Report ready</span>
-          )}
-        </div>
+        {state.failed ? (
+          <div role="alert" className={`mt-5 max-w-3xl ${RULE_CITED}`}>
+            <p className="text-ui font-bold text-fg">The run stopped: {state.failed}</p>
+            <p className="mt-1 text-body text-secondary">
+              Nothing after {activeStageLabel.toLowerCase()} ran, so this dive has no case file. Upload the clip
+              again to start a fresh run.
+            </p>
+            <Link to="/upload" className={`${BUTTON_PRIMARY} mt-4`}>
+              Upload the clip again
+            </Link>
+          </div>
+        ) : null}
       </header>
 
-      {/* Body: Wide ResizablePanels, narrow stacked */}
-      {isDesktop ? (
+      {historical ? (
+        <div className="px-4 py-6 sm:px-7">{frameGrid}</div>
+      ) : isDesktop ? (
         <div className="flex-1">
           <ResizablePanels label="Investigation panels" className="h-full min-h-[640px]">
             <ResizablePanel id="frames-panel" label="Frames" defaultSize={62} minSize={380}>
-              <div className="h-full overflow-y-auto p-4">
-                {state.reportReady && investigation ? (
-                  <div className="space-y-4">
-                    <SegmentedControl
-                      options={[
-                        { value: "report", label: "Case file" },
-                        { value: "frames", label: "Frames" },
-                      ]}
-                      value={viewMode}
-                      onValueChange={(val: string) => setViewMode(val as "report" | "frames")}
-                    />
-                    {viewMode === "report" ? (
-                      <CaseFile
-                        investigation={investigation}
-                        onOpenEvidence={handleOpenEvidence}
-                        frames={state.frames}
-                        toolCalls={state.toolCalls}
-                      />
-                    ) : (
-                      <FrameGrid frames={state.frames} />
-                    )}
-                  </div>
-                ) : (
-                  <FrameGrid frames={state.frames} />
-                )}
-              </div>
+              <div className="h-full overflow-y-auto px-7 py-6">{work}</div>
             </ResizablePanel>
             <ResizablePanel id="trace-panel" label="Trace" defaultSize={38} minSize={380}>
-              <div className="h-full overflow-y-auto border-l border-hairline p-4">
-                <TracePanel
-                  toolCalls={state.toolCalls}
-                  findings={state.findings}
-                  status={status}
-                  reconnectSeq={reconnectSeq}
-                  frameIds={state.frames.map((f) => f.id)}
-                  onSelectEvidence={(kind, evId) => handleOpenEvidence({ kind, id: evId })}
-                />
+              <div className="h-full overflow-y-auto border-l border-hairline bg-surface px-6 py-6">
+                {trace}
               </div>
             </ResizablePanel>
           </ResizablePanels>
         </div>
       ) : (
-        <div className="space-y-6 p-4">
-          {state.reportReady && investigation ? (
-            <div className="space-y-4">
-              <SegmentedControl
-                options={[
-                  { value: "report", label: "Case file" },
-                  { value: "frames", label: "Frames" },
-                ]}
-                value={viewMode}
-                onValueChange={(val: string) => setViewMode(val as "report" | "frames")}
-              />
-              {viewMode === "report" ? (
-                <CaseFile
-                  investigation={investigation}
-                  onOpenEvidence={handleOpenEvidence}
-                  frames={state.frames}
-                  toolCalls={state.toolCalls}
-                />
-              ) : (
-                <FrameGrid frames={state.frames} />
-              )}
-            </div>
-          ) : (
-            <FrameGrid frames={state.frames} />
-          )}
-          <TracePanel
-            toolCalls={state.toolCalls}
-            findings={state.findings}
-            status={status}
-            reconnectSeq={reconnectSeq}
-            frameIds={state.frames.map((f) => f.id)}
-            onSelectEvidence={(kind, evId) => handleOpenEvidence({ kind, id: evId })}
-          />
+        <div className="space-y-10 px-4 py-6 sm:px-7">
+          {work}
+          <div className="border-t border-hairline pt-6">{trace}</div>
         </div>
       )}
 
@@ -286,7 +338,7 @@ function SurveyRouteComponent() {
         evidence={selectedEvidence}
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
-        frames={state.frames}
+        frames={frames}
       />
     </div>
   );

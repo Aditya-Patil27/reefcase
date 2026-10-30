@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect, type ReactElement } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 import Map, {
   Marker,
   Source,
@@ -14,8 +14,8 @@ import { config } from "../config";
 import type { components } from "../api/schema";
 import { formatCoordinates } from "../components/SitePicker";
 import { CoverStrip } from "../components/CoverStrip";
+import { BUTTON_PRIMARY, LIT_RING } from "../components/strobe";
 import {
-  getTrendClass,
   mpaFillLayer,
   mpaLineLayer,
   reefFillLayer,
@@ -23,6 +23,11 @@ import {
 } from "./layers";
 
 type SiteSummary = components["schemas"]["SiteSummary"];
+
+/** Pins grow with live cover: 14px at none, 22px at 60% and above. */
+function pinSize(live: number): number {
+  return Math.round(14 + Math.min(live / 0.6, 1) * 8);
+}
 
 export interface LayerVisibility {
   mpa: boolean;
@@ -49,22 +54,34 @@ export function ReefMap({
   layers,
   geoData,
 }: ReefMapProps): ReactElement {
-  const mapRef = useRef<MapRef | null>(null);
-  const [viewState, setViewState] = useState({
-    longitude: 145.461,
-    latitude: -14.668,
-    zoom: 6,
-  });
+  // A state ref: maplibre loads lazily, so the map can arrive after the sites do.
+  const [map, setMap] = useState<MapRef | null>(null);
+
+  // Open on every site at once, then leave the view to the reader.
+  const fitted = useRef(false);
+  useEffect(() => {
+    if (fitted.current || !map || sites.length === 0) return;
+    fitted.current = true;
+    const lons = sites.map((site) => site.location.lon);
+    const lats = sites.map((site) => site.location.lat);
+    map.fitBounds(
+      [
+        [Math.min(...lons), Math.min(...lats)],
+        [Math.max(...lons), Math.max(...lats)],
+      ],
+      { padding: 64, maxZoom: 6, duration: 0 },
+    );
+  }, [map, sites]);
 
   // Pan to selected site when selection changes
   useEffect(() => {
-    if (selectedSite && mapRef.current) {
-      mapRef.current.flyTo({
+    if (selectedSite && map) {
+      map.flyTo({
         center: [selectedSite.location.lon, selectedSite.location.lat],
         duration: 1000,
       });
     }
-  }, [selectedSite]);
+  }, [map, selectedSite]);
 
   return (
     <div
@@ -73,9 +90,8 @@ export function ReefMap({
       className="relative h-full w-full overflow-hidden bg-bg"
     >
       <Map
-        ref={mapRef}
-        {...viewState}
-        onMove={(evt) => setViewState(evt.viewState)}
+        ref={setMap}
+        initialViewState={{ longitude: 145.461, latitude: -14.668, zoom: 6 }}
         mapStyle={config.BASEMAP_STYLE}
         style={{ width: "100%", height: "100%" }}
         dragRotate={false}
@@ -107,6 +123,7 @@ export function ReefMap({
         {/* Site markers */}
         {sites.map((site) => {
           const isSelected = selectedSite?.id === site.id;
+          const size = pinSize(site.latest_cover.live_coral);
           return (
             <Marker
               key={site.id}
@@ -118,19 +135,16 @@ export function ReefMap({
                 onSelectSite(site);
               }}
             >
+              {/* Tailwind needs the hover and focus variants of LIT_RING spelled out to generate them. */}
               <button
                 type="button"
                 aria-label={site.name}
-                className={`group relative flex size-5 items-center justify-center rounded-full transition-transform hover:scale-125 focus:scale-125 ${
-                  isSelected ? "scale-125 ring-2 ring-reef-bleached" : ""
+                aria-pressed={isSelected}
+                style={{ width: size, height: size }}
+                className={`block border-2 border-raised bg-deep transition-shadow hover:shadow-[0_0_0_3px_var(--strobe),0_0_0_4px_var(--deep)] focus-visible:shadow-[0_0_0_3px_var(--strobe),0_0_0_4px_var(--deep)] focus-visible:outline-none ${
+                  isSelected ? LIT_RING : ""
                 }`}
-              >
-                <span
-                  className={`size-3 rounded-full shadow-sm hover:ring-2 hover:ring-reef-bleached ${getTrendClass(
-                    site.trend,
-                  )}`}
-                />
-              </button>
+              />
             </Marker>
           );
         })}
@@ -149,12 +163,12 @@ export function ReefMap({
             <div
               role="dialog"
               aria-label={selectedSite.name}
-              className="w-[280px] rounded-lg border border-hairline bg-surface p-4 text-fg shadow-floating"
+              className="w-[280px] border border-border bg-raised p-4 text-fg shadow-floating"
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h3 className="text-title font-semibold text-fg">{selectedSite.name}</h3>
-                  <p className="font-mono text-label text-muted">
+                  <h3 className="text-title font-bold text-fg">{selectedSite.name}</h3>
+                  <p className="text-label text-secondary">
                     {formatCoordinates(selectedSite.location)}
                   </p>
                 </div>
@@ -162,43 +176,31 @@ export function ReefMap({
                   type="button"
                   aria-label="Close"
                   onClick={() => onSelectSite(null)}
-                  className="rounded p-1 text-muted hover:text-fg"
+                  className="p-1 text-secondary hover:bg-accent-subtle hover:text-fg"
                 >
-                  <X size={14} />
+                  <X size={16} aria-hidden="true" />
                 </button>
               </div>
 
-              <div className="mt-3 flex items-baseline justify-between">
-                <span className="text-figure font-bold tabular-nums text-fg">
-                  {Math.round(selectedSite.latest_cover.live_coral * 100)}%
+              <p className="mt-3 flex items-baseline justify-between gap-2">
+                <span className="flex items-baseline gap-1.5">
+                  <span className="text-figure font-bold text-fg">
+                    {Math.round(selectedSite.latest_cover.live_coral * 100)}%
+                  </span>
+                  <span className="text-ui font-semibold text-fg">live coral</span>
                 </span>
-                <span className="font-mono text-label text-secondary">
-                  {selectedSite.latest_dive_date}
-                </span>
-              </div>
+                <span className="text-label text-secondary">{selectedSite.latest_dive_date}</span>
+              </p>
 
-              <div className="mt-2">
-                <CoverStrip cover={selectedSite.latest_cover} className="h-2 w-full rounded" />
-              </div>
+              <CoverStrip cover={selectedSite.latest_cover} className="mt-2 h-2.5 w-full" />
 
-              <div className="mt-4 flex flex-col gap-2 border-t border-hairline pt-3 font-mono text-label">
-                <Link
-                  to="/sites/$id"
-                  params={{ id: selectedSite.id }}
-                  className="flex items-center justify-between text-accent hover:underline"
-                >
-                  <span>Site timeline</span>
-                  <span aria-hidden="true">&rarr;</span>
-                </Link>
-                <Link
-                  to="/surveys/$id"
-                  params={{ id: "srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3" }}
-                  className="flex items-center justify-between text-secondary hover:text-fg"
-                >
-                  <span>Latest case file</span>
-                  <span aria-hidden="true">&rarr;</span>
-                </Link>
-              </div>
+              <Link
+                to="/sites/$id"
+                params={{ id: selectedSite.id }}
+                className={`${BUTTON_PRIMARY} mt-4 w-full`}
+              >
+                Open site
+              </Link>
             </div>
           </Popup>
         ) : null}

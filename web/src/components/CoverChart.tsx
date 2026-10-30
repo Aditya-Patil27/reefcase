@@ -1,6 +1,7 @@
-﻿import type { ReactElement } from "react";
+import type { ReactElement } from "react";
 import { Link } from "@tanstack/react-router";
 import type { components } from "../api/schema";
+import { TEXT_LINK } from "./strobe";
 
 type Survey = components["schemas"]["Survey"];
 
@@ -10,12 +11,13 @@ export interface CoverChartProps {
 }
 
 const CATEGORIES = [
-  { key: "live_coral", label: "Live coral", color: "bg-reef-live", text: "text-reef-live" },
-  { key: "bleached_coral", label: "Bleached coral", color: "bg-reef-bleached", text: "text-reef-bleached" },
-  { key: "algae", label: "Algae", color: "bg-reef-algae", text: "text-reef-algae" },
-  { key: "rubble", label: "Rubble", color: "bg-reef-rubble", text: "text-reef-rubble" },
-  { key: "sand", label: "Sand", color: "bg-reef-sand", text: "text-reef-sand" },
-  { key: "other", label: "Other", color: "bg-reef-other", text: "text-reef-other" },
+  { key: "live_coral", label: "Live coral", color: "bg-reef-live" },
+  // Bleached coral is near-white, so it carries a 1px rule like CoverStrip and the site legend.
+  { key: "bleached_coral", label: "Bleached coral", color: "bg-reef-bleached shadow-[inset_0_0_0_1px_var(--border)]" },
+  { key: "algae", label: "Algae", color: "bg-reef-algae" },
+  { key: "rubble", label: "Rubble", color: "bg-reef-rubble" },
+  { key: "sand", label: "Sand", color: "bg-reef-sand" },
+  { key: "other", label: "Rock and unclassified", color: "bg-reef-other" },
 ] as const;
 
 export function CoverChart({ surveys, className }: CoverChartProps): ReactElement {
@@ -33,11 +35,11 @@ export function CoverChart({ surveys, className }: CoverChartProps): ReactElemen
       <div
         role="group"
         aria-label="Cover categories"
-        className="flex flex-wrap items-center gap-3 sm:gap-4 text-label font-mono text-secondary"
+        className="flex flex-wrap items-center gap-3 sm:gap-4 text-label text-secondary"
       >
         {CATEGORIES.map((cat) => (
           <div key={cat.key} className="flex items-center gap-1.5">
-            <span className={`size-3 rounded-sm ${cat.color} shrink-0`} />
+            <span aria-hidden="true" className={`size-3 ${cat.color} shrink-0`} />
             <span>{cat.label}</span>
           </div>
         ))}
@@ -47,7 +49,7 @@ export function CoverChart({ surveys, className }: CoverChartProps): ReactElemen
       <div className="overflow-x-auto max-w-full pb-2">
         <div className="relative min-w-[360px] flex items-end gap-6 sm:gap-12 pt-6 pb-2 min-h-[260px] border-b border-hairline">
         {/* Y-axis ticks */}
-        <div className="absolute left-0 top-0 bottom-8 flex flex-col justify-between font-mono text-label text-muted select-none pointer-events-none">
+        <div className="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-label text-muted select-none pointer-events-none">
           <span>100%</span>
           <span>75%</span>
           <span>50%</span>
@@ -78,13 +80,13 @@ export function CoverChart({ surveys, className }: CoverChartProps): ReactElemen
                 className="flex flex-col items-center gap-2 group w-20 max-w-[100px]"
               >
                 {/* Live coral readout on top */}
-                <span className="font-mono text-label font-semibold text-fg">
+                <span className="text-ui font-bold text-fg">
                   {livePct}%
                 </span>
 
                 {/* Stacked bar (height 180px) */}
                 <div
-                  className="h-44 w-12 rounded-t-sm overflow-hidden flex flex-col-reverse"
+                  className="h-44 w-12 overflow-hidden flex flex-col-reverse bg-sunken"
                   aria-label={`Dive ${survey.dive_date}: ${livePct}% live coral`}
                 >
                   {CATEGORIES.map((cat) => {
@@ -104,15 +106,15 @@ export function CoverChart({ surveys, className }: CoverChartProps): ReactElemen
 
                 {/* X-axis date */}
                 <div className="text-center space-y-1 pt-1">
-                  <span className="block font-mono text-label text-secondary whitespace-nowrap">
+                  <span className="block text-label text-secondary whitespace-nowrap">
                     {survey.dive_date}
                   </span>
                   <Link
                     to="/surveys/$id"
                     params={{ id: survey.id }}
-                    className="inline-flex items-center font-mono text-label text-accent hover:underline"
+                    className={`text-label ${TEXT_LINK}`}
                   >
-                    Case file →
+                    Case file
                   </Link>
                 </div>
               </div>

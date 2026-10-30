@@ -66,14 +66,22 @@ const mockSiteDetail: SiteDetail = {
   ],
 };
 
-let mockData: SiteDetail | null = mockSiteDetail;
+let mockData: SiteDetail | null | undefined = mockSiteDetail;
+let mockFrames: unknown[] | null = null;
+let mockInvestigation: unknown = null;
 
-vi.mock("../api/client", () => ({
+vi.mock("../api/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../api/client")>()),
   api: {
     GET: vi.fn((path: string) => {
       if (path.includes("/api/sites/")) {
+        if (mockData === undefined) {
+          return Promise.resolve({ data: undefined, response: new Response(null, { status: 500 }) });
+        }
         return Promise.resolve({ data: mockData });
       }
+      if (path.endsWith("/frames")) return Promise.resolve({ data: mockFrames });
+      if (path.endsWith("/investigation")) return Promise.resolve({ data: mockInvestigation });
       return Promise.resolve({ data: null });
     }),
   },
@@ -87,6 +95,8 @@ describe("SiteTimelineRoute", () => {
       defaultOptions: { queries: { retry: false } },
     });
     mockData = mockSiteDetail;
+    mockFrames = null;
+    mockInvestigation = null;
     vi.spyOn(Route, "useParams").mockReturnValue({ id: "site_lizard_island" });
   });
 
@@ -101,20 +111,20 @@ describe("SiteTimelineRoute", () => {
     // Site name in display size
     expect(await screen.findByRole("heading", { name: "Lizard Island" })).toBeInTheDocument();
 
-    // Coordinates in mono
+    // Coordinates
     expect(screen.getByText(/14.6680°\s+S\s+145.4610°\s+E/i)).toBeInTheDocument();
 
-    // MPA badge
-    expect(screen.getByText(/MPA/i)).toBeInTheDocument();
+    // MPA chip
+    expect(screen.getByText("MPA protected")).toBeInTheDocument();
 
     // One readout line of key figures
     expect(screen.getByLabelText("Site key figures")).toHaveTextContent(
-      /LIVE CORAL \d+% \([+−]\d+\.\d pp since \d{4}\) · \d+ SURVEYS/,
+      /\d+% live coral [+−]\d+\.\d pp since \d{4} · \d+ surveys/,
     );
 
-    // COVER OVER TIME and SURVEYS
-    expect(screen.getByRole("heading", { name: "COVER OVER TIME" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "SURVEYS" })).toBeInTheDocument();
+    // Cover over time and Surveys
+    expect(screen.getByRole("heading", { name: "Cover over time" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Surveys" })).toBeInTheDocument();
 
     // Surveys table contains Case file links
     const caseFileLinks = screen.getAllByRole("link", { name: /Case file/i });
@@ -144,7 +154,7 @@ describe("SiteTimelineRoute", () => {
     );
 
     expect(await screen.findByLabelText("Site key figures")).toHaveTextContent(
-      /LIVE CORAL 37% \(−11\.4 pp since 2021\) · 3 SURVEYS · LATEST DIVE 2026-10-21/,
+      /37% live coral −11\.4 pp since 2021 · 3 surveys · latest dive 2026-10-21/,
     );
   });
 
@@ -165,5 +175,71 @@ describe("SiteTimelineRoute", () => {
       await screen.findByText(/No surveys at this site yet. Upload a dive to start its record./i),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Upload/i })).toBeInTheDocument();
+  });
+
+  it("says the record did not load when the API fails, not that the site is empty", async () => {
+    mockData = undefined;
+
+    const Component = (Route as any).options.component;
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Component />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/The site record did not load/);
+    expect(screen.queryByText(/No surveys at this site yet/)).not.toBeInTheDocument();
+  });
+
+  it("lays out the latest dive's frames and case file beside the site record", async () => {
+    mockFrames = [
+      {
+        frame: {
+          id: "frm_a",
+          survey_id: "srv_03",
+          t_sec: 1,
+          image_path: "blobs/srv_03/frames/frm_a.jpg",
+          quality: { blur: 0.1, color_cast: 0.1, turbidity: 0.1, passed: true, reason: null },
+        },
+        segmentation: {
+          id: "seg_a",
+          frame_id: "frm_a",
+          backend: "sam3",
+          mask_path: "blobs/srv_03/masks/frm_a.png",
+          cover: mockSiteDetail.surveys[0]!.cover,
+          latency_ms: 900,
+        },
+        assessment: null,
+      },
+    ];
+    mockInvestigation = {
+      id: "inv_1",
+      survey_id: "srv_03",
+      findings: [{ statement: "Bleaching is widespread on the slope.", evidence: [{ kind: "frame", id: "frm_a" }] }],
+      hypotheses: [
+        { cause: "heat_stress", confidence: 0.62, supporting: [], contradicting: [], rationale: "Hot summer." },
+      ],
+      verdict: "Thermal stress drove most of the bleaching.",
+      actions: ["Re-survey in February."],
+      uncertain_frames: [],
+      model: "Muse Spark Open",
+    };
+
+    const Component = (Route as any).options.component;
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Component />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Evidence: 1 frame from the 2026 dive" }),
+    ).toBeInTheDocument();
+    const lit = screen.getByRole("button", { name: "Open Frame 01" });
+    expect(lit).toHaveAttribute("data-lit", "true");
+    expect(screen.getByAltText("Frame 01")).toHaveAttribute("src", "/media/srv_03/frames/frm_a.jpg");
+
+    expect(await screen.findByText("Thermal stress drove most of the bleaching.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open full case file" })).toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
 
@@ -8,7 +8,7 @@ type Health = components["schemas"]["Health"];
 
 type Credit = { source: string; licence: string; obligation: string };
 
-/** Every attribution in architecture §9.9, plus the basemap (docs/agents/ui.md). */
+/** Every attribution in architecture §9.9, plus the basemap. */
 const CREDITS: readonly Credit[] = [
   {
     source: "Global Fishing Watch",
@@ -70,38 +70,57 @@ function HealthReadout() {
   });
 
   const status = health.isPending ? "pending" : health.isError ? "error" : health.data.status;
+  // A down or degraded API is not a proven alert: the dot empties instead of turning red.
   const dot =
     status === "ok"
-      ? "bg-success"
-      : status === "degraded"
-        ? "bg-warning"
-        : status === "pending"
-          ? "bg-muted"
-          : "bg-danger";
+      ? "bg-strobe"
+      : status === "pending"
+        ? "bg-deep-ink"
+        : status === "degraded"
+          ? "border-[1.5px] border-strobe"
+          : "border-[1.5px] border-deep-ink";
   const readout = health.isPending
-    ? "checking providers"
+    ? "checking models"
     : health.isError
       ? "API unreachable"
       : health.data.detail;
 
   return (
-    <p role="status" className="flex items-center gap-2 font-mono text-label text-secondary">
-      <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${dot}`} />
-      <span>{readout}</span>
+    <p role="status" className="flex min-w-0 items-center gap-2 text-label text-deep-ink">
+      <span aria-hidden="true" className={`size-2 shrink-0 ${dot}`} />
+      <span className="truncate">{readout}</span>
     </p>
   );
 }
 
 function DataCredits() {
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  // Escape and a click outside close it, like any other popover.
+  useEffect(() => {
+    if (!open) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    function onPointer(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, [open]);
 
   return (
-    <div className="relative shrink-0">
+    <div ref={rootRef} className="relative shrink-0">
       <button
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className="rounded-md px-1 py-0.5 text-label text-secondary hover:text-fg"
+        className="py-1 text-label font-semibold text-secondary underline decoration-border hover:text-fg hover:decoration-fg"
       >
         Data credits
       </button>
@@ -109,13 +128,13 @@ function DataCredits() {
         <div
           role="dialog"
           aria-label="Data credits"
-          className="absolute bottom-full left-0 z-10 mb-2 w-72 rounded-lg border border-hairline bg-raised p-4 text-label text-secondary shadow-floating"
+          className="absolute bottom-full left-0 z-20 mb-2 w-80 max-w-[calc(100vw-2rem)] border border-border bg-raised p-4 text-label text-secondary shadow-floating"
         >
-          <ul className="space-y-2">
+          <ul className="grid gap-3">
             {CREDITS.map((credit) => (
               <li key={credit.source}>
-                <span className="text-fg">{credit.source}</span>{" "}
-                <span className="font-mono text-muted">{credit.licence}</span>
+                <span className="font-semibold text-fg">{credit.source}</span>{" "}
+                <span className="text-muted">· {credit.licence}</span>
                 <span className="block text-muted">{credit.obligation}</span>
               </li>
             ))}
@@ -127,36 +146,36 @@ function DataCredits() {
 }
 
 /**
- * The active link is `text-fg` with a 2px accent underline. Both come from the
- * `data-status` attribute the router sets, so the inactive transparent border can
- * never win the cascade against the active colour.
+ * The active link carries a 2px strobe underline, set from the `data-status` attribute the router
+ * adds, so the inactive transparent border can never win the cascade.
  */
 const navLinkClass =
-  "border-b-2 border-b-transparent px-1 py-3 text-ui text-secondary hover:text-fg data-[status=active]:border-b-accent data-[status=active]:text-fg";
+  "flex h-14 items-center border-b-2 border-b-transparent text-ui text-deep-ink hover:text-on-accent data-[status=active]:border-b-strobe data-[status=active]:font-semibold data-[status=active]:text-on-accent";
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-bg text-fg">
-      <header className="flex h-12 shrink-0 items-center justify-between border-b border-hairline px-4">
-        <div className="flex items-center gap-6">
-          <Link to="/" className="text-ui font-semibold text-fg">
-            ReefCase
+      <header className="flex h-14 shrink-0 items-center gap-6 bg-deep px-4 text-on-accent sm:gap-10 sm:px-7">
+        <Link to="/" className="text-title font-extrabold tracking-tight text-on-accent">
+          ReefCase
+        </Link>
+        <nav aria-label="Primary" className="flex items-center gap-5 sm:gap-7">
+          <Link to="/" activeOptions={{ exact: true }} className={navLinkClass}>
+            Map
           </Link>
-          <nav aria-label="Primary" className="flex items-center gap-4">
-            <Link to="/" activeOptions={{ exact: true }} className={navLinkClass}>
-              Map
-            </Link>
-            <Link to="/upload" className={navLinkClass}>
-              Upload
-            </Link>
-          </nav>
+          <Link to="/upload" className={navLinkClass}>
+            <span className="sm:hidden">Upload</span>
+            <span className="hidden sm:inline">Upload a dive</span>
+          </Link>
+        </nav>
+        <div className="ml-auto min-w-0">
+          <HealthReadout />
         </div>
-        <HealthReadout />
       </header>
-      <main className="flex-1">{children}</main>
-      <footer className="flex h-8 shrink-0 items-center justify-between gap-4 border-t border-hairline px-4 text-label text-muted">
+      <main className="flex min-h-0 flex-1 flex-col">{children}</main>
+      <footer className="flex shrink-0 items-center justify-between gap-4 border-t border-hairline px-4 py-2 text-label text-muted sm:px-7">
         <DataCredits />
-        <p className="min-w-0 truncate font-mono">Open-weight models · SAM 3 · Muse Spark Open</p>
+        <p className="min-w-0 truncate">Open-weight models · SAM 3 · Muse Spark Open</p>
       </footer>
     </div>
   );

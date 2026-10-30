@@ -46,7 +46,7 @@ test("the shell survives a route change without a reload", async ({ page }) => {
 
   await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Upload" }).click();
   await expect(page).toHaveURL(/\/upload$/);
-  await expect(page.getByRole("main")).toContainText("CLIP");
+  await expect(page.getByRole("main")).toContainText("Clip");
   await expect(page.getByRole("contentinfo")).toContainText(
     "Open-weight models · SAM 3 · Muse Spark Open",
   );

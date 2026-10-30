@@ -29,8 +29,8 @@ function capitalize(word: string): string {
 }
 
 /**
- * The 4px stacked cover bar: one segment per SegClass, sized by its fraction.
- * ReefCase's visual signature, reused wherever a cover value appears.
+ * The stacked cover bar (4px unless sized by the caller): one segment per SegClass, sized by its fraction.
+ * Reused wherever a cover value appears; bone-white bleaching always carries an outline.
  */
 export function CoverStrip({ cover, className }: { cover: Cover; className?: string }) {
   const fractions = SEGMENTS.map((segment) => cover[segment.segClass] ?? 0);
@@ -49,7 +49,7 @@ export function CoverStrip({ cover, className }: { cover: Cover; className?: str
         <span
           key={segment.segClass}
           data-segment={segment.segClass}
-          className={`${segment.colour} h-full shrink-0`}
+          className={`${segment.colour} h-full shrink-0 ${segment.segClass === "bleached_coral" ? "shadow-[inset_0_0_0_1px_var(--border)]" : ""}`}
           style={{ width: `${widthPercent(fractions[index] ?? 0)}%` }}
         />
       ))}

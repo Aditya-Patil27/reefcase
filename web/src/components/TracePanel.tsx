@@ -6,6 +6,7 @@ import type { components } from "../api/schema";
 import Alert from "./arc/alert/alert";
 import TextShimmer from "./arc/text-shimmer/text-shimmer";
 import { EvidenceChip, toolNamesByResultId } from "./CaseFile";
+import { RULE_CITED, RULE_PENDING } from "./strobe";
 import { evidenceLabel, humanize } from "../format";
 
 type Finding = components["schemas"]["Finding"];
@@ -13,6 +14,8 @@ type Finding = components["schemas"]["Finding"];
 export interface TracePanelProps {
   toolCalls: ToolCallView[];
   findings: Finding[];
+  /** The run stopped before the agent finished. */
+  stopped?: boolean;
   status?: EventStreamStatus;
   reconnectSeq?: number | null;
   /** Frame ids in arrival order, for human chip labels. */
@@ -57,6 +60,7 @@ function formatParamSummary(params: Record<string, unknown>): string {
 export function TracePanel({
   toolCalls,
   findings,
+  stopped = false,
   status,
   reconnectSeq,
   frameIds = [],
@@ -80,13 +84,18 @@ export function TracePanel({
       ) : null}
 
       <div>
-        <h2 id="trace-heading" className="font-mono text-label uppercase text-muted">
-          TRACE
+        <h2 id="trace-heading" className="text-title font-bold text-fg">
+          Trace
         </h2>
+        <p className="mt-1 text-body text-secondary">
+          Every tool the agent called, in order. Open a call to see what it returned.
+        </p>
 
-        <div className="mt-3 divide-y divide-dashed divide-hairline border-y border-dashed border-hairline">
+        <div className="mt-4 divide-y divide-border border-y border-border">
           {toolCalls.length === 0 ? (
-            <p className="py-3 text-body text-muted">Awaiting tool calls from investigator agent…</p>
+            <p className="py-3 text-body text-secondary">
+              {stopped ? "The agent did not start." : "Waiting for the agent's first tool call…"}
+            </p>
           ) : (
             toolCalls.map((call, index) => {
               const idxStr = formatToolIndex(index);
@@ -99,23 +108,23 @@ export function TracePanel({
                   <button
                     type="button"
                     onClick={() => toggleCall(call.callId)}
-                    className="flex w-full items-center justify-between text-left hover:opacity-90"
+                    className="flex w-full items-center justify-between gap-2 py-0.5 text-left hover:bg-accent-subtle"
                     aria-expanded={isExpanded}
                   >
                     <div className="flex min-w-0 items-center gap-2">
-                      <span className="font-mono text-label text-muted tabular-nums">{idxStr}</span>
-                      <span className="text-ui font-medium text-fg">{humanize(call.tool)}</span>
-                      <span className="truncate font-mono text-label text-muted">{summary}</span>
+                      <span className="w-6 shrink-0 text-label font-bold text-secondary">{idxStr}</span>
+                      <span className="shrink-0 text-ui font-bold text-fg">{humanize(call.tool)}</span>
+                      <span className="truncate text-label text-secondary">{summary}</span>
                     </div>
 
                     <div className="shrink-0 pl-2">
                       {call.status === "running" ? (
-                        <span className="font-mono text-label text-accent">
+                        <span className="text-label font-semibold text-fg">
                           <TextShimmer active>running</TextShimmer>
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 font-mono text-label text-secondary">
-                          <Check size={16} strokeWidth={1.5} className="text-secondary" />
+                        <span className="flex items-center gap-1 text-label text-secondary">
+                          <Check size={16} strokeWidth={2} className="text-success" />
                           <span>done</span>
                         </span>
                       )}
@@ -123,16 +132,16 @@ export function TracePanel({
                   </button>
 
                   {isExpanded && call.summary ? (
-                    <div className="mt-2 pl-6 font-mono text-body text-secondary">
+                    <div className="mt-2 ml-8 border-l-[3px] border-deep pl-3.5 text-body text-fg">
                       <p>{call.summary}</p>
                       {sourceInfo ? (
-                        <p className="mt-1 text-label text-muted">
+                        <p className="mt-1 text-label text-secondary">
                           Source:{" "}
                           <a
                             href={sourceInfo.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="underline hover:text-accent"
+                            className="font-semibold underline decoration-border hover:decoration-fg"
                           >
                             {sourceInfo.label}
                           </a>
@@ -149,11 +158,11 @@ export function TracePanel({
 
       {findings.length > 0 ? (
         <div>
-          <h3 className="font-mono text-label uppercase text-muted">FINDINGS</h3>
-          <ul className="mt-3 divide-y divide-hairline border-y border-hairline">
+          <h3 className="text-ui font-bold text-fg">Findings</h3>
+          <ul className="mt-3 space-y-4">
             {findings.map((f, i) => (
-              <li key={i} className="py-3">
-                <p className="text-body text-fg">{f.statement}</p>
+              <li key={i} className={f.evidence.length > 0 ? RULE_CITED : RULE_PENDING}>
+                <p className="text-body">{f.statement}</p>
                 {f.evidence && f.evidence.length > 0 ? (
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
                     {f.evidence.map((ev) => (

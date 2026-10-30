@@ -44,7 +44,7 @@ export function SitePicker(props: {
     <div
       role="group"
       aria-label="Dive site map"
-      className="overflow-hidden rounded-lg border border-hairline bg-surface"
+      className="overflow-hidden border border-border bg-surface"
     >
       <Map
         mapStyle={config.BASEMAP_STYLE}
@@ -64,7 +64,10 @@ export function SitePicker(props: {
             onChange(clampDiveSite({ lat: event.lngLat.lat, lon: event.lngLat.lng }))
           }
         >
-          <span aria-hidden="true" className="block size-3.5 rounded-full border-2 border-fg bg-accent" />
+          <span
+            aria-hidden="true"
+            className="block size-5 cursor-grab border-[3px] border-strobe bg-deep shadow-floating active:cursor-grabbing"
+          />
         </Marker>
       </Map>
     </div>

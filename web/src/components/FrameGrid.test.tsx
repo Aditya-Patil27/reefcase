@@ -1,4 +1,4 @@
-﻿import { describe, it, expect } from "vitest";
+﻿import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { FrameGrid } from "./FrameGrid";
 import type { FrameView } from "../live/reducer";
@@ -25,9 +25,9 @@ const sampleFrames: FrameView[] = [
 ];
 
 describe("FrameGrid", () => {
-  it("renders the FRAMES section header and segmented control", () => {
+  it("renders the Frames section header and segmented control", () => {
     render(<FrameGrid frames={sampleFrames} />);
-    expect(screen.getByRole("heading", { name: "FRAMES" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Frames" })).toBeInTheDocument();
     expect(screen.getByText("Frame")).toBeInTheDocument();
     expect(screen.getByText("Mask")).toBeInTheDocument();
     expect(screen.getByText("Both")).toBeInTheDocument();
@@ -58,5 +58,17 @@ describe("FrameGrid", () => {
     // In Mask mode, mask image is visible
     const maskImg = screen.getByAltText("Frame 01 mask");
     expect(maskImg).toBeInTheDocument();
+  });
+
+  it("lights the opened frame and opens a frame as evidence", () => {
+    const onOpenFrame = vi.fn();
+    render(
+      <FrameGrid frames={sampleFrames} litId={sampleFrames[0]!.id} onOpenFrame={onOpenFrame} />,
+    );
+
+    const tile = screen.getByRole("button", { name: "Open Frame 01" });
+    expect(tile).toHaveAttribute("data-lit", "true");
+    fireEvent.click(tile);
+    expect(onOpenFrame).toHaveBeenCalledWith(sampleFrames[0]!.id);
   });
 });

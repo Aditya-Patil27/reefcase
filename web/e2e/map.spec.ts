@@ -1,4 +1,4 @@
-﻿import { expect, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -13,13 +13,13 @@ test("/ renders reef map with sites, layers toggles, and site popover", async ({
 
   await page.goto("/");
 
-  // SITES section and site rows
-  await expect(page.getByRole("heading", { name: "SITES" })).toBeVisible();
+  // Sites section and site rows
+  await expect(page.getByRole("heading", { name: "Sites" })).toBeVisible();
   await expect(page.getByText("Lizard Island").first()).toBeVisible();
   await expect(page.getByText("Heron Island").first()).toBeVisible();
 
-  // LAYERS section and switch toggles
-  await expect(page.getByRole("heading", { name: "LAYERS" })).toBeVisible();
+  // Layers section and switch toggles
+  await expect(page.getByRole("heading", { name: "Layers" })).toBeVisible();
   const mpaSwitch = page.getByRole("switch", { name: "MPA boundaries" });
   const reefSwitch = page.getByRole("switch", { name: "Reef extent" });
   const vesselSwitch = page.getByRole("switch", { name: "Vessel activity" });
@@ -36,10 +36,10 @@ test("/ renders reef map with sites, layers toggles, and site popover", async ({
   const popover = page.getByRole("dialog", { name: "Lizard Island" });
   await expect(popover).toBeVisible();
   await expect(popover.getByText(/14\.6680°\s+S/)).toBeVisible();
-  await expect(popover.getByText("37%")).toBeVisible();
+  await expect(popover.getByText("37%", { exact: true })).toBeVisible();
   await expect(popover.getByText("2026-10-21")).toBeVisible();
-  await expect(popover.getByRole("link", { name: /Site timeline/i })).toBeVisible();
-  await expect(popover.getByRole("link", { name: /Latest case file/i })).toBeVisible();
+  const openSite = popover.getByRole("link", { name: "Open site" });
+  await expect(openSite).toBeVisible();
 
   // Save screenshot of map view at this viewport
   const viewport = page.viewportSize();
@@ -53,5 +53,9 @@ test("/ renders reef map with sites, layers toggles, and site popover", async ({
 
   // No horizontal overflow check
   await expectNoHorizontalOverflow(page, "/");
+
+  // The popover leads to the site's page
+  await openSite.click();
+  await expect(page).toHaveURL(/\/sites\/site_lizard_island$/);
   expect(consoleErrors).toEqual([]);
 });

@@ -21,12 +21,14 @@ test("/surveys/$id renders live investigation view with frames, trace, and findi
   // Pipeline stages (responsive)
   const isMobile = (page.viewportSize()?.width ?? 1440) < 640;
   if (isMobile) {
-    await expect(page.getByText(/Stage \d\/6/)).toBeVisible();
+    await expect(
+      page.getByRole("status").filter({ hasText: /Stage \d of 6|Case file ready/ }),
+    ).toBeVisible();
   } else {
-    await expect(page.getByText("Upload").first()).toBeVisible();
-    await expect(page.getByText("Frames").first()).toBeVisible();
-    await expect(page.getByText("Segment").first()).toBeVisible();
-    await expect(page.getByText("Investigate").first()).toBeVisible();
+    await expect(page.getByRole("main").getByText("Upload", { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("main").getByText("Frames", { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("main").getByText("Segment", { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("main").getByText("Investigate", { exact: true }).first()).toBeVisible();
   }
 
   // Switch to Frames tab if case file report is active
@@ -35,8 +37,8 @@ test("/surveys/$id renders live investigation view with frames, trace, and findi
     await framesTab.click();
   }
 
-  // FRAMES section
-  await expect(page.getByRole("heading", { name: "FRAMES" }).first()).toBeVisible();
+  // Frames section
+  await expect(page.getByRole("heading", { name: "Frames" }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Frame", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Mask", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Both", exact: true })).toBeVisible();
@@ -44,13 +46,13 @@ test("/surveys/$id renders live investigation view with frames, trace, and findi
   // Frame tiles and thumbnails appear from mock event stream
   await expect(page.getByText("Frame 01").first()).toBeVisible();
 
-  // TRACE section
-  await expect(page.getByRole("heading", { name: "TRACE" }).first()).toBeVisible();
+  // Trace section
+  await expect(page.getByRole("heading", { name: "Trace" }).first()).toBeVisible();
   await expect(page.getByText("Heat stress").first()).toBeVisible();
   await expect(page.getByText("Vessel activity").first()).toBeVisible();
 
-  // FINDINGS section
-  await expect(page.getByRole("heading", { name: "FINDINGS" }).first()).toBeVisible();
+  // Findings section
+  await expect(page.getByRole("heading", { name: "Findings" }).first()).toBeVisible();
 
   // Save screenshot of live investigation at this viewport size
   const viewport = page.viewportSize();

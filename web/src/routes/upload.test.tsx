@@ -119,7 +119,7 @@ describe("the upload route", () => {
     expect(bar).toHaveAttribute("aria-valuenow", "42");
     expect(bar).toHaveAttribute("aria-valuemin", "0");
     expect(bar).toHaveAttribute("aria-valuemax", "100");
-    expect(screen.getByText("42% · 18.3 / 43.6 MB")).toBeInTheDocument();
+    expect(screen.getByText("Uploading 42% · 18.3 / 43.6 MB")).toBeInTheDocument();
 
     expect(mocks.uploadSurvey).toHaveBeenCalledWith(
       expect.objectContaining({

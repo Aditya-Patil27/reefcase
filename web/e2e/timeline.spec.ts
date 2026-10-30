@@ -16,23 +16,23 @@ test("/sites/$id renders site timeline with metrics, cover chart, and surveys ta
 
   await page.goto(`/sites/${SITE_ID}`);
 
-  // Header: site name in display text, coordinates in mono, MPA badge
+  // Header: site name, coordinates, MPA chip
   await expect(page.getByRole("heading", { name: "Lizard Island" })).toBeVisible();
   await expect(page.getByText(/14.6680°\s+S\s+145.4610°\s+E/i)).toBeVisible();
-  await expect(page.getByText(/MPA Protected/i)).toBeVisible();
+  await expect(page.getByText("MPA protected")).toBeVisible();
 
   // One readout line of key figures
   await expect(page.getByLabel("Site key figures")).toHaveText(
-    /LIVE CORAL \d+% \([+−]\d+\.\d pp since \d{4}\) · \d+ SURVEYS/,
+    /\d+% live coral [+−]\d+\.\d pp since \d{4} · \d+ surveys/,
   );
 
-  // COVER OVER TIME section
-  await expect(page.getByRole("heading", { name: "COVER OVER TIME" })).toBeVisible();
+  // Cover over time section
+  await expect(page.getByRole("heading", { name: "Cover over time" })).toBeVisible();
   await expect(page.getByText("Live coral").first()).toBeVisible();
   await expect(page.getByText("Bleached coral").first()).toBeVisible();
 
-  // SURVEYS section
-  await expect(page.getByRole("heading", { name: "SURVEYS" })).toBeVisible();
+  // Surveys section
+  await expect(page.getByRole("heading", { name: "Surveys" })).toBeVisible();
 
   // Save screenshot of timeline at this viewport size
   const viewport = page.viewportSize();

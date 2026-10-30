@@ -58,7 +58,8 @@ const mockSites = [
   },
 ];
 
-vi.mock("../api/client", () => ({
+vi.mock("../api/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../api/client")>()),
   api: {
     GET: vi.fn((path: string) => {
       if (path === "/api/sites") {
@@ -79,7 +80,7 @@ describe("MapRoute", () => {
     });
   });
 
-  it("renders SITES list and LAYERS controls", async () => {
+  it("renders the Sites list and Layers controls", async () => {
     render(
       <QueryClientProvider client={queryClient}>
         <Component />
@@ -87,8 +88,8 @@ describe("MapRoute", () => {
     );
 
     // Section headings
-    expect(screen.getByRole("heading", { name: "SITES" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "LAYERS" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Sites" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Layers" })).toBeInTheDocument();
 
     // Sites in list
     await waitFor(() => {
@@ -117,11 +118,10 @@ describe("MapRoute", () => {
     expect(lizardRow).not.toBeNull();
     fireEvent.click(lizardRow!);
 
-    // Popover contains site details and navigation links
+    // Popover contains site details and a link to the site page
     await waitFor(() => {
       expect(screen.getByRole("dialog", { name: "Lizard Island" })).toBeInTheDocument();
-      expect(screen.getByText("Site timeline")).toBeInTheDocument();
-      expect(screen.getByText("Latest case file")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Open site" })).toHaveAttribute("href", "/sites/$id");
     });
   });
 });
