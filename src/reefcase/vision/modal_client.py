@@ -31,7 +31,8 @@ class ModalSegmenter:
         self._url = settings.sam_modal_url
         # Modal proxy auth: the endpoint rejects anyone without this workspace token.
         self._auth = f"Bearer {settings.sam_modal_token.get_secret_value()}"
-        self._client = client or httpx.Client(timeout=60.0)
+        # A cold start (container + SAM 3 load) takes 45-90 s before the 60 s request cap.
+        self._client = client or httpx.Client(timeout=180.0)
 
     def segment(self, image: np.ndarray) -> np.ndarray:
         if image.ndim != 3 or image.shape[2] != 3 or image.dtype != np.uint8:
