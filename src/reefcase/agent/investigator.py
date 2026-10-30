@@ -34,7 +34,7 @@ from reefcase.core.schemas import (
     Segmentation,
     Survey,
 )
-from reefcase.tools import heat_stress, mpa, reef_map, vessels
+from reefcase.tools import heat_stress, history, mpa, reef_map, vessels
 from reefcase.tools.http import ToolContext
 from reefcase.tools.registry import ToolSpec, registry
 
@@ -47,7 +47,7 @@ __all__ = [
 ]
 
 # Importing a tool module registers its tool.
-_TOOL_MODULES = (heat_stress, mpa, reef_map, vessels)
+_TOOL_MODULES = (heat_stress, history, mpa, reef_map, vessels)
 
 INVESTIGATOR_TOOLS = ("heat_stress", "vessel_activity", "reef_map", "mpa_boundary", "site_history")
 INVESTIGATOR_PROMPT = (Path(__file__).parent / "prompts" / "investigator.md").read_text(

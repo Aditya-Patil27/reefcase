@@ -7,6 +7,8 @@ AC: Given a site with 3 completed surveys
 
 from __future__ import annotations
 
+import subprocess
+import sys
 from datetime import UTC, date, datetime
 from typing import Any
 
@@ -14,9 +16,9 @@ import httpx
 import pytest
 
 from reefcase.core.errors import NotFoundError
-from reefcase.core.schemas import GeoPoint, SegClass, Site, Survey, SurveyStatus, ToolResult
+from reefcase.core.schemas import GeoPoint, SegClass, Site, Survey, SurveyStatus
 from reefcase.store.db import Store
-from reefcase.tools.history import SITE_HISTORY_SOURCE_URL, SiteHistoryParams, site_history
+from reefcase.tools.history import SiteHistoryParams, site_history
 from reefcase.tools.http import ToolContext
 from reefcase.tools.registry import registry
 
@@ -28,7 +30,7 @@ def _strict_mock_client() -> httpx.AsyncClient:
     return httpx.AsyncClient(transport=httpx.MockTransport(handler))
 
 
-async def _create_site(store: Store, site_id: str = "site_history_test") -> Site:
+async def _create_site(store: Store, site_id: str) -> Site:
     site = Site(
         id=site_id,
         name="Kealakekua Bay",
@@ -39,209 +41,108 @@ async def _create_site(store: Store, site_id: str = "site_history_test") -> Site
     return site
 
 
+async def _save_survey(
+    store: Store,
+    site_id: str,
+    survey_id: str,
+    dive_date: date,
+    status: SurveyStatus,
+    live_coral: float | None = None,
+) -> None:
+    cover = None if live_coral is None else {SegClass.LIVE_CORAL: live_coral, SegClass.SAND: 0.2}
+    await store.surveys.save(
+        Survey(
+            id=survey_id,
+            site_id=site_id,
+            dive_date=dive_date,
+            status=status,
+            source="upload",
+            cover=cover,
+            created_at=datetime.now(UTC),
+        )
+    )
+
+
 @pytest.mark.asyncio
-async def test_site_history_returns_ordered_completed_surveys_excluding_current(
+async def test_site_history_returns_done_surveys_by_dive_date(
     store: Store, make_settings: Any
 ) -> None:
-    """AC: Returns completed surveys ordered by dive_date with cover, excluding current."""
+    """AC: 3 completed surveys ordered by dive_date with cover; the current one is excluded."""
     site = await _create_site(store, "site_3_completed")
+    # Saved out of order; the current survey is RUNNING while the investigator runs.
+    await _save_survey(store, site.id, "srv_2024", date(2024, 11, 20), SurveyStatus.DONE, 0.40)
+    await _save_survey(store, site.id, "srv_current", date(2026, 10, 25), SurveyStatus.RUNNING)
+    await _save_survey(store, site.id, "srv_2021", date(2021, 5, 10), SurveyStatus.DONE, 0.55)
+    await _save_survey(store, site.id, "srv_failed", date(2022, 3, 1), SurveyStatus.FAILED)
+    await _save_survey(store, site.id, "srv_2023", date(2023, 8, 15), SurveyStatus.DONE, 0.45)
 
-    # Survey 1: 2021-05-10
-    s1 = Survey(
-        id="srv_past_1",
-        site_id=site.id,
-        dive_date=date(2021, 5, 10),
-        status=SurveyStatus.DONE,
-        source="upload",
-        cover={
-            SegClass.LIVE_CORAL: 0.55,
-            SegClass.BLEACHED_CORAL: 0.05,
-            SegClass.ALGAE: 0.10,
-            SegClass.RUBBLE: 0.10,
-            SegClass.SAND: 0.20,
-            SegClass.OTHER: 0.0,
-        },
-        created_at=datetime(2021, 5, 10, 12, 0, tzinfo=UTC),
-    )
-    # Survey 2: 2023-08-15
-    s2 = Survey(
-        id="srv_past_2",
-        site_id=site.id,
-        dive_date=date(2023, 8, 15),
-        status=SurveyStatus.DONE,
-        source="upload",
-        cover={
-            SegClass.LIVE_CORAL: 0.45,
-            SegClass.BLEACHED_CORAL: 0.15,
-            SegClass.ALGAE: 0.15,
-            SegClass.RUBBLE: 0.10,
-            SegClass.SAND: 0.15,
-            SegClass.OTHER: 0.0,
-        },
-        created_at=datetime(2023, 8, 15, 12, 0, tzinfo=UTC),
-    )
-    # Survey 3: 2024-11-20
-    s3 = Survey(
-        id="srv_past_3",
-        site_id=site.id,
-        dive_date=date(2024, 11, 20),
-        status=SurveyStatus.DONE,
-        source="upload",
-        cover={
-            SegClass.LIVE_CORAL: 0.40,
-            SegClass.BLEACHED_CORAL: 0.20,
-            SegClass.ALGAE: 0.15,
-            SegClass.RUBBLE: 0.10,
-            SegClass.SAND: 0.15,
-            SegClass.OTHER: 0.0,
-        },
-        created_at=datetime(2024, 11, 20, 12, 0, tzinfo=UTC),
-    )
-    # Current Survey: 2026-10-25 (currently running / being investigated)
-    s_current = Survey(
-        id="srv_current",
-        site_id=site.id,
-        dive_date=date(2026, 10, 25),
-        status=SurveyStatus.RUNNING,
-        source="upload",
-        cover=None,
-        created_at=datetime(2026, 10, 25, 12, 0, tzinfo=UTC),
-    )
-
-    # Save in non-chronological order to verify sorting
-    await store.surveys.save(s3)
-    await store.surveys.save(s1)
-    await store.surveys.save(s_current)
-    await store.surveys.save(s2)
-
-    settings = make_settings()
     async with _strict_mock_client() as client:
-        ctx = ToolContext(http=client, store=store, settings=settings)
-        params = SiteHistoryParams(site_id=site.id, current_survey_id="srv_current")
-        result = await site_history(params, ctx)
+        ctx = ToolContext(http=client, store=store, settings=make_settings())
+        result = await site_history(SiteHistoryParams(site_id=site.id), ctx)
 
-    assert isinstance(result, ToolResult)
     assert result.tool == "site_history"
     assert result.id.startswith("tr_")
-    assert result.source_url == f"{SITE_HISTORY_SOURCE_URL}{site.id}"
-
-    data = result.data
-    surveys = data["surveys"]
-    assert len(surveys) == 3
-
-    # Verify chronological ordering
-    assert surveys[0]["id"] == "srv_past_1"
-    assert surveys[0]["date"] == "2021-05-10"
-    assert surveys[0]["cover"]["live_coral"] == 0.55
-    assert surveys[0]["live_coral"] == 0.55
-
-    assert surveys[1]["id"] == "srv_past_2"
-    assert surveys[1]["date"] == "2023-08-15"
-    assert surveys[1]["cover"]["live_coral"] == 0.45
-    assert surveys[1]["live_coral"] == 0.45
-
-    assert surveys[2]["id"] == "srv_past_3"
-    assert surveys[2]["date"] == "2024-11-20"
-    assert surveys[2]["cover"]["live_coral"] == 0.40
-    assert surveys[2]["live_coral"] == 0.40
-
-    # Ensure current survey is excluded
-    ids = [s["id"] for s in surveys]
-    assert "srv_current" not in ids
-
-
-@pytest.mark.asyncio
-async def test_site_history_excludes_completed_current_survey(
-    store: Store, make_settings: Any
-) -> None:
-    """When a survey is already marked DONE, passing current_survey_id still excludes it."""
-    site = await _create_site(store, "site_exclude_completed")
-
-    s1 = Survey(
-        id="srv_old",
-        site_id=site.id,
-        dive_date=date(2022, 1, 1),
-        status=SurveyStatus.DONE,
-        source="upload",
-        cover={SegClass.LIVE_CORAL: 0.6},
-        created_at=datetime(2022, 1, 1, tzinfo=UTC),
-    )
-    s2 = Survey(
-        id="srv_now_done",
-        site_id=site.id,
-        dive_date=date(2026, 1, 1),
-        status=SurveyStatus.DONE,
-        source="upload",
-        cover={SegClass.LIVE_CORAL: 0.3},
-        created_at=datetime(2026, 1, 1, tzinfo=UTC),
-    )
-    await store.surveys.save(s1)
-    await store.surveys.save(s2)
-
-    settings = make_settings()
-    async with _strict_mock_client() as client:
-        ctx = ToolContext(http=client, store=store, settings=settings)
-        params = SiteHistoryParams(site_id=site.id, current_survey_id="srv_now_done")
-        result = await site_history(params, ctx)
-
-    surveys = result.data["surveys"]
-    assert len(surveys) == 1
-    assert surveys[0]["id"] == "srv_old"
+    assert result.source_url == "/sites/site_3_completed"
+    assert result.data == {
+        "surveys": [
+            {
+                "survey_id": "srv_2021",
+                "dive_date": "2021-05-10",
+                "cover": {"live_coral": 0.55, "sand": 0.2},
+            },
+            {
+                "survey_id": "srv_2023",
+                "dive_date": "2023-08-15",
+                "cover": {"live_coral": 0.45, "sand": 0.2},
+            },
+            {
+                "survey_id": "srv_2024",
+                "dive_date": "2024-11-20",
+                "cover": {"live_coral": 0.40, "sand": 0.2},
+            },
+        ]
+    }
 
 
 @pytest.mark.asyncio
 async def test_site_history_empty_when_no_past_surveys(store: Store, make_settings: Any) -> None:
-    """A site with only the current survey returns an empty list."""
     site = await _create_site(store, "site_no_past")
-    s_only = Survey(
-        id="srv_only",
-        site_id=site.id,
-        dive_date=date(2026, 10, 25),
-        status=SurveyStatus.RUNNING,
-        source="upload",
-        created_at=datetime.now(UTC),
-    )
-    await store.surveys.save(s_only)
+    await _save_survey(store, site.id, "srv_only", date(2026, 10, 25), SurveyStatus.RUNNING)
 
-    settings = make_settings()
     async with _strict_mock_client() as client:
-        ctx = ToolContext(http=client, store=store, settings=settings)
-        params = SiteHistoryParams(site_id=site.id, current_survey_id="srv_only")
-        result = await site_history(params, ctx)
+        ctx = ToolContext(http=client, store=store, settings=make_settings())
+        result = await site_history(SiteHistoryParams(site_id=site.id), ctx)
 
-    assert result.data["surveys"] == []
-    assert result.data["count"] == 0
+    assert result.data == {"surveys": []}
 
 
 @pytest.mark.asyncio
 async def test_site_history_unknown_site_raises_not_found(store: Store, make_settings: Any) -> None:
-    """Querying an unknown site_id raises NotFoundError."""
-    settings = make_settings()
     async with _strict_mock_client() as client:
-        ctx = ToolContext(http=client, store=store, settings=settings)
+        ctx = ToolContext(http=client, store=store, settings=make_settings())
         with pytest.raises(NotFoundError):
             await site_history(SiteHistoryParams(site_id="site_nonexistent"), ctx)
 
 
 @pytest.mark.asyncio
-async def test_registry_integration(store: Store, make_settings: Any) -> None:
-    """site_history is registered in the tool registry and can be invoked through registry.call."""
+async def test_registry_call(store: Store, make_settings: Any) -> None:
     site = await _create_site(store, "site_registry")
-    s1 = Survey(
-        id="srv_reg_1",
-        site_id=site.id,
-        dive_date=date(2023, 1, 1),
-        status=SurveyStatus.DONE,
-        source="upload",
-        cover={SegClass.LIVE_CORAL: 0.5},
-        created_at=datetime.now(UTC),
-    )
-    await store.surveys.save(s1)
+    await _save_survey(store, site.id, "srv_reg_1", date(2023, 1, 1), SurveyStatus.DONE, 0.5)
 
-    settings = make_settings()
     async with _strict_mock_client() as client:
-        ctx = ToolContext(http=client, store=store, settings=settings)
+        ctx = ToolContext(http=client, store=store, settings=make_settings())
         result = await registry.call("site_history", {"site_id": site.id}, ctx)
 
-    assert result.tool == "site_history"
-    assert len(result.data["surveys"]) == 1
+    assert [s["survey_id"] for s in result.data["surveys"]] == ["srv_reg_1"]
+
+
+def test_investigator_offers_every_tool() -> None:
+    """A fresh interpreter, so tool modules this test file imports cannot mask a missing one."""
+    code = (
+        "from reefcase.agent.investigator import INVESTIGATOR_TOOLS\n"
+        "from reefcase.tools.registry import registry\n"
+        "print(sorted(set(INVESTIGATOR_TOOLS) - set(registry.names())))\n"
+    )
+    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "[]"

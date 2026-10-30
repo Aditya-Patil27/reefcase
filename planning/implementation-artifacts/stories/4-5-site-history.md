@@ -33,17 +33,17 @@ So that I can describe change, not just state.
 
 ### §5.4 — Tools (`src/reefcase/tools/`)
 - Tool signature: `async def site_history(params: SiteHistoryParams, ctx: ToolContext) -> ToolResult`
-- Parameter model:
-  ```python
-  class SiteHistoryParams(ToolParams):
-      site_id: str
-      current_survey_id: str | None = None
-      exclude_survey_id: str | None = None
-  ```
-- Returns in `data`:
-  - `surveys`: list of surveys ordered by `dive_date` ascending with `cover`, `live_coral`, `date`/`dive_date`, `id`/`survey_id`.
-  - Excludes the current survey (by explicit `current_survey_id` / `exclude_survey_id` or by incomplete survey status).
-- Runtime constraint: reads directly from DuckDB store (`ctx.store.surveys.by_site(site_id)`). Makes no network calls.
+- Tool table row (verbatim): `| site_history | site_id | past surveys with dates and cover, ordered by date |`
+- So the only parameter is `site_id`. The survey under investigation is RUNNING while the
+  investigator runs (`pipeline/runner.py` sets DONE only after the stages), so keeping DONE
+  surveys excludes it.
+- Returns `data = {"surveys": [{"survey_id", "dive_date", "cover"}]}` in `by_site` order.
+- The investigator only offers registered tools, so `agent/investigator.py` must import
+  `reefcase.tools.history` (`_TOOL_MODULES`).
+- Reads `ctx.store.surveys.by_site(site_id)`; makes no network calls.
+
+(Guide review 2026-10-30: the first draft of this section quoted extra
+`current_survey_id`/`exclude_survey_id` params that §5.4 does not have.)
 
 ## Tasks
 
