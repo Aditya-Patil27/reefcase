@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 ---
 
 # Story 7.1: Training corpus and SAM 3 pseudo-labels
