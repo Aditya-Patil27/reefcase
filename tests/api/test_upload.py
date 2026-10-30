@@ -173,3 +173,18 @@ def test_health_reports_provider_config(make_settings, tmp_path) -> None:
 
 def test_dive_date_is_a_real_date() -> None:
     assert date.fromisoformat("2026-10-01") == date(2026, 10, 1)
+
+
+@pytest.mark.asyncio
+async def test_media_serves_blobs_and_refuses_escapes(make_settings, tmp_path) -> None:
+    app = build_app(make_settings, tmp_path)
+    ref = app.state.store.blobs.save_mask("srv_media", "frm_media", b"PNGBYTES")
+    assert ref == "blobs/srv_media/masks/frm_media.png"
+    async with client_for(app) as client:
+        served = await client.get("/media/srv_media/masks/frm_media.png")
+        missing = await client.get("/media/srv_media/masks/nope.png")
+        escape = await client.get("/media/..%2F..%2Freefcase.duckdb")
+    assert served.status_code == 200
+    assert served.content == b"PNGBYTES"
+    assert missing.status_code == 404
+    assert escape.status_code == 404

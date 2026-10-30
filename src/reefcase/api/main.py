@@ -14,6 +14,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
 
 from reefcase.api.routes import events, surveys, tool_results
 from reefcase.core.config import Settings
@@ -57,6 +58,8 @@ def create_app(
     app.include_router(events.router, prefix="/api")
     app.include_router(tool_results.router, prefix="/api")
     app.get("/api/health")(_health_route)
+    # Frames and masks for the web (§6.3); thumb_url and mask_url point here.
+    app.mount("/media", StaticFiles(directory=store.blobs.root, check_dir=False), name="media")
 
     return app
 
