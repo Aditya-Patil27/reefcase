@@ -84,7 +84,7 @@ function SurveyRouteComponent() {
   const id = params.id;
 
   const { state, status, reconnectSeq } = useEventStream(id);
-  const elapsed = useElapsedTime(!state.reportReady && !state.failed);
+  const elapsed = useElapsedTime(!state.reportReady && !state.failed && status !== "closed");
   const isDesktop = useIsDesktop(1280);
 
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceItem | null>(null);

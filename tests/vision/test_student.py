@@ -3,7 +3,7 @@ import pytest
 
 from reefcase.core.config import Settings
 from reefcase.core.errors import ConfigError
-from reefcase.vision.student import StudentSegmenter
+from reefcase.vision.student import StudentSegmenter, model_input_size
 
 
 class DummyStudentSegmenter(StudentSegmenter):
@@ -46,3 +46,9 @@ def test_student_segmenter_prefers_cuda_when_available(monkeypatch) -> None:
 
     monkeypatch.setattr("reefcase.vision.student.import_module", lambda _: _Torch())
     assert StudentSegmenter._pick_device() == "cuda"
+
+
+def test_model_input_size_keeps_aspect_on_a_32_pixel_grid() -> None:
+    assert model_input_size(1024, 2048) == (512, 1024)
+    assert model_input_size(1080, 1920) == (576, 1024)
+    assert model_input_size(540, 960) == (576, 1024)

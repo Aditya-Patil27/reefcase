@@ -8,7 +8,6 @@ import numpy as np
 from PIL import Image
 
 from reefcase.core.config import Settings
-from reefcase.core.schemas import SegClass
 from reefcase.vision.cover import cover_from_mask
 from reefcase.vision.segmenter import build_segmenter
 
@@ -24,9 +23,10 @@ def pseudo_label_frames(
     source: str,
     licence: str,
     limit: int | None = None,
+    segmenter: str = "sam3_local",
 ) -> int:
-    settings = Settings(_env_file=None, segmenter="fake")
-    segmenter = build_segmenter(settings)
+    settings = Settings(_env_file=None, segmenter=segmenter)
+    backend = build_segmenter(settings)
     labels_dir = out_dir / "labels"
     labels_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = out_dir / "manifest.jsonl"
@@ -43,7 +43,7 @@ def pseudo_label_frames(
             continue
 
         image = np.asarray(Image.open(frame_path).convert("RGB"), dtype=np.uint8)
-        mask = segmenter.segment(image)
+        mask = backend.segment(image)
         mask_path = labels_dir / f"{frame_path.stem}.png"
         Image.fromarray(mask, mode="L").save(mask_path, format="PNG")
         cover = {klass.value: value for klass, value in cover_from_mask(mask).items()}
@@ -84,6 +84,7 @@ def main() -> None:
     parser.add_argument("--source", default="coralscapes_trainval")
     parser.add_argument("--licence", default="Apache-2.0")
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--segmenter", default="sam3_local")
     args = parser.parse_args()
 
     written = pseudo_label_frames(
@@ -92,6 +93,7 @@ def main() -> None:
         source=args.source,
         licence=args.licence,
         limit=args.limit,
+        segmenter=args.segmenter,
     )
     print(f"wrote {written} labels to {args.out_dir}")
 

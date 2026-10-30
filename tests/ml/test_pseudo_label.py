@@ -1,5 +1,5 @@
-import json
 import importlib.util
+import json
 from pathlib import Path
 from types import ModuleType
 
@@ -33,6 +33,7 @@ def test_pseudo_label_writes_png_and_manifest(tmp_path: Path) -> None:
         out_dir=output,
         source="coralscapes_trainval",
         licence="Apache-2.0",
+        segmenter="fake",
     )
 
     assert count == 1
@@ -62,12 +63,14 @@ def test_pseudo_label_resumes_without_duplicate_rows(tmp_path: Path) -> None:
         source="ncrmp_non_demo",
         licence="US Gov",
         limit=1,
+        segmenter="fake",
     )
     second = module.pseudo_label_frames(
         in_dir=frames,
         out_dir=output,
         source="ncrmp_non_demo",
         licence="US Gov",
+        segmenter="fake",
     )
 
     assert first == 1

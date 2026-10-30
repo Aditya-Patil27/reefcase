@@ -51,7 +51,7 @@ development_status:
   4-3-vessel-activity-gfw: done # D P0
   4-4-reef-map-and-mpa-boundary: done # D P0
   4-5-site-history: done # D P0
-  4-6-map-layer-endpoints: backlog # D P0
+  4-6-map-layer-endpoints: done # D P0
   4-7-site-endpoints: done # B P0
   epic-4-retrospective: optional
 

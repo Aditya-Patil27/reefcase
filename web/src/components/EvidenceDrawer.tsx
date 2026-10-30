@@ -249,11 +249,11 @@ export function EvidenceDrawer({
                   <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-y border-hairline py-3 text-body">
                     <dt className="text-secondary">Not broadcasting AIS</dt>
                     <dd className="font-bold text-fg">
-                      {(toolResult.data as any).sar_detections.unmatched_to_ais}
+                      {(toolResult.data as any).sar_detections.unmatched_to_ais?.count}
                     </dd>
                     <dt className="text-secondary">All detections within 10 km</dt>
                     <dd className="font-bold text-fg">
-                      {(toolResult.data as any).sar_detections.count}
+                      {(toolResult.data as any).sar_detections.total}
                     </dd>
                   </dl>
                 </div>
