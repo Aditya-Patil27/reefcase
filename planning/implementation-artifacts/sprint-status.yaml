@@ -47,7 +47,7 @@ development_status:
 
   epic-4: in-progress
   4-1-tool-framework-and-result-cache: done # C P0
-  4-2-heat-stress-noaa-crw: backlog # C P0
+  4-2-heat-stress-noaa-crw: done # C P0
   4-3-vessel-activity-gfw: review # D P0
   4-4-reef-map-and-mpa-boundary: done # D P0
   4-5-site-history: backlog # C P0
