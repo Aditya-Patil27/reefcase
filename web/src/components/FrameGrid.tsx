@@ -62,12 +62,20 @@ export function FrameGrid({
           const picture = (
             <>
               {mode !== "mask" && (
-                <img src={frame.thumbUrl} alt={name} className="size-full object-cover" />
+                <img
+                  src={frame.thumbUrl}
+                  alt={name}
+                  loading="lazy"
+                  decoding="async"
+                  className="size-full object-cover"
+                />
               )}
               {mode !== "frame" && frame.maskUrl ? (
                 <img
                   src={frame.maskUrl}
                   alt={`${name} mask`}
+                  loading="lazy"
+                  decoding="async"
                   className={`absolute inset-0 size-full object-cover ${mode === "both" ? "opacity-55" : ""}`}
                 />
               ) : null}

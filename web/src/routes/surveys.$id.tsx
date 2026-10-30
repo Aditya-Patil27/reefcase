@@ -63,20 +63,22 @@ function useIsDesktop(breakpoint = 1280): boolean {
   return isDesktop;
 }
 
-function useElapsedTime(running: boolean): string {
-  const [seconds, setSeconds] = useState(0);
+/** Time since the run was queued, ticking while it runs and holding where it stopped. */
+function useElapsedTime(since: string | undefined, running: boolean): string | null {
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     if (!running) return;
-    const timer = setInterval(() => {
-      setSeconds((s) => s + 1);
-    }, 1000);
+    const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [running]);
 
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  if (!since) return null;
+  const total = Math.max(0, Math.floor((now - Date.parse(since)) / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = String(total % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${String(m).padStart(2, "0")}:${s}`;
 }
 
 function SurveyRouteComponent() {
@@ -84,7 +86,6 @@ function SurveyRouteComponent() {
   const id = params.id;
 
   const { state, status, reconnectSeq } = useEventStream(id);
-  const elapsed = useElapsedTime(!state.reportReady && !state.failed && status !== "closed");
   const isDesktop = useIsDesktop(1280);
 
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceItem | null>(null);
@@ -119,6 +120,12 @@ function SurveyRouteComponent() {
     },
   });
   const survey = surveyQuery.data;
+  // A run that had already finished when the page opened has no clock to show: the stream only replays it.
+  const runningAtOpen = survey?.status === "queued" || survey?.status === "running";
+  const elapsed = useElapsedTime(
+    runningAtOpen ? survey.created_at : undefined,
+    runningAtOpen && !state.reportReady && !state.failed && status !== "closed",
+  );
 
   const siteQuery = useQuery({
     queryKey: ["site", survey?.site_id],
@@ -275,7 +282,7 @@ function SurveyRouteComponent() {
                 </span>
               </>
             )}
-            {state.failed || historical ? null : (
+            {elapsed === null || state.failed || historical ? null : (
               <time className="text-label font-bold text-secondary tabular-nums" aria-label="Elapsed time">
                 {elapsed}
               </time>
@@ -294,7 +301,12 @@ function SurveyRouteComponent() {
         ) : (
           <div className="mt-4 hidden sm:block">
             {/* A stopped stage is not a proven alert, so the stepper's error mark draws in deep, not red. */}
-            <Stepper steps={stepperSteps} current={currentStage} className="w-full max-w-3xl [--danger:var(--deep)]" />
+            <Stepper
+              steps={stepperSteps}
+              // Past the last step once the case file is ready, so Report ticks like the rest.
+              current={state.reportReady ? PIPELINE_STAGES.length : currentStage}
+              completeLabel="Case file ready"
+              className="w-full max-w-3xl [--danger:var(--deep)]" />
           </div>
         )}
 

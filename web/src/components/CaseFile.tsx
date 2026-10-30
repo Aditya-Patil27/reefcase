@@ -143,7 +143,16 @@ export function CaseFile({
     <article aria-label="Case file" className="@container space-y-8 text-fg">
       <section aria-label="Verdict" className="grid gap-5 @2xl:grid-cols-[1fr_minmax(0,18rem)]">
         <div className="space-y-3">
-          <h2 className="text-display font-bold text-fg">{investigation.verdict}</h2>
+          {/* A one-line verdict reads as a headline; a model's paragraph-long one drops to title size. */}
+          <h2
+            className={
+              investigation.verdict.length > 120
+                ? "max-w-[60ch] text-title font-bold text-fg"
+                : "text-display font-bold text-fg"
+            }
+          >
+            {investigation.verdict}
+          </h2>
           {alert ? (
             <p className="flex flex-wrap gap-2">
               <span className={CHIP_ALERT}>{alert}</span>
@@ -164,7 +173,11 @@ export function CaseFile({
               data-lit="true"
               className={`water-cast block aspect-[4/3] w-full cursor-zoom-in ${LIT_RING}`}
             >
-              <img src={worstFrame.thumbUrl} alt="" className="size-full object-cover" />
+              <img
+                src={worstFrame.imageUrl ?? worstFrame.thumbUrl}
+                alt=""
+                className="size-full object-cover"
+              />
               {worstFrame.maskUrl ? (
                 <img
                   src={worstFrame.maskUrl}

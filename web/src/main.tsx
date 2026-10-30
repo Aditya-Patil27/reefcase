@@ -10,7 +10,21 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
 });
 
-const router = createRouter({ routeTree, defaultPreload: "intent" });
+// Each route's code is its own chunk; on a slow link the shell shows this while one loads.
+function RoutePending() {
+  return (
+    <p className="px-4 py-6 text-body text-secondary sm:px-6">
+      Loading…
+    </p>
+  );
+}
+
+const router = createRouter({
+  routeTree,
+  defaultPreload: "intent",
+  defaultPendingComponent: RoutePending,
+  defaultPendingMs: 300,
+});
 
 declare module "@tanstack/react-router" {
   interface Register {

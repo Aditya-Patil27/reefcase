@@ -580,12 +580,13 @@ export const handlers = [
   http.get("/api/geo/:layer", ({ params }) => HttpResponse.json(geoLayer(String(params.layer)))),
 
   // Survey frames and masks are real Coralscapes transects in public/demo (data/LICENSES.md),
-  // matched to the mock frame ids by stream order.
+  // matched to the mock frame ids by stream order. A thumbnail is the frame itself here.
   http.get("/media/:surveyId/:kind/:file", ({ params }) => {
     const slot = frameIds.indexOf(String(params.file).replace(/\.\w+$/, "")) + 1;
-    if (slot === 0 || (params.kind !== "frames" && params.kind !== "masks")) return pixel();
-    const ext = params.kind === "frames" ? "jpg" : "png";
-    return fetch(bypass(`/demo/${params.kind}/${String(slot).padStart(2, "0")}.${ext}`));
+    const kind = params.kind === "thumbs" ? "frames" : params.kind;
+    if (slot === 0 || (kind !== "frames" && kind !== "masks")) return pixel();
+    const ext = kind === "frames" ? "jpg" : "png";
+    return fetch(bypass(`/demo/${kind}/${String(slot).padStart(2, "0")}.${ext}`));
   }),
 
   http.get("/media/*", pixel),

@@ -44,6 +44,10 @@ class Blobs:
         """``<root>/<survey_id>/frames/<frame_id>.jpg``."""
         return self.survey_dir(survey_id) / "frames" / f"{frame_id}.jpg"
 
+    def thumb_path(self, survey_id: str, frame_id: str) -> Path:
+        """``<root>/<survey_id>/thumbs/<frame_id>.jpg`` (made on first request, §6.3)."""
+        return self.survey_dir(survey_id) / "thumbs" / f"{frame_id}.jpg"
+
     def mask_path(self, survey_id: str, frame_id: str) -> Path:
         """``<root>/<survey_id>/masks/<frame_id>.png``."""
         return self.survey_dir(survey_id) / "masks" / f"{frame_id}.png"

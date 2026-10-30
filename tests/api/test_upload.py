@@ -1,5 +1,6 @@
 """Story 2.1 — POST /api/surveys: valid upload, field-level 422s, size cap, health."""
 
+import io
 import time
 from datetime import date
 from importlib import import_module
@@ -8,6 +9,7 @@ from pathlib import Path
 import httpx
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from reefcase.api.main import create_app
 from reefcase.core.errors import NotFoundError
@@ -189,6 +191,30 @@ async def test_media_serves_blobs_and_refuses_escapes(make_settings, tmp_path) -
     assert served.content == b"PNGBYTES"
     assert missing.status_code == 404
     assert escape.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_media_makes_a_small_cached_thumbnail(make_settings, tmp_path) -> None:
+    app = build_app(make_settings, tmp_path)
+    blobs = app.state.store.blobs
+    image = io.BytesIO()
+    Image.new("RGB", (1920, 1280), (10, 80, 120)).save(image, format="JPEG")
+    blobs.save_frame("srv_media", "frm_media", image.getvalue())
+    async with client_for(app) as client:
+        thumb = await client.get("/media/srv_media/thumbs/frm_media.jpg")
+        again = await client.get("/media/srv_media/thumbs/frm_media.jpg")
+        frame = await client.get("/media/srv_media/frames/frm_media.jpg")
+        missing = await client.get("/media/srv_media/thumbs/nope.jpg")
+        bad_id = await client.get("/media/srv_media/thumbs/frm.media.jpg")
+    assert thumb.status_code == 200
+    assert thumb.headers["cache-control"] == "public, max-age=86400"
+    assert Image.open(io.BytesIO(thumb.content)).size == (640, 427)
+    assert blobs.thumb_path("srv_media", "frm_media").is_file()
+    assert again.content == thumb.content
+    assert frame.headers["cache-control"] == "public, max-age=86400"
+    assert len(frame.content) > len(thumb.content)
+    assert missing.status_code == 404
+    assert bad_id.status_code == 404
 
 
 def test_server_runs_an_uploaded_survey(make_settings, tmp_path) -> None:

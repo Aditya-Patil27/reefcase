@@ -10,9 +10,9 @@ import { Link } from "@tanstack/react-router";
 import { X } from "lucide-react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
-import { config } from "../config";
 import type { components } from "../api/schema";
 import { formatCoordinates } from "../components/SitePicker";
+import { BasemapNotice, useBasemap } from "./basemap";
 import { CoverStrip } from "../components/CoverStrip";
 import { BUTTON_PRIMARY, LIT_RING } from "../components/strobe";
 import {
@@ -56,12 +56,13 @@ export function ReefMap({
 }: ReefMapProps): ReactElement {
   // A state ref: maplibre loads lazily, so the map can arrive after the sites do.
   const [map, setMap] = useState<MapRef | null>(null);
+  const basemap = useBasemap();
 
-  // Open on every site at once, then leave the view to the reader.
-  const fitted = useRef(false);
+  // Open on every site at once, then leave the view to the reader. A retried basemap is a new map.
+  const fitted = useRef<MapRef | null>(null);
   useEffect(() => {
-    if (fitted.current || !map || sites.length === 0) return;
-    fitted.current = true;
+    if (fitted.current === map || !map || sites.length === 0) return;
+    fitted.current = map;
     const lons = sites.map((site) => site.location.lon);
     const lats = sites.map((site) => site.location.lat);
     map.fitBounds(
@@ -90,9 +91,10 @@ export function ReefMap({
       className="relative h-full w-full overflow-hidden bg-bg"
     >
       <Map
+        key={basemap.key}
         ref={setMap}
         initialViewState={{ longitude: 145.461, latitude: -14.668, zoom: 6 }}
-        mapStyle={config.BASEMAP_STYLE}
+        {...basemap.mapProps}
         style={{ width: "100%", height: "100%" }}
         dragRotate={false}
         workerUrl={workerUrl}
@@ -205,6 +207,9 @@ export function ReefMap({
           </Popup>
         ) : null}
       </Map>
+      {basemap.failed ? (
+        <BasemapNotice onRetry={basemap.retry}>Sites still show without it.</BasemapNotice>
+      ) : null}
     </div>
   );
 }

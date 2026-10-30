@@ -10,18 +10,32 @@ type FrameDetail = components["schemas"]["FrameDetail"];
 /** A frame as the live view shows it: ordered by arrival, enriched as events land. */
 export type FrameView = {
   id: string;
+  /** A small copy for the grid; empty until the frame is scored. */
   thumbUrl: string;
+  /** The full-size frame, for the drawer and the case file. */
+  imageUrl?: string;
   quality?: QualityScore;
   cover?: Cover;
   maskUrl?: string;
   assessment?: FrameAssessment;
 };
 
+/**
+ * Frame URLs from the ids, the way /media serves them. Not from the event's thumb_url, so a
+ * survey recorded before thumbnails existed still gets them.
+ */
+function frameUrls(surveyId: string, frameId: string): Pick<FrameView, "thumbUrl" | "imageUrl"> {
+  return {
+    thumbUrl: `/media/${surveyId}/thumbs/${frameId}.jpg`,
+    imageUrl: `/media/${surveyId}/frames/${frameId}.jpg`,
+  };
+}
+
 /** A stored frame as the views show it. Frame and mask URLs come from the ids, the way the media mount serves them. */
 export function toFrameView(surveyId: string, detail: FrameDetail): FrameView {
   return {
     id: detail.frame.id,
-    thumbUrl: `/media/${surveyId}/frames/${detail.frame.id}.jpg`,
+    ...frameUrls(surveyId, detail.frame.id),
     quality: detail.frame.quality,
     cover: detail.segmentation?.cover,
     maskUrl: detail.segmentation ? `/media/${surveyId}/masks/${detail.frame.id}.png` : undefined,
@@ -96,7 +110,7 @@ export function liveReducer(state: LiveState, action: LiveAction): LiveState {
         ...base,
         frames: upsertFrame(base.frames, event.frame_id, (frame) => ({
           ...frame,
-          thumbUrl: event.thumb_url,
+          ...frameUrls(event.survey_id, event.frame_id),
           quality: event.quality,
         })),
       };

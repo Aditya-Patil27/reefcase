@@ -237,7 +237,7 @@ describe("SiteTimelineRoute", () => {
     ).toBeInTheDocument();
     const lit = screen.getByRole("button", { name: "Open Frame 01" });
     expect(lit).toHaveAttribute("data-lit", "true");
-    expect(screen.getByAltText("Frame 01")).toHaveAttribute("src", "/media/srv_03/frames/frm_a.jpg");
+    expect(screen.getByAltText("Frame 01")).toHaveAttribute("src", "/media/srv_03/thumbs/frm_a.jpg");
 
     expect(await screen.findByText("Thermal stress drove most of the bleaching.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open full case file" })).toBeInTheDocument();

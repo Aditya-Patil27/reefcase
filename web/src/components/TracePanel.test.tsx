@@ -1,4 +1,4 @@
-﻿import { describe, it, expect } from "vitest";
+﻿import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { TracePanel } from "./TracePanel";
 import type { ToolCallView } from "../live/reducer";
@@ -63,6 +63,15 @@ describe("TracePanel", () => {
         screen.getByText(/DHW peaked at 6.8 C-weeks on 2026-09-14/i),
       ).toBeInTheDocument();
     }
+  });
+
+  it("opens a stored tool result in the evidence drawer instead of expanding", () => {
+    const onSelectEvidence = vi.fn();
+    const calls: ToolCallView[] = [{ ...sampleCalls[0]!, toolResultId: "tr_01" }];
+    render(<TracePanel toolCalls={calls} findings={[]} onSelectEvidence={onSelectEvidence} />);
+    fireEvent.click(screen.getByText("Heat stress").closest("button")!);
+    expect(onSelectEvidence).toHaveBeenCalledWith("tool_result", "tr_01");
+    expect(screen.queryByText(/DHW peaked at 6.8 C-weeks/i)).not.toBeInTheDocument();
   });
 
   it("renders FINDINGS when findings are emitted", () => {

@@ -95,7 +95,8 @@ describe("useEventStream", () => {
     expect(result.current.state.lastSeq).toBe(1);
     expect(result.current.state.frames.length).toBe(1);
     expect(result.current.state.frames[0]?.id).toBe("frm_01");
-    expect(result.current.state.frames[0]?.thumbUrl).toBe("/media/frames/01.jpg");
+    expect(result.current.state.frames[0]?.thumbUrl).toBe("/media/srv_test1/thumbs/frm_01.jpg");
+    expect(result.current.state.frames[0]?.imageUrl).toBe("/media/srv_test1/frames/frm_01.jpg");
   });
 
   it("handles disconnection and reconnect without duplicate items", () => {

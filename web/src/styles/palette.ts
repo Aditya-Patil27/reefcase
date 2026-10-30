@@ -53,6 +53,8 @@ export const DEEP_HEX = "#0b3d4a";
 export const STROBE_HEX = "#fff6e3";
 /** Ink, --foreground in theme.css. */
 export const INK_HEX = "#062a33";
+/** Case paper, --surface in theme.css: the plain ground a map falls back to without its basemap. */
+export const SURFACE_HEX = "#f6faf8";
 /** Rules on the ground, --border in theme.css. */
 export const RULE_HEX = "#b3ccc8";
 

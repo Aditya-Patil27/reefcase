@@ -159,7 +159,7 @@ async def ingest_stage(
         await store.frames.save(frame)
         saved_frames.append(frame)
 
-        thumb_url = f"/media/{survey_id}/frames/{frame_id}.jpg"
+        thumb_url = f"/media/{survey_id}/thumbs/{frame_id}.jpg"
         await event_bus.publish(
             FrameScored(
                 survey_id=survey_id,

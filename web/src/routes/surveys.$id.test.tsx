@@ -290,7 +290,7 @@ describe("SurveyRoute", () => {
     expect(await screen.findByText("Imported survey · segmented only, no investigation")).toBeInTheDocument();
     expect(await screen.findByAltText("Frame 01")).toHaveAttribute(
       "src",
-      `/media/${mocks.surveyId}/frames/frm_a.jpg`,
+      `/media/${mocks.surveyId}/thumbs/frm_a.jpg`,
     );
     expect(screen.queryByRole("heading", { name: "Trace" })).not.toBeInTheDocument();
     expect(screen.queryByText(/Awaiting tool calls/)).not.toBeInTheDocument();

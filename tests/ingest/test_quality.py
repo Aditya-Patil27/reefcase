@@ -235,7 +235,7 @@ async def test_ingest_stage_saves_passing_frames_and_emits_events(
     assert len(scored_events) == len(frames)
     thumbs = {event.frame_id: event.thumb_url for event in scored_events}
     for frame in frames:
-        assert thumbs[frame.id] == f"/media/{survey.id}/frames/{frame.id}.jpg"
+        assert thumbs[frame.id] == f"/media/{survey.id}/thumbs/{frame.id}.jpg"
 
 
 @pytest.mark.asyncio

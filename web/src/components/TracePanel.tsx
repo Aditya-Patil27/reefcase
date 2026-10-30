@@ -102,14 +102,19 @@ export function TracePanel({
               const summary = formatParamSummary(call.params);
               const isExpanded = !!expandedCalls[call.callId];
               const sourceInfo = TOOL_SOURCES[call.tool];
+              // A stored result opens in the evidence drawer, formatted; an error has only its summary.
+              const resultId = onSelectEvidence ? call.toolResultId : undefined;
 
               return (
                 <div key={call.callId} className="py-2.5">
                   <button
                     type="button"
-                    onClick={() => toggleCall(call.callId)}
+                    onClick={() =>
+                      resultId ? onSelectEvidence?.("tool_result", resultId) : toggleCall(call.callId)
+                    }
                     className="flex w-full items-center justify-between gap-2 py-0.5 text-left hover:bg-accent-subtle"
-                    aria-expanded={isExpanded}
+                    aria-expanded={resultId ? undefined : isExpanded}
+                    aria-haspopup={resultId ? "dialog" : undefined}
                   >
                     <div className="flex min-w-0 items-center gap-2">
                       <span className="w-6 shrink-0 text-label font-bold text-secondary">{idxStr}</span>
@@ -131,7 +136,7 @@ export function TracePanel({
                     </div>
                   </button>
 
-                  {isExpanded && call.summary ? (
+                  {!resultId && isExpanded && call.summary ? (
                     <div className="mt-2 ml-8 border-l-[3px] border-deep pl-3.5 text-body text-fg">
                       <p>{call.summary}</p>
                       {sourceInfo ? (

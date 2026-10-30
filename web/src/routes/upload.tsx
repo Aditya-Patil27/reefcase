@@ -1,5 +1,8 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { api, dataOrNull } from "../api/client";
+import type { components } from "../api/schema";
 import {
   formatBytes,
   formatDuration,
@@ -19,8 +22,18 @@ export const Route = createFileRoute("/upload")({
   component: UploadRoute,
 });
 
-/** Lizard Island, the mock site in docs/agents/ui.md, so the pin starts on a real reef. */
+type SiteSummary = components["schemas"]["SiteSummary"];
+
+/** Lizard Island, the mock site in docs/agents/ui.md: a real reef for the pin until the sites load. */
 const INITIAL_SITE = { lat: -14.668, lon: 145.461 };
+
+/** The site dived most recently, which is where the next clip most likely comes from. */
+function latestSite(sites: SiteSummary[] | undefined): SiteSummary | undefined {
+  return sites?.reduce<SiteSummary | undefined>(
+    (latest, site) => (!latest || site.latest_dive_date > latest.latest_dive_date ? site : latest),
+    undefined,
+  );
+}
 
 /** DOM order, so focus lands on the first invalid field a reader would meet. */
 const FIELD_ORDER: readonly FieldName[] = ["video", "lat", "lon", "site_name", "dive_date"];
@@ -126,6 +139,16 @@ function UploadRoute() {
   const [duration, setDuration] = useState(Number.NaN);
   const clipUrlRef = useRef<string | null>(null);
   const [site, setSite] = useState(INITIAL_SITE);
+  const pinPlaced = useRef(false);
+  const sitesQuery = useQuery({
+    queryKey: ["sites"],
+    queryFn: async () => dataOrNull(await api.GET("/api/sites")) ?? [],
+  });
+  const startSite = latestSite(sitesQuery.data);
+  // The pin starts on the latest site once the sites load, unless the diver has already placed it.
+  useEffect(() => {
+    if (startSite && !pinPlaced.current) setSite({ lat: startSite.location.lat, lon: startSite.location.lon });
+  }, [startSite]);
   const [siteName, setSiteName] = useState("");
   const [diveDate, setDiveDate] = useState<Date | undefined>(() => new Date());
   const [errors, setErrors] = useState<FormErrors>({});
@@ -166,6 +189,7 @@ function UploadRoute() {
   }
 
   function movePin(next: { lat: number; lon: number }): void {
+    pinPlaced.current = true;
     setSite(clampDiveSite(next));
     clearError("lat");
     clearError("lon");
@@ -287,7 +311,8 @@ function UploadRoute() {
             Drop the pin where you dived. A pin within 500 m of a known site joins its record.
           </p>
         </div>
-        <SitePicker value={site} onChange={movePin} />
+        {/* Keyed on the start site: the map's camera opens on the pin only when it mounts. */}
+        <SitePicker key={startSite?.id ?? "initial"} value={site} onChange={movePin} />
         <div className="grid grid-cols-2 gap-3">
           <Field name="lat" label="Latitude" error={errors.lat}>
             <NumberField
@@ -300,6 +325,7 @@ function UploadRoute() {
               largeStep={1}
               formatOptions={{ minimumFractionDigits: 4, maximumFractionDigits: 4, useGrouping: false }}
               onValueChange={(lat) => {
+                pinPlaced.current = true;
                 setSite((current) => ({ ...current, lat }));
                 clearError("lat");
               }}
@@ -317,6 +343,7 @@ function UploadRoute() {
               largeStep={1}
               formatOptions={{ minimumFractionDigits: 4, maximumFractionDigits: 4, useGrouping: false }}
               onValueChange={(lon) => {
+                pinPlaced.current = true;
                 setSite((current) => ({ ...current, lon }));
                 clearError("lon");
               }}

@@ -21,7 +21,7 @@ from starlette.exceptions import HTTPException
 from starlette.responses import Response
 from starlette.types import Scope
 
-from reefcase.api.routes import events, geo, sites, surveys, tool_results
+from reefcase.api.routes import events, geo, media, sites, surveys, tool_results
 from reefcase.core.config import Settings
 from reefcase.pipeline import stages
 from reefcase.pipeline.bus import EventBus
@@ -80,13 +80,25 @@ def create_app(
     app.include_router(sites.router, prefix="/api")
     app.include_router(geo.router, prefix="/api")
     app.get("/api/health")(_health_route)
-    # Frames and masks for the web (§6.3); thumb_url and mask_url point here.
-    app.mount("/media", StaticFiles(directory=store.blobs.root, check_dir=False), name="media")
+    # Before the /media mount, so a thumbnail request reaches the route that makes it.
+    app.include_router(media.router)
+    # Frames and masks for the web (§6.3); mask_url points here.
+    app.mount("/media", _Media(directory=store.blobs.root, check_dir=False), name="media")
     # Last, so every API route wins (§12: one origin for the API and the web build).
     if resolved.web_dist is not None:
         app.mount("/", _WebApp(directory=resolved.web_dist, html=True), name="web")
 
     return app
+
+
+class _Media(StaticFiles):
+    """Stored frames and masks; a blob never changes once written, so browsers may cache it."""
+
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        response = await super().get_response(path, scope)
+        if response.status_code == 200:
+            response.headers["Cache-Control"] = media.CACHE_CONTROL
+        return response
 
 
 class _WebApp(StaticFiles):

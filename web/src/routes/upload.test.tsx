@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { components } from "../api/schema";
@@ -9,6 +10,14 @@ type Survey = components["schemas"]["Survey"];
 const mocks = vi.hoisted(() => ({
   uploadSurvey: vi.fn(),
   navigate: vi.fn(),
+  sites: [] as unknown[],
+}));
+
+vi.mock("../api/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../api/client")>()),
+  api: {
+    GET: vi.fn(() => Promise.resolve({ data: mocks.sites, response: new Response() })),
+  },
 }));
 
 vi.mock("@tanstack/react-router", async (importOriginal) => ({
@@ -59,7 +68,12 @@ const clip = new File(["clip"], "lizard-island.mp4", { type: "video/mp4" });
 function renderUpload() {
   const Page = Route.options.component;
   if (!Page) throw new Error("The upload route has no component.");
-  return render(<Page />);
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <Page />
+    </QueryClientProvider>,
+  );
 }
 
 /** Arc's dropzone keeps its file input visually hidden, so the test drives that input directly. */
@@ -78,6 +92,7 @@ describe("the upload route", () => {
     mocks.uploadSurvey.mockReset();
     mocks.navigate.mockReset();
     mocks.navigate.mockResolvedValue(undefined);
+    mocks.sites = [];
     // jsdom 30 has no object URLs (web/src/api/upload.ts notes the same for the preview).
     URL.createObjectURL = vi.fn(() => "blob:clip");
     URL.revokeObjectURL = vi.fn();
@@ -194,6 +209,21 @@ describe("the upload route", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Move pin to Heron Island" }));
     expect(screen.queryByText("Latitude is outside the survey grid.")).toBeNull();
+  });
+
+  it("starts the pin on the most recently dived site", async () => {
+    const cover = { live_coral: 0.2, bleached_coral: 0.1, algae: 0.3, rubble: 0.1, sand: 0.2, other: 0.1 };
+    mocks.sites = [
+      { id: "site_old", name: "Old", location: { lat: -14.668, lon: 145.461 }, latest_dive_date: "2019-08-19", latest_cover: cover },
+      { id: "site_haw_41", name: "HAW-41", location: { lat: 20.268, lon: -155.86 }, latest_dive_date: "2024-03-12", latest_cover: cover },
+    ];
+    renderUpload();
+
+    await waitFor(() =>
+      expect(screen.getByTestId("pin-readout")).toHaveTextContent("20.2680° N  155.8600° W", {
+        normalizeWhitespace: false,
+      }),
+    );
   });
 
   it("keeps the pin and the coordinate fields in step, both ways", async () => {

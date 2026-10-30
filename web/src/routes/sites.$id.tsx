@@ -35,11 +35,6 @@ function percent(fraction: number): string {
   return `${Math.round(fraction * 100)}%`;
 }
 
-/** Healthy above 40% live coral, declining above 25%, bleached below. */
-function condition(live: number): string {
-  return live >= 0.4 ? "Healthy" : live >= 0.25 ? "Declining" : "Bleached";
-}
-
 function SiteRoute() {
   const { id } = Route.useParams();
   const [openedId, setOpenedId] = useState<string | null>(null);
@@ -143,12 +138,12 @@ function SiteRoute() {
         ) : null,
     },
     {
-      key: "verdict",
-      label: "Condition",
+      // Measured bleached cover, not a label inferred from low live cover.
+      key: "bleached_cover",
+      label: "Bleached",
+      numeric: true,
       render: (_, row) => (
-        <span className="text-label font-semibold text-secondary">
-          {condition(row.cover?.live_coral ?? 0)}
-        </span>
+        <span className="text-ui text-fg">{row.cover ? percent(row.cover.bleached_coral) : "—"}</span>
       ),
     },
     {

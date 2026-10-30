@@ -107,7 +107,7 @@ export function EvidenceDrawer({
                 <div data-lit="true" className="water-cast relative aspect-video w-full">
                   {maskMode !== "mask" && frame.thumbUrl ? (
                     <img
-                      src={frame.thumbUrl}
+                      src={frame.imageUrl ?? frame.thumbUrl}
                       alt={frameName}
                       className="absolute inset-0 size-full object-cover"
                     />

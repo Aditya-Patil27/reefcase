@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import Map, { Marker } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
-import { config } from "../config";
+import { BasemapNotice, useBasemap } from "../map/basemap";
 
 export type DiveSite = { lat: number; lon: number };
 
@@ -39,15 +39,17 @@ export function SitePicker(props: {
   onChange: (next: DiveSite) => void;
 }): ReactElement {
   const { value, onChange } = props;
+  const basemap = useBasemap();
 
   return (
     <div
       role="group"
       aria-label="Dive site map"
-      className="overflow-hidden border border-border bg-surface"
+      className="relative overflow-hidden border border-border bg-surface"
     >
       <Map
-        mapStyle={config.BASEMAP_STYLE}
+        key={basemap.key}
+        {...basemap.mapProps}
         initialViewState={{ longitude: value.lon, latitude: value.lat, zoom: 10 }}
         style={{ width: "100%", height: 360 }}
         dragRotate={false}
@@ -70,6 +72,11 @@ export function SitePicker(props: {
           />
         </Marker>
       </Map>
+      {basemap.failed ? (
+        <BasemapNotice onRetry={basemap.retry}>
+          Click or drag to place the pin, or type the coordinates.
+        </BasemapNotice>
+      ) : null}
     </div>
   );
 }
