@@ -495,7 +495,7 @@ function geoLayer(layer: string) {
       features: [
         {
           type: "Feature",
-          properties: { benthic_class: "Coral/Algae" },
+          properties: { layer: "benthic", class_name: "Coral/Algae" },
           geometry: {
             type: "Polygon",
             coordinates: [

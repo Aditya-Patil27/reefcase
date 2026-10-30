@@ -37,6 +37,16 @@ public-domain status is unverified (architecture §9.5).
 | NCRMP station HAW-41, 2016-08-15 (32) | https://www.ncei.noaa.gov/archive/accession/0164296 | US Gov; cite NOAA PIFSC ESD |
 | NCRMP station HAW-41, 2019-07-15 (30) | https://www.ncei.noaa.gov/archive/accession/0240600 | US Gov; cite NOAA PIFSC ESD |
 
+## Demo clip
+
+`scripts/build_demo_clip.py` downloads the 2024 photos into the gitignored `data/demo/clip/` and
+stitches them into the gitignored `data/demo/haw41_2024.mp4`, the upload in the demo (8.3 AC 1).
+It is a slideshow of survey photos, not a diver's video; not redistributed in the repo.
+
+| Photos | Source URL | Licence |
+|---|---|---|
+| NCRMP station OCC-HAW-002 (HAW-41), 2024-07-06 (30) | https://www.ncei.noaa.gov/archive/accession/0317534 | US Gov; cite NOAA PIFSC ESD |
+
 ## Local fixtures
 
 | Fixture | Source URL | Licence |

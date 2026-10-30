@@ -22,6 +22,7 @@ from reefcase.store.repos import (
     AssessmentRepo,
     EventRepo,
     FrameRepo,
+    InvestigationRepo,
     SegmentationRepo,
     SiteRepo,
     SurveyRepo,
@@ -90,6 +91,7 @@ class Store:
         self.segmentations = SegmentationRepo(self)
         self.assessments = AssessmentRepo(self)
         self.tool_results = ToolResultRepo(self)
+        self.investigations = InvestigationRepo(self)
 
     @classmethod
     def open(cls, data_dir: Path | str, *, migrations_dir: Path | str | None = None) -> Store:

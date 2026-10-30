@@ -24,4 +24,6 @@ var/
 .scratch/
 data/geo/raw/
 data/demo/history/
+data/demo/clip/
+data/demo/*.mp4
 .playwright-mcp/
