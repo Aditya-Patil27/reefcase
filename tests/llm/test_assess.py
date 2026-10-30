@@ -11,7 +11,7 @@ from typing import Any
 import numpy as np
 import pytest
 from PIL import Image
-from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
 from pydantic_ai.messages import (
     BinaryContent,
     ModelMessage,
@@ -332,3 +332,28 @@ async def test_run_stages_skips_assessment_without_a_teacher(
     assert survey.status is SurveyStatus.DONE, survey.failure_reason
     assert await store.assessments.list_by_survey(SURVEY_ID) == []
     assert any("TEACHER" in record.getMessage() for record in caplog.records)
+
+
+@pytest.mark.asyncio
+async def test_assess_stage_skips_a_frame_when_the_model_api_fails(
+    store: Store, caplog: pytest.LogCaptureFixture
+) -> None:
+    await _create_survey(store)
+    frames = await _save_frames(store, 3)
+    bad_frame = frames[1].id
+
+    def respond(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+        request = messages[0]
+        assert isinstance(request, ModelRequest)
+        prompt = next(part for part in request.parts if isinstance(part, UserPromptPart))
+        if bad_frame in str(prompt.content):
+            raise ModelHTTPError(status_code=503, model_name="spark-test")
+        return _answer(info, VALID)
+
+    with caplog.at_level(logging.WARNING, logger="reefcase.pipeline.stages"):
+        result = await assess_stage(
+            store, SURVEY_ID, frames, model=FunctionModel(respond, model_name="spark-test")
+        )
+
+    assert [a.frame_id for a in result] == [frames[0].id, frames[2].id]
+    assert any(bad_frame in r.getMessage() and "503" in r.getMessage() for r in caplog.records)
