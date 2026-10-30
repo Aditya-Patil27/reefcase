@@ -9,7 +9,21 @@ import numpy as np
 from reefcase.core.config import Settings
 from reefcase.core.errors import ConfigError
 
-__all__ = ["StudentSegmenter"]
+__all__ = ["StudentSegmenter", "model_input_size"]
+
+# ReefStudent trains at 512x1024 (Coralscapes at half size); frames are resized so the
+# long side matches and both sides are multiples of 32, which the U-Net requires.
+_LONG_SIDE = 1024
+_STRIDE = 32
+
+
+def model_input_size(height: int, width: int) -> tuple[int, int]:
+    """The (height, width) a frame of this size is resized to before the U-Net."""
+    scale = _LONG_SIDE / max(height, width)
+    return (
+        max(_STRIDE, round(height * scale / _STRIDE) * _STRIDE),
+        max(_STRIDE, round(width * scale / _STRIDE) * _STRIDE),
+    )
 
 
 class _TorchModel(Protocol):
@@ -55,9 +69,17 @@ class StudentSegmenter:
 
     def _predict(self, image: np.ndarray) -> np.ndarray:
         torch = import_module("torch")
+        functional = import_module("torch.nn.functional")
+        height, width = image.shape[:2]
         tensor = torch.from_numpy(image.astype(np.float32) / 255.0).permute(2, 0, 1).unsqueeze(0)
         tensor = tensor.to(self._device)
-        outputs: object = self._model(tensor)
+        with torch.inference_mode():
+            size = model_input_size(height, width)
+            tensor = functional.interpolate(tensor, size=size, mode="bilinear", align_corners=False)
+            outputs: object = self._model(tensor)
+            outputs = functional.interpolate(
+                outputs, size=(height, width), mode="bilinear", align_corners=False
+            )
         if hasattr(outputs, "detach"):
             tensor_like = cast(_TensorLike, outputs)
             outputs = tensor_like.detach().cpu().numpy()
@@ -87,7 +109,8 @@ class StudentSegmenter:
             raise ConfigError(
                 "student backend requires torch and segmentation_models_pytorch"
             ) from exc
-        model = smp.Unet("efficientnet-b0", classes=6, in_channels=3)
+        # No encoder download: the checkpoint holds every weight.
+        model = smp.Unet("efficientnet-b0", encoder_weights=None, classes=6, in_channels=3)
         state = torch.load(weights, map_location=device)
         model.load_state_dict(state)
         model = model.to(device).eval()

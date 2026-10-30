@@ -1,8 +1,9 @@
 import importlib.util
-import json
 import sys
 from pathlib import Path
 from types import ModuleType
+
+import numpy as np
 
 _SCRIPT = Path(__file__).resolve().parents[2] / "ml" / "kaggle" / "train_student.py"
 
@@ -40,20 +41,23 @@ def test_split_manifest_is_grouped_and_near_90_10() -> None:
     assert len(train) == 8
 
 
-def test_train_from_manifest_writes_best_checkpoint_and_metrics(tmp_path: Path) -> None:
+def test_derive_group_is_the_coralscapes_dive_site() -> None:
     module = _load_script()
-    manifest = tmp_path / "manifest.jsonl"
-    lines = [
-        {"frame": "vid_a_1.jpg", "source": "coralscapes", "source_group": "vid_a"},
-        {"frame": "vid_a_2.jpg", "source": "coralscapes", "source_group": "vid_a"},
-        {"frame": "vid_b_1.jpg", "source": "ncrmp", "source_group": "vid_b"},
-    ]
-    manifest.write_text("\n".join(json.dumps(line) for line in lines), encoding="utf-8")
 
-    metrics = module.train_from_manifest(manifest_path=manifest, out_dir=tmp_path / "out", epochs=3)
+    assert module._derive_group("site29_000001_010000_leftImg8bit.png") == "site29"
 
-    checkpoint = json.loads((tmp_path / "out" / "reefstudent.pt").read_text(encoding="utf-8"))
-    assert checkpoint["epoch"] == metrics["best_epoch"] == 3
-    assert "live_coral" in checkpoint["class_iou"]
-    curve = json.loads((tmp_path / "out" / "curve.json").read_text(encoding="utf-8"))
-    assert len(curve) == 3
+
+def test_iou_from_confusion_indexes_classes_by_mask_index() -> None:
+    module = _load_script()
+    # Rows are targets, columns predictions, both in MASK_INDEX order (0 = other).
+    confusion = np.zeros((6, 6), dtype=np.int64)
+    confusion[0, 0] = 2
+    confusion[1, 1] = 1
+    confusion[1, 0] = 1
+
+    per_class, miou = module.iou_from_confusion(confusion)
+
+    assert per_class["other"] == 2 / 3
+    assert per_class["live_coral"] == 0.5
+    assert per_class["sand"] == 1.0  # absent from both sides
+    assert miou == np.mean(list(per_class.values()))

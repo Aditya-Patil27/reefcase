@@ -33,8 +33,9 @@ dev = [
   "pytest-recording>=0.14.0",
   "ruff>=0.17.2",
 ]
-# Real SAM 3 weights (local CUDA, Modal, Kaggle): `uv sync --group gpu`. The gate never installs it.
+# Real SAM 3 and ReefStudent weights (local CUDA, Modal, Kaggle): `uv sync --group gpu`. The gate never installs it.
 gpu = [
+  "segmentation-models-pytorch==0.6.0",
   "torch==2.14.1",
   "torchvision==0.29.1",  # Sam3ImageProcessor needs it
   "transformers==5.20.2",
