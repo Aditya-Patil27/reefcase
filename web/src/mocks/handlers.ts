@@ -275,15 +275,18 @@ const toolData: Record<string, Record<string, unknown>> = {
     ],
   },
   vessel_activity: {
+    // The real shape (src/reefcase/tools/vessels.py): grid-cell centres, no dates.
     sar_detections: {
-      count: 14,
-      unmatched_to_ais: 4,
-      points: [
-        { lat: -14.612, lon: 145.503, date: "2026-09-08" },
-        { lat: -14.704, lon: 145.421, date: "2026-09-19" },
-        { lat: -14.651, lon: 145.522, date: "2026-10-02" },
-        { lat: -14.598, lon: 145.447, date: "2026-10-13" },
-      ],
+      total: 14,
+      unmatched_to_ais: {
+        count: 4,
+        points: [
+          { lat: -14.704, lon: 145.421 },
+          { lat: -14.651, lon: 145.522 },
+          { lat: -14.612, lon: 145.503 },
+          { lat: -14.598, lon: 145.447 },
+        ],
+      },
     },
     fishing_hours: 31.4,
   },

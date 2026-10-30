@@ -18,11 +18,33 @@ const mockToolResult = {
   retrieved_at: "2026-10-21T09:14:02Z",
 };
 
+// The real vessel_activity shape (src/reefcase/tools/vessels.py).
+const vesselToolResult = {
+  id: "tr_vessels",
+  tool: "vessel_activity",
+  params: { lat: 20.268, lon: -155.86, radius_km: 10, days: 30 },
+  data: {
+    sar_detections: {
+      total: 14,
+      unmatched_to_ais: { count: 4, points: [{ lat: 20.27, lon: -155.85 }] },
+    },
+    fishing_hours: 31.4,
+  },
+  source_url: "https://gateway.api.globalfishingwatch.org/v3/4wings/report",
+  retrieved_at: "2026-10-21T09:14:02Z",
+};
+
+const toolResults: Record<string, unknown> = {
+  [mockToolResult.id]: mockToolResult,
+  [vesselToolResult.id]: vesselToolResult,
+};
+
 vi.mock("../api/client", () => ({
   api: {
-    GET: vi.fn((path: string) => {
+    GET: vi.fn((path: string, init?: { params?: { path?: { tool_result_id?: string } } }) => {
       if (path.includes("/api/tool-results/")) {
-        return Promise.resolve({ data: mockToolResult });
+        const id = init?.params?.path?.tool_result_id ?? "";
+        return Promise.resolve({ data: toolResults[id] ?? null });
       }
       return Promise.resolve({ data: null });
     }),
@@ -96,5 +118,23 @@ describe("EvidenceDrawer", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("PARAMETERS")).toBeInTheDocument();
+  });
+
+  it("summarises vessel activity from the real tool shape", async () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <EvidenceDrawer
+          evidence={{ kind: "tool_result", id: "tr_vessels" }}
+          open={true}
+          onOpenChange={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+
+    const unmatched = await screen.findByText(/Unmatched to AIS:/);
+    expect(unmatched).toHaveTextContent("Unmatched to AIS: 4");
+    expect(screen.getByText(/Total detections inside 10km:/)).toHaveTextContent(
+      "Total detections inside 10km: 14",
+    );
   });
 });
