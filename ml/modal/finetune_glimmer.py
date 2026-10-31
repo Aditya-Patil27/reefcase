@@ -261,7 +261,7 @@ def _run(
     import time
 
     import torch
-    from peft import LoraConfig, get_peft_model
+    from peft import LoraConfig, PeftModel, get_peft_model
     from transformers import AutoModelForMultimodalLM, AutoProcessor
 
     started = time.monotonic()
@@ -335,12 +335,28 @@ def _run(
             "reasoning": reasoning or "template default (as served)",
             "s_per_row": round(seconds / len(test_rows), 2),
             "samples": samples,
+            # Per-row severities, in test order, for a confusion matrix against ``teacher``.
+            "predictions": [p["bleaching_severity"] if p else None for p in preds],
         }
         print(label, json.dumps(report[label]), flush=True)
         del out
         torch.cuda.empty_cache()
 
+    def finish(stem: str) -> dict[str, Any]:
+        report["gpu_s"] = round(time.monotonic() - started, 1)
+        report["usd_est"] = round(report["gpu_s"] / 3600 * USD_PER_H100_HOUR, 2)
+        _EVAL.mkdir(parents=True, exist_ok=True)
+        _EVAL.joinpath(f"{stem}.json").write_text(json.dumps(report, indent=2) + "\n")
+        glimmer.commit()
+        return report
+
+    report["teacher"] = [severity(r) for r in test_rows]
     evaluate("base", "low", 1024 if not smoke else 768)
+    if action == "eval":
+        # Re-test the saved adapter without training, e.g. for per-row predictions.
+        model = PeftModel.from_pretrained(model, _ADAPTERS / name)
+        evaluate("tuned", None, 1024)
+        return finish(f"{name}-eval")
 
     rows = oversample(train_rows)
     random.Random(7).shuffle(rows)
@@ -423,12 +439,7 @@ def _run(
         shutil.copy(_DATA / doc, target / doc)
 
     evaluate("tuned", None, 1024)
-    report["gpu_s"] = round(time.monotonic() - started, 1)
-    report["usd_est"] = round(report["gpu_s"] / 3600 * USD_PER_H100_HOUR, 2)
-    _EVAL.mkdir(parents=True, exist_ok=True)
-    _EVAL.joinpath(f"{name}.json").write_text(json.dumps(report, indent=2) + "\n")
-    glimmer.commit()
-    return report
+    return finish(name)
 
 
 if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
@@ -482,10 +493,11 @@ if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
             print(download.remote())
         elif action == "smoke":
             print(json.dumps(train.remote("smoke", output_tool(), 20, 8), indent=2))
-        elif action == "full":
+        elif action in ("full", "eval"):
             # Spawned, not awaited: with --detach the call outlives this client, so a dropped
             # connection cannot cancel a multi-hour run. Follow it with `modal app logs`.
-            call = train.spawn("full", output_tool(), None, None)
-            print(f"spawned {call.object_id}; report -> reefcase-glimmer:eval/{ADAPTER_NAME}.json")
+            call = train.spawn(action, output_tool(), None, None)
+            stem = ADAPTER_NAME if action == "full" else f"{ADAPTER_NAME}-eval"
+            print(f"spawned {call.object_id}; report -> reefcase-glimmer:eval/{stem}.json")
         else:
-            raise SystemExit("--action is download, smoke or full")
+            raise SystemExit("--action is download, smoke, full or eval")
