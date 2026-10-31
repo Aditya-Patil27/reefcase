@@ -94,6 +94,48 @@ segment with SAM 3. When ReefStudent is the segmenter, an optional disagreement 
 (`REEFCASE_DISAGREEMENT_CHECK=true`) also runs SAM 3 on every frame: where their coral masks
 overlap by less than 0.5 IoU, the case file keeps the SAM 3 mask and flags the frame as uncertain. Details are in [ml/results/MODEL_CARD.md](ml/results/MODEL_CARD.md).
 
+## Real diver footage
+
+The demo dive is stitched from survey photos. To test ReefCase on real video, we cut 15 clips from
+12 public videos made by reef agencies, NGOs and divers. Each clip keeps only the underwater
+stretch, without talking heads or title cards. They include hard cases on purpose: rubble, a diver
+blocking the view, 1998 VHS footage and edited films with many cuts.
+
+Three clips have been through the full pipeline so far. The dive dates are guesses based on each
+video's upload date, and the dive positions are approximate.
+
+| Clip | Live coral | Bleached | What the case file said |
+|---|---|---|---|
+| DLNR, Kāneʻohe Bay, Oʻahu, Feb 2019 | 67% | 2% | Healthy, with minor paling and no heat stress (DHW 0). The video's title says DLNR was investigating a new threat to these corals. The case file found none, and we haven't checked what that threat was. |
+| TRACC transect, Malaysia, 2014 | 12% | 0% | Sparse coral, no bleaching, DHW 0.67. It flagged 8 of 24 frames as uncertain and said the diver blocking the reef limits certainty. |
+| DLNR, Hanauma Bay, Oʻahu, late 2014 | | | Rejected: too few frames passed the blur check, so no case file was made. |
+
+We don't redistribute the clips. Each link below opens the source video at the clip's start. None of
+the clips are US federal footage, so each owner's permission is needed before a clip is published.
+
+<details>
+<summary><b>The 15 clips</b></summary>
+
+| Clip | Owner | Place, date | What it tests |
+|---|---|---|---|
+| [1:30–2:30](https://youtu.be/D-j2S26klx8?t=90), [2:30–3:30](https://youtu.be/D-j2S26klx8?t=150) | Hawaii DLNR, Division of Aquatic Resources | Oʻahu, ~Feb 2019 | Unedited snorkel pass over dense, pale coral |
+| [0:18–1:18](https://youtu.be/q0PIDDzhM7w?t=18) | Hawaii DLNR | Hanauma Bay, Oʻahu, late 2014 | Rocky reef, partial bleaching, fish |
+| [0:17–0:40](https://youtu.be/Dgr2hdx2kEA?t=17), [0:56–1:42](https://youtu.be/Dgr2hdx2kEA?t=56) | Hawaii DLNR, Division of Aquatic Resources | Oʻahu, Jan 2015 | Bleached patches on a reef flat |
+| [0:55–1:48](https://youtu.be/E_J3IjQ7hAU?t=55) | Hawaii DLNR, Division of Aquatic Resources | Hawaiʻi, 2015–16 | Survey divers on a transect, heavy bleaching |
+| [0:12–0:40](https://youtu.be/FImsdAkjBCw?t=12) | Kuleana Coral Restoration | Oʻahu, 2020 | Transect line, tagged bleached colonies |
+| [1:30–2:18](https://youtu.be/CMJ_y9vy75U?t=90) | Kuleana Coral Restoration | Maunalua Bay, Oʻahu, ≤2021 | Low coral cover, mostly rubble |
+| [0:06–0:45](https://youtu.be/HnCeWFl5WXY?t=6), [0:54–1:16](https://youtu.be/HnCeWFl5WXY?t=54) | TRACC | Malaysia, ≤2014 | A real line-transect survey |
+| [0:25–1:40](https://youtu.be/WklM-N5WkVo?t=25) | Reef Check Foundation | Haiti, Feb 2011 | Manta tow over a sparse, overfished reef |
+| [1:20–1:52](https://youtu.be/9FhnHh7U94s?t=80) | Reef Relief Founders | Cuba, 1998 | Old VHS-quality survey video |
+| [0:00–0:19](https://youtu.be/XPr0K6595Zc) | petercrocker314 | Koh Ra, Thailand, ≤2009 | Diver blocking most of the reef |
+| [5:24–6:12](https://youtu.be/15oIS_j7bDs?t=324) | Roundglass Sustain | Andaman and Nicobar Islands, ≤2024 | Edited documentary with many cuts |
+| [1:03–1:38](https://youtu.be/e93NGHwbWjw?t=63) | ReefWatch Marine Conservation | India, mixed locations, ≤2016 | Edited film with many cuts |
+
+Places and dates come from each video's title, description, title cards and upload date, not from
+GPS. Where only the upload date is known, the date is shown as ≤ that date.
+
+</details>
+
 ## Run it yourself
 
 <details>
