@@ -41,6 +41,9 @@ except ImportError:  # pragma: no cover - Modal is a human deployment dependency
 APP_DIR = "/app"
 DATA_DIR = "/data"
 WEB_DIST = f"{APP_DIR}/web/dist"
+# ReefStudent runs in the API container during a live upload (NFR1: 180 s); the seed is a batch.
+API_CPU = 8
+SEED_CPU = 2
 
 
 def api_settings() -> Settings:
@@ -62,6 +65,9 @@ def seed_env(environ: Mapping[str, str]) -> dict[str, str]:
         "REEFCASE_DATA_DIR": DATA_DIR,
         "REEFCASE_SEGMENTER": "student",
         "REEFCASE_STUDENT_WEIGHTS": DATA_DIR + "/models/reefstudent.pt",
+        # torch sizes its pool to the host's cores, not the container's; ReefStudent was
+        # benchmarked at 807 ms a frame on 2 threads.
+        "OMP_NUM_THREADS": str(SEED_CPU),
     }
 
 
@@ -71,9 +77,6 @@ if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
         modal.Image.debian_slim(python_version="3.14")
         .uv_sync(frozen=True, extra_options="--no-dev --group gpu")
         .workdir(APP_DIR)
-        # torch sizes its pool to the host's cores, not the container's 2; ReefStudent was
-        # benchmarked at 807 ms a frame on 2 threads.
-        .env({"OMP_NUM_THREADS": "2"})
         # The geo tools read data/geo/*.parquet relative to the working directory.
         .add_local_dir("data/geo", f"{APP_DIR}/data/geo", ignore=["raw"])
         .add_local_file(
@@ -90,8 +93,8 @@ if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
 
     @app.function(
         image=image,
-        # Frame extraction and JPEG work starve on the 0.125-core default.
-        cpu=2.0,
+        # Frame extraction, JPEG work and ReefStudent starve on the 0.125-core default.
+        cpu=float(API_CPU),
         volumes={DATA_DIR: data},
         secrets=secrets,
         max_containers=1,
@@ -103,11 +106,13 @@ if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
     @modal.concurrent(max_inputs=100)
     @modal.asgi_app()
     def api():
+        # Before create_app loads ReefStudent: torch reads this when it is first imported.
+        os.environ["OMP_NUM_THREADS"] = str(API_CPU)
         from reefcase.api.main import create_app
 
         return create_app(api_settings())
 
-    @app.function(image=image, cpu=2.0, volumes={DATA_DIR: data}, secrets=secrets, timeout=3600)
+    @app.function(image=image, cpu=float(SEED_CPU), volumes={DATA_DIR: data}, secrets=secrets, timeout=3600)
     def seed() -> None:
         """Import the historical surveys (8.1) onto the volume."""
         subprocess.run(
