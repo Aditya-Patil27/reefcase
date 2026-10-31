@@ -1,4 +1,4 @@
-<img src="docs/media/hero.svg" width="100%" alt="ReefCase. Turn a diver's reef video into a cited investigation. A real frame from NOAA station HAW-41 is swept by a light that reveals its SAM 3 segmentation: 13% live coral.">
+<img src="docs/media/hero.svg" width="100%" alt="ReefCase. A diver swims a transect at NOAA station HAW-41 at night; each camera strobe lights the real reef, and the last flash develops Frame 15 with its SAM 3 mask: 13.0% live coral, 0.2% bleached.">
 
 <p align="center">
   <a href="https://app2732006--reefcase-api-api.us-east.modal.run"><b>Open the live app</b></a>
@@ -80,10 +80,7 @@ the exact frame or data record.
 
 ## How it works
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/media/pipeline-dark.svg">
-  <img src="docs/media/pipeline-light.svg" width="100%" alt="Pipeline: upload, frames, segment with SAM 3 or ReefStudent, assess with Muse Spark Open, investigate with five data tools, report a cited case file.">
-</picture>
+<img src="docs/media/pipeline.svg" width="100%" alt="The evidence chain from the real HAW-41 run. Frames: 24 sampled from the clip. Segment: Frame 06 masked by SAM 3, 7.0% live coral. Assess: Muse Spark Open notes most colonies appear pale white. Investigate: five tools, from NOAA heat stress to the NCRMP site history of 40.2% coral in 2019. Report: a verdict with five ranked hypotheses.">
 
 Each stage streams to the browser over SSE as it runs, so the live view fills in frame by frame
 and tool call by tool call. The agent's tool results are cached and stored with the survey, which
@@ -242,11 +239,11 @@ PYTHONUTF8=1 uv run --with modal modal deploy ml/modal/api_app.py
 <details>
 <summary><b>Rebuilding the README media</b></summary>
 
-The hero and pipeline graphics are generated, not drawn: the hero embeds a real HAW-41 frame and
-its SAM 3 mask from the live deployment. The tour is recorded against the live app.
+The hero and pipeline graphics are generated, not drawn: every frame, mask, tool result and
+hypothesis in them comes from the HAW-41 survey on the live deployment. The tour is recorded against the live app.
 
 ```bash
-uv run python scripts/readme_media/build_svgs.py <frame.jpg> <mask.png>
+uv run python scripts/readme_media/build_svgs.py <cache_dir> <fonts_dir>   # see its docstring
 node scripts/readme_media/record_tour.mjs     # then the ffmpeg steps in its header
 ```
 
