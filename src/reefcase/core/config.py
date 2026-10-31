@@ -80,6 +80,9 @@ class Settings(BaseSettings):
     sam_modal_url: str | None = None
     sam_modal_token: SecretStr | None = None
     student_weights: Path | None = None
+    # Story 5.5: cross-check every ReefStudent mask against SAM 3 on Modal. Off by default:
+    # it adds a billed GPU call per frame to every live run.
+    disagreement_check: bool = False
 
     llm_agent_base_url: str | None = None
     llm_agent_api_key: SecretStr | None = None

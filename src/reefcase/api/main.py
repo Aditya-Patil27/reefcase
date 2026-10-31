@@ -28,7 +28,7 @@ from reefcase.pipeline import stages
 from reefcase.pipeline.bus import EventBus
 from reefcase.pipeline.runner import JobRunner, RunStages
 from reefcase.store.db import Store
-from reefcase.vision.segmenter import build_segmenter
+from reefcase.vision.segmenter import build_checker, build_segmenter
 
 __all__ = ["create_app"]
 
@@ -70,7 +70,10 @@ def create_app(
         # Settings pinned in code (the Modal API) must reach the runs, and a model load
         # belongs at startup, where a missing weights file stops the deploy, not an upload.
         run_stages = partial(
-            stages.run_stages, settings=resolved, segmenter=build_segmenter(resolved)
+            stages.run_stages,
+            settings=resolved,
+            segmenter=build_segmenter(resolved),
+            checker=build_checker(resolved),
         )
 
     store = Store.open(resolved.data_dir)

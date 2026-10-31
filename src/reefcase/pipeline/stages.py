@@ -17,11 +17,13 @@ from PIL import Image
 from pydantic_ai.exceptions import ModelAPIError, UnexpectedModelBehavior
 from pydantic_ai.models import Model
 
+from reefcase.agent.disagreement import coral_iou, disagrees
 from reefcase.agent.investigator import investigate
 from reefcase.core.config import Settings
 from reefcase.core.errors import ConfigError
 from reefcase.core.events import (
     Assessed,
+    Disagreement,
     FindingEvent,
     FrameScored,
     FramesExtracted,
@@ -44,7 +46,7 @@ from reefcase.llm.providers import build_model
 from reefcase.pipeline.bus import EventBus
 from reefcase.tools.http import ToolContext, build_client
 from reefcase.vision.cover import cover_from_mask
-from reefcase.vision.segmenter import Segmenter, build_segmenter
+from reefcase.vision.segmenter import Segmenter, build_checker, build_segmenter
 
 if TYPE_CHECKING:
     from reefcase.store.db import Store
@@ -202,11 +204,16 @@ async def segment_stage(
     bus: EventBus | None = None,
     settings: Settings | None = None,
     segmenter: Segmenter | None = None,
+    checker: Segmenter | None = None,
 ) -> dict[SegClass, float] | None:
     """Segment each kept frame, store its mask PNG and row, set the survey cover.
 
     Emits ``segmented`` per frame. The survey cover is the pixel-weighted mean
     of the frame covers; it is returned, or ``None`` when there are no frames.
+
+    With a ``checker`` (SAM 3, Story 5.5) each frame is segmented by both at once.
+    When their coral masks disagree, the checker's mask is kept and a
+    ``disagreement`` event is emitted.
     """
     event_bus = bus or EventBus(store)
     seg = segmenter or build_segmenter(settings or Settings())
@@ -214,14 +221,34 @@ async def segment_stage(
     weighted = dict.fromkeys(SegClass, 0.0)
     total_pixels = 0
     for frame in frames:
-        mask, cover, latency_ms = await asyncio.to_thread(
-            _segment_frame, seg, store.blobs.resolve(frame.image_path)
-        )
+        image_file = store.blobs.resolve(frame.image_path)
+        backend = seg.name
+        if checker is None:
+            mask, cover, latency_ms = await asyncio.to_thread(_segment_frame, seg, image_file)
+        else:
+            (mask, cover, latency_ms), checked = await asyncio.gather(
+                asyncio.to_thread(_segment_frame, seg, image_file),
+                asyncio.to_thread(_segment_frame, checker, image_file),
+            )
+            iou = coral_iou(mask, checked[0])
+            if disagrees(iou):
+                mask, cover, latency_ms = checked
+                backend = checker.name
+                await event_bus.publish(
+                    Disagreement(
+                        survey_id=survey_id,
+                        seq=await store.events.next_seq(survey_id),
+                        ts=_now(),
+                        frame_id=frame.id,
+                        iou=iou,
+                        chosen="sam3",
+                    )
+                )
         mask_ref = store.blobs.save_mask(survey_id, frame.id, _encode_mask(mask))
         segmentation = Segmentation(
             id=new_id(SEGMENTATION),
             frame_id=frame.id,
-            backend=seg.name,
+            backend=backend,
             mask_path=mask_ref,
             cover=cover,
             latency_ms=latency_ms,
@@ -233,7 +260,7 @@ async def segment_stage(
                 seq=await store.events.next_seq(survey_id),
                 ts=_now(),
                 frame_id=frame.id,
-                backend=seg.name,
+                backend=backend,
                 cover=cover,
                 mask_url=f"/media/{survey_id}/masks/{frame.id}.png",
             )
@@ -350,6 +377,13 @@ async def investigate_stage(
         if close_client:
             await client.aclose()
 
+    # Frames where SAM 3 overruled the student are uncertain whatever the agent said (5.5).
+    uncertain = list(investigation.uncertain_frames)
+    for event in await store.events.list(survey_id):
+        if isinstance(event, Disagreement) and event.frame_id not in uncertain:
+            uncertain.append(event.frame_id)
+    investigation = investigation.model_copy(update={"uncertain_frames": uncertain})
+
     await store.investigations.save(investigation)
 
     for finding in investigation.findings:
@@ -383,11 +417,19 @@ async def run_stages(
     agent_model: Model | None = None,
     http_client: httpx.AsyncClient | None = None,
     segmenter: Segmenter | None = None,
+    checker: Segmenter | None = None,
 ) -> None:
     """Run all pipeline stages in sequence."""
     cfg = settings or Settings()
     frames = await ingest_stage(store, survey_id, settings=cfg)
-    await segment_stage(store, survey_id, frames, settings=cfg, segmenter=segmenter)
+    await segment_stage(
+        store,
+        survey_id,
+        frames,
+        settings=cfg,
+        segmenter=segmenter,
+        checker=checker or build_checker(cfg),
+    )
     if teacher_model is None and cfg.llm_role("teacher") is None:
         logger.warning("REEFCASE_LLM_TEACHER_* is not configured; skipping frame assessment")
         assessments: list[FrameAssessment] = []
