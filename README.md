@@ -149,3 +149,6 @@ ReefCase uses data from Global Fishing Watch, NOAA Coral Reef Watch and NCRMP, t
 Atlas, WDPA and Coralscapes. Some sources are licensed for non-commercial use only. Third-party
 libraries, models and datasets are used, not modified. See [data/LICENSES.md](data/LICENSES.md)
 for each source's licence and attribution.
+
+The ReefCase code is under the [MIT licence](LICENSE). It doesn't cover the data, the models or
+their weights, which keep their own licences.
