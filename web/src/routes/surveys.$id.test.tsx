@@ -132,8 +132,8 @@ describe("SurveyRoute", () => {
       </QueryClientProvider>,
     );
 
-    // Readout contains survey id
-    expect(screen.getAllByText(/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/i).length).toBeGreaterThan(0);
+    // The header names the dive, not its database id
+    expect(screen.queryByText(/srv_01JA7Z3K9YQ2C8W4T6H0M5N8P3/i)).not.toBeInTheDocument();
 
     // Pipeline stages
     expect(screen.getAllByText("Frames").length).toBeGreaterThan(0);

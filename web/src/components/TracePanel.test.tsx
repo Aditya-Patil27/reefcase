@@ -41,6 +41,18 @@ describe("TracePanel", () => {
     expect(screen.getByText("running")).toBeInTheDocument();
   });
 
+  it("names the site instead of printing its id", () => {
+    const call: ToolCallView = {
+      callId: "call_03",
+      tool: "site_history",
+      params: { site_id: "site_lizard_island" },
+      status: "returned",
+    };
+    render(<TracePanel toolCalls={[call]} findings={[]} siteName="Lizard Island" />);
+    expect(screen.getByText("Lizard Island")).toBeInTheDocument();
+    expect(screen.queryByText(/site_lizard_island/)).not.toBeInTheDocument();
+  });
+
   it("shows reconnecting alert when reconnectSeq is provided", () => {
     render(
       <TracePanel

@@ -105,6 +105,32 @@ describe("CaseFile", () => {
     expect(handleOpenEvidence).toHaveBeenCalledWith({ kind: "tool_result", id: "tr_01JA7" });
   });
 
+  it("heads with the verdict's first sentence and says each rationale once", () => {
+    render(
+      <CaseFile
+        investigation={{
+          ...mockInvestigation,
+          verdict: "The reef collapsed since 2019. Local runoff fits the evidence best.",
+          hypotheses: [
+            { ...mockInvestigation.hypotheses[0]!, cause: "unknown", confidence: 0.7 },
+            mockInvestigation.hypotheses[1]!,
+          ],
+          model: "meta-models/muse-spark-open-1026",
+        }}
+        onOpenEvidence={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(
+      /^The reef collapsed since 2019\.$/,
+    );
+    expect(screen.getByText("Local runoff fits the evidence best.")).toBeInTheDocument();
+    expect(screen.getAllByText("DHW sat above 4 C-weeks for five weeks.")).toHaveLength(1);
+    expect(screen.getByText("Cause outside our data")).toBeInTheDocument();
+    expect(screen.getByText(/scored on its own/)).toBeInTheDocument();
+    expect(screen.getByText("Written by Muse Spark Open")).toBeInTheDocument();
+  });
+
   it("draws an uncited finding as pending and shows a proven alert", () => {
     render(
       <CaseFile

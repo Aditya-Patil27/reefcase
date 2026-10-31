@@ -158,6 +158,32 @@ describe("SiteTimelineRoute", () => {
     );
   });
 
+  it("measures the change against the previous dive, not the first", async () => {
+    mockData = {
+      site: mockSiteDetail.site,
+      surveys: [
+        ...mockSiteDetail.surveys,
+        {
+          ...mockSiteDetail.surveys[1]!,
+          id: "srv_00",
+          dive_date: "2013-08-03",
+          cover: { ...mockSiteDetail.surveys[1]!.cover!, live_coral: 0.05 },
+        },
+      ],
+    };
+
+    const Component = (Route as any).options.component;
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Component />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByLabelText("Site key figures")).toHaveTextContent(
+      /37% live coral −11\.4 pp since 2021 · 3 surveys/,
+    );
+  });
+
   it("renders empty state when site has no surveys", async () => {
     mockData = {
       site: mockSiteDetail.site,

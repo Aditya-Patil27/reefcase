@@ -20,6 +20,8 @@ export interface TracePanelProps {
   reconnectSeq?: number | null;
   /** Frame ids in arrival order, for human chip labels. */
   frameIds?: string[];
+  /** The site's name, shown in place of a raw site id. */
+  siteName?: string;
   className?: string;
   onSelectEvidence?: (kind: "frame" | "tool_result", id: string) => void;
 }
@@ -36,7 +38,7 @@ function formatToolIndex(index: number): string {
   return String(index + 1).padStart(2, "0");
 }
 
-function formatParamSummary(params: Record<string, unknown>): string {
+function formatParamSummary(params: Record<string, unknown>, siteName?: string): string {
   const parts: string[] = [];
   if (params.lat !== undefined && params.lon !== undefined) {
     parts.push(`lat ${params.lat} lon ${params.lon}`);
@@ -49,7 +51,9 @@ function formatParamSummary(params: Record<string, unknown>): string {
   }
   if (parts.length === 0) {
     for (const [key, val] of Object.entries(params)) {
-      if (typeof val === "string" || typeof val === "number") {
+      if (key === "site_id" && siteName) {
+        parts.push(siteName);
+      } else if (typeof val === "string" || typeof val === "number") {
         parts.push(`${key}=${val}`);
       }
     }
@@ -64,6 +68,7 @@ export function TracePanel({
   status,
   reconnectSeq,
   frameIds = [],
+  siteName,
   className = "",
   onSelectEvidence,
 }: TracePanelProps) {
@@ -99,7 +104,7 @@ export function TracePanel({
           ) : (
             toolCalls.map((call, index) => {
               const idxStr = formatToolIndex(index);
-              const summary = formatParamSummary(call.params);
+              const summary = formatParamSummary(call.params, siteName);
               const isExpanded = !!expandedCalls[call.callId];
               const sourceInfo = TOOL_SOURCES[call.tool];
               // A stored result opens in the evidence drawer, formatted; an error has only its summary.
