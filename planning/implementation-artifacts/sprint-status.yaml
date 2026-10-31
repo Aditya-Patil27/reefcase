@@ -14,7 +14,7 @@
 # Priority: P0 by Sat Oct 31, P1 by Mon Nov 2, P2 by Tue Nov 3; freeze Wed Nov 4
 
 generated: 2026-10-26
-last_updated: 2026-10-30
+last_updated: 2026-10-31
 project: met
 project_key: NOKEY
 tracking_system: file-system
@@ -84,7 +84,7 @@ development_status:
 
   epic-8: in-progress
   8-1-historical-survey-import: done # B P1
-  8-2-telegram-bot: backlog # D P2
+  8-2-telegram-bot: review # D P2
   8-3-deployment: review # B P1
   8-4-demo-dataset-and-rehearsal: backlog # C P1
   8-5-readme-and-submission: backlog # B P0
