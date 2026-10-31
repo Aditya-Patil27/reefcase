@@ -240,3 +240,13 @@ def test_server_runs_an_uploaded_survey(make_settings, tmp_path) -> None:
 
     assert status == "done"
     assert ran == [survey_id]
+
+
+@pytest.mark.asyncio
+async def test_upload_with_source_bot(make_settings, tmp_path) -> None:
+    app = build_app(make_settings, tmp_path)
+    async with client_for(app) as client:
+        response = await post_survey(client, source="bot")
+    assert response.status_code == 201
+    body = response.json()
+    assert body["source"] == "bot"
