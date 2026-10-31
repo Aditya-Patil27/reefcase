@@ -40,15 +40,13 @@ def test_split_keeps_both_halves_of_a_frame_together() -> None:
     assert module.split_rows(rows) == (train, test)
 
 
-def test_oversample_repeats_only_severe_rows() -> None:
+def test_oversample_repeats_every_bleached_level() -> None:
     module = _load_script()
-    rows = [_row("a", 0), _row("b", 2), _row("c", 3), _row("d", 4)]
+    rows = [_row("a", 0), _row("e", 1), _row("b", 2), _row("c", 3), _row("d", 4)]
 
-    out = module.oversample(rows)
+    counts = [module.severity(r) for r in module.oversample(rows)]
 
-    assert [module.severity(r) for r in out].count(3) == 3
-    assert [module.severity(r) for r in out].count(4) == 3
-    assert [module.severity(r) for r in out].count(0) == 1
+    assert [counts.count(s) for s in range(5)] == [1, 2, 3, 3, 3]
 
 
 def test_label_ids_keep_only_the_last_turn() -> None:

@@ -9,8 +9,9 @@ come from ``ml/modal/gen_assessments.py``.
 
 - Split: 90/10 by Coralscapes frame, so a frame's two halves never sit on both sides.
 - Train: bf16 LoRA (r=16) on the language model's attention and MLP projections; the vision
-  tower stays frozen. Loss falls on the assistant turn only. Severity 3-4 rows, about 4% of
-  the set, are repeated so the rare bleached frames are not drowned out.
+  tower stays frozen. Loss falls on the assistant turn only. Healthy frames are about 70% of
+  the set, so every bleached row is repeated (``COPIES``); v1 repeated only severity 3-4 and
+  learned to call paling (severity 1) healthy.
 - Eval: greedy decoding over the held-out 10%, for base Glimmer and Glimmer-Reef, with the
   same prompt and tool. It reports the JSON-validity rate (a ``final_result`` call whose
   arguments pass the schema) and the bleaching-severity agreement with the teacher.
@@ -62,7 +63,10 @@ __all__ = [
 ]
 
 BASE_REPO = "meta-models/Muse-Glimmer-30B"
-ADAPTER_NAME = "glimmer-reef"
+# v1 (``glimmer-reef``, ml/results/glimmer_eval*.json) stays on the volume for comparison.
+ADAPTER_NAME = "glimmer-reef-v2"
+# Copies of each row in training, by teacher severity.
+COPIES = {0: 1, 1: 2, 2: 3, 3: 3, 4: 3}
 USD_PER_H100_HOUR = 3.95
 TEST_FRACTION = 0.1
 IGNORE = -100
@@ -117,12 +121,9 @@ def split_rows(
     return train, test
 
 
-def oversample(
-    rows: list[dict[str, Any]], min_severity: int = 3, copies: int = 3
-) -> list[dict[str, Any]]:
-    """The rows with each severe-bleaching row repeated ``copies`` times in all."""
-    extra = [row for row in rows if severity(row) >= min_severity for _ in range(copies - 1)]
-    return rows + extra
+def oversample(rows: list[dict[str, Any]], copies: dict[int, int] = COPIES) -> list[dict[str, Any]]:
+    """The rows, each repeated ``copies[severity]`` times in all."""
+    return [row for row in rows for _ in range(copies[severity(row)])]
 
 
 def label_ids(input_ids: list[int], start_id: int) -> list[int]:
