@@ -11,7 +11,7 @@ import asyncio
 import json
 import logging
 import sys
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Coroutine
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from typing import cast
@@ -22,6 +22,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 logger = logging.getLogger("reefcase.bot")
 
 MAX_TELEGRAM_FILE_BYTES = 20 * 1024 * 1024  # 20 MB limit imposed by Telegram Bot API
+RECONNECT_S = 5.0
+FOLLOW_TIMEOUT_S = 30 * 60
 
 
 class BotSettings(BaseSettings):
@@ -113,6 +115,61 @@ def _is_video_doc(doc: dict[str, object]) -> bool:
     return any(name.endswith(ext) for ext in [".mp4", ".mov", ".avi", ".webm", ".mkv"])
 
 
+async def _report(
+    current_type: str | None,
+    parsed_payload: object,
+    survey_id: str,
+    chat_id: int,
+    send: SendCallable,
+    api_client: httpx.AsyncClient,
+    api_url: str,
+) -> bool:
+    """Tell the diver how a terminal event ended; ``True`` if ``current_type`` was one."""
+    base_web_url = api_url.rstrip("/")
+    if current_type == "report_ready":
+        inv_url = f"{base_web_url}/api/surveys/{survey_id}/investigation"
+        inv_resp = await api_client.get(inv_url)
+        if inv_resp.status_code == 200:
+            inv_data: object = inv_resp.json()
+            verdict = _get_str(inv_data, "verdict") or ""
+            raw_findings = _get_list(inv_data, "findings") or []
+            findings: list[str] = []
+            for item in raw_findings:
+                if isinstance(item, dict):
+                    item_dict = cast(dict[str, object], item)
+                    stmt = _get_str(item_dict, "statement")
+                    if stmt:
+                        findings.append(stmt)
+            top_3 = findings[:3]
+            findings_text = "\n".join(f"• {stmt}" for stmt in top_3)
+            link = f"{base_web_url}/surveys/{survey_id}"
+            msg = (
+                f"Investigation complete!\n\n"
+                f"Verdict: {verdict}\n\n"
+                f"Top findings:\n{findings_text}\n\n"
+                f"Case file: {link}"
+            )
+            await send(chat_id, msg)
+        else:
+            link = f"{base_web_url}/surveys/{survey_id}"
+            await send(
+                chat_id,
+                f"Investigation ready! Case file: {link}",
+            )
+        return True
+
+    if current_type == "survey_failed":
+        reason = "Unknown failure"
+        if isinstance(parsed_payload, dict):
+            payload_dict = cast(dict[str, object], parsed_payload)
+            reason_val = _get_str(payload_dict, "reason")
+            if reason_val:
+                reason = reason_val
+        await send(chat_id, f"Investigation failed: {reason}")
+        return True
+    return False
+
+
 async def follow_survey_events(
     survey_id: str,
     chat_id: int,
@@ -120,88 +177,71 @@ async def follow_survey_events(
     api_client: httpx.AsyncClient,
     api_url: str,
 ) -> None:
-    """Follow survey SSE events until completion or failure."""
+    """Follow survey SSE events until completion or failure.
+
+    The API closes the stream whenever the survey is not ``running`` (still queued, say),
+    so this reconnects with ``Last-Event-ID``; the API replays the log after it, so no
+    event is lost between connections.
+    """
     events_url = f"{api_url.rstrip('/')}/api/surveys/{survey_id}/events"
-    base_web_url = api_url.rstrip("/")
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + FOLLOW_TIMEOUT_S
+    last_id: str | None = None
 
     try:
-        async with api_client.stream(
-            "GET", events_url, timeout=httpx.Timeout(600.0, read=None)
-        ) as response:
-            if response.status_code != 200:
-                await send(
-                    chat_id,
-                    f"Could not follow investigation events ({response.status_code}).",
-                )
+        while True:
+            headers = {"Last-Event-ID": last_id} if last_id is not None else {}
+            async with api_client.stream(
+                "GET", events_url, headers=headers, timeout=httpx.Timeout(600.0, read=None)
+            ) as response:
+                if response.status_code != 200:
+                    await send(
+                        chat_id,
+                        f"Could not follow investigation events ({response.status_code}).",
+                    )
+                    return
+
+                event_type: str | None = None
+                data_lines: list[str] = []
+
+                async for line in response.aiter_lines():
+                    line = line.strip()
+                    if not line:
+                        if data_lines:
+                            raw_data = "\n".join(data_lines)
+                            data_lines = []
+                            try:
+                                parsed_payload: object = json.loads(raw_data)
+                            except Exception:
+                                parsed_payload = {}
+
+                            current_type = event_type or _get_str(parsed_payload, "type")
+                            event_type = None
+
+                            if await _report(
+                                current_type,
+                                parsed_payload,
+                                survey_id,
+                                chat_id,
+                                send,
+                                api_client,
+                                api_url,
+                            ):
+                                return
+                        continue
+
+                    if line.startswith("id:"):
+                        last_id = line[len("id:") :].strip()
+                    elif line.startswith("event:"):
+                        event_type = line[len("event:") :].strip()
+                    elif line.startswith("data:"):
+                        data_lines.append(line[len("data:") :].strip())
+
+            if loop.time() >= deadline:
+                link = f"{api_url.rstrip('/')}/surveys/{survey_id}"
+                await send(chat_id, f"Still investigating. Check the case file later: {link}")
                 return
-
-            event_type: str | None = None
-            data_lines: list[str] = []
-
-            async for line in response.aiter_lines():
-                line = line.strip()
-                if not line:
-                    if data_lines:
-                        raw_data = "\n".join(data_lines)
-                        data_lines = []
-                        try:
-                            parsed_payload: object = json.loads(raw_data)
-                        except Exception:
-                            parsed_payload = {}
-
-                        current_type = event_type
-                        if not current_type and isinstance(parsed_payload, dict):
-                            payload_dict = cast(dict[str, object], parsed_payload)
-                            current_type = _get_str(payload_dict, "type")
-                        event_type = None
-
-                        if current_type == "report_ready":
-                            inv_url = f"{api_url.rstrip('/')}/api/surveys/{survey_id}/investigation"
-                            inv_resp = await api_client.get(inv_url)
-                            if inv_resp.status_code == 200:
-                                inv_data: object = inv_resp.json()
-                                verdict = _get_str(inv_data, "verdict") or ""
-                                raw_findings = _get_list(inv_data, "findings") or []
-                                findings: list[str] = []
-                                for item in raw_findings:
-                                    if isinstance(item, dict):
-                                        item_dict = cast(dict[str, object], item)
-                                        stmt = _get_str(item_dict, "statement")
-                                        if stmt:
-                                            findings.append(stmt)
-                                top_3 = findings[:3]
-                                findings_text = "\n".join(f"• {stmt}" for stmt in top_3)
-                                link = f"{base_web_url}/surveys/{survey_id}"
-                                msg = (
-                                    f"Investigation complete!\n\n"
-                                    f"Verdict: {verdict}\n\n"
-                                    f"Top findings:\n{findings_text}\n\n"
-                                    f"Case file: {link}"
-                                )
-                                await send(chat_id, msg)
-                            else:
-                                link = f"{base_web_url}/surveys/{survey_id}"
-                                await send(
-                                    chat_id,
-                                    f"Investigation ready! Case file: {link}",
-                                )
-                            return
-
-                        if current_type == "survey_failed":
-                            reason = "Unknown failure"
-                            if isinstance(parsed_payload, dict):
-                                payload_dict = cast(dict[str, object], parsed_payload)
-                                reason_val = _get_str(payload_dict, "reason")
-                                if reason_val:
-                                    reason = reason_val
-                            await send(chat_id, f"Investigation failed: {reason}")
-                            return
-                    continue
-
-                if line.startswith("event:"):
-                    event_type = line[len("event:") :].strip()
-                elif line.startswith("data:"):
-                    data_lines.append(line[len("data:") :].strip())
+            await asyncio.sleep(RECONNECT_S)
     except Exception as exc:
         logger.exception("Error while following survey events: %s", exc)
         await send(chat_id, f"Error following investigation: {exc}")
@@ -311,6 +351,13 @@ async def run_bot(
     telegram_base = f"https://api.telegram.org/bot{token}"
     file_base = f"https://api.telegram.org/file/bot{token}"
     sessions: dict[int, ChatSession] = {}
+    # An investigation takes minutes, so each one runs beside the polling loop.
+    tasks: set[asyncio.Task[None]] = set()
+
+    def spawn(coro: Coroutine[object, object, None]) -> None:
+        task = asyncio.create_task(coro)
+        tasks.add(task)
+        task.add_done_callback(tasks.discard)
 
     async with httpx.AsyncClient(timeout=httpx.Timeout(40.0, read=40.0)) as http_client:
 
@@ -360,8 +407,15 @@ async def run_bot(
                         lon = _get_float(loc, "longitude")
                         if lat is not None and lon is not None:
                             loc_payload = LocationPayload(lat=lat, lon=lon)
-                            await handle_location(
-                                session, loc_payload, chat_id, send_message, http_client, api_url
+                            spawn(
+                                handle_location(
+                                    session,
+                                    loc_payload,
+                                    chat_id,
+                                    send_message,
+                                    http_client,
+                                    api_url,
+                                )
                             )
                             continue
 
@@ -420,8 +474,10 @@ async def run_bot(
                             dive_date=msg_date,
                             size=file_size or len(dl_resp.content),
                         )
-                        await handle_video(
-                            session, payload, chat_id, send_message, http_client, api_url
+                        spawn(
+                            handle_video(
+                                session, payload, chat_id, send_message, http_client, api_url
+                            )
                         )
                         continue
 
@@ -446,6 +502,8 @@ def main() -> None:
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     )
+    # httpx logs every request URL at INFO, and Telegram URLs carry the bot token.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     from reefcase.core.config import Settings
 
     settings = Settings()
