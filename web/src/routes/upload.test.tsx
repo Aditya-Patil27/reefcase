@@ -33,10 +33,15 @@ vi.mock("../api/upload", async (importOriginal) => ({
 /** The map needs WebGL, so the route test swaps in a stub that shows the pin readout and moves it. */
 vi.mock("../components/SitePicker", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../components/SitePicker")>();
+  const { useState } = await import("react");
   return {
     ...actual,
-    SitePicker: (props: { value: DiveSite; onChange: (next: DiveSite) => void }) => (
+    SitePicker: (props: { value: DiveSite; onChange: (next: DiveSite) => void }) => {
+      // The real map's camera opens on the pin it mounts with and ignores later values.
+      const [camera] = useState(props.value);
+      return (
       <div role="group" aria-label="Dive site map">
+        <p data-testid="camera-readout">{actual.formatCoordinates(camera)}</p>
         <p data-testid="pin-readout">{actual.formatCoordinates(props.value)}</p>
         <button type="button" onClick={() => props.onChange({ lat: -23.442, lon: 151.914 })}>
           Move pin to Heron Island
@@ -45,7 +50,8 @@ vi.mock("../components/SitePicker", async (importOriginal) => {
           Move pin past the antimeridian
         </button>
       </div>
-    ),
+      );
+    },
   };
 });
 
@@ -125,8 +131,9 @@ describe("the upload route", () => {
     renderUpload();
 
     chooseClip();
-    expect(screen.getAllByText("lizard-island.mp4").length).toBeGreaterThan(0);
-    expect(screen.getByText(/^4 B · —$/)).toBeInTheDocument();
+    // The dropzone's file card names the clip; the form adds only its length.
+    expect(screen.getAllByText("lizard-island.mp4")).toHaveLength(1);
+    expect(screen.getByText("Length —")).toBeInTheDocument();
 
     submit();
 
@@ -224,6 +231,9 @@ describe("the upload route", () => {
         normalizeWhitespace: false,
       }),
     );
+    expect(screen.getByTestId("camera-readout")).toHaveTextContent("20.2680° N  155.8600° W", {
+      normalizeWhitespace: false,
+    });
   });
 
   it("keeps the pin and the coordinate fields in step, both ways", async () => {

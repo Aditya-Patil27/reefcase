@@ -146,8 +146,13 @@ function UploadRoute() {
   });
   const startSite = latestSite(sitesQuery.data);
   // The pin starts on the latest site once the sites load, unless the diver has already placed it.
+  // The map remounts in the same update, so its camera opens on the moved pin, not the default.
+  const [mapKey, setMapKey] = useState("initial");
   useEffect(() => {
-    if (startSite && !pinPlaced.current) setSite({ lat: startSite.location.lat, lon: startSite.location.lon });
+    if (startSite && !pinPlaced.current) {
+      setSite({ lat: startSite.location.lat, lon: startSite.location.lon });
+      setMapKey(startSite.id);
+    }
   }, [startSite]);
   const [siteName, setSiteName] = useState("");
   const [diveDate, setDiveDate] = useState<Date | undefined>(() => new Date());
@@ -279,14 +284,8 @@ function UploadRoute() {
               chooseClip(files);
             }}
           />
-          {clip ? (
-            <div className="mt-1 grid min-w-0 gap-1">
-              <p className="truncate text-ui font-bold text-fg">{clip.name}</p>
-              <p className="text-label text-secondary">
-                {`${formatBytes(clip.size)} · ${durationText}`}
-              </p>
-            </div>
-          ) : null}
+          {/* The dropzone's file card already names the clip and its size. */}
+          {clip ? <p className="text-label text-secondary">{`Length ${durationText}`}</p> : null}
           {clipUrl ? (
             <video
               className="hidden"
@@ -312,7 +311,7 @@ function UploadRoute() {
           </p>
         </div>
         {/* Keyed on the start site: the map's camera opens on the pin only when it mounts. */}
-        <SitePicker key={startSite?.id ?? "initial"} value={site} onChange={movePin} />
+        <SitePicker key={mapKey} value={site} onChange={movePin} />
         <div className="grid grid-cols-2 gap-3">
           <Field name="lat" label="Latitude" error={errors.lat}>
             <NumberField
