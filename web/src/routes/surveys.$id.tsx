@@ -8,6 +8,7 @@ import { useEventStream } from "../live/useEventStream";
 import { FrameGrid } from "../components/FrameGrid";
 import { TracePanel } from "../components/TracePanel";
 import { CaseFile, useCitedToolResults } from "../components/CaseFile";
+import { AskCase } from "../components/AskCase";
 import { BUTTON_PRIMARY, CHIP, RULE_CITED } from "../components/strobe";
 import { toFrameView, type FrameView } from "../live/reducer";
 import { EvidenceDrawer, type EvidenceItem } from "../components/EvidenceDrawer";
@@ -220,13 +221,21 @@ function SurveyRouteComponent() {
           onValueChange={(val: string) => setViewMode(val as "report" | "frames")}
         />
         {viewMode === "report" ? (
-          <CaseFile
-            investigation={investigation}
-            onOpenEvidence={handleOpenEvidence}
-            frames={state.frames}
-            toolCalls={state.toolCalls}
-            alert={alert}
-          />
+          <>
+            <CaseFile
+              investigation={investigation}
+              onOpenEvidence={handleOpenEvidence}
+              frames={state.frames}
+              toolCalls={state.toolCalls}
+              alert={alert}
+            />
+            <AskCase
+              surveyId={id}
+              onOpenEvidence={handleOpenEvidence}
+              frames={state.frames}
+              toolCalls={state.toolCalls}
+            />
+          </>
         ) : (
           frameGrid
         )}

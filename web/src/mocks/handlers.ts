@@ -546,6 +546,26 @@ export const handlers = [
 
   http.get("/api/surveys/:survey_id/investigation", () => HttpResponse.json(investigation)),
 
+  http.post("/api/surveys/:survey_id/ask", async ({ request }) => {
+    const body = (await request.json()) as { question?: string };
+    const question = (body.question ?? "").toLowerCase();
+    if (question.includes("heat stress")) {
+      return HttpResponse.json({
+        answer:
+          "Degree heating weeks peaked at 8.4 DHW during the summer, driving widespread paling and bleaching on the reef slope. Vessel activity remained low and did not account for the damage.",
+        citations: [
+          { kind: "tool_result", id: "tr_01JA7" },
+          { kind: "frame", id: "frm_06" },
+        ],
+      });
+    }
+    return HttpResponse.json({
+      answer:
+        "The investigation established thermal stress as the primary factor driving coral loss across the surveyed transect.",
+      citations: [{ kind: "frame", id: "frm_06" }],
+    });
+  }),
+
   http.get("/api/surveys/:survey_id/frames", () => HttpResponse.json(frames)),
 
   http.get("/api/surveys/:survey_id", ({ params }) => {

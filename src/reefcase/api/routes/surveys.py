@@ -16,6 +16,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Form, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 
+from reefcase.agent.ask import Answer, AskRequest, ask
 from reefcase.core.errors import NotFoundError
 from reefcase.core.ids import SITE, SURVEY, new_id
 from reefcase.core.schemas import (
@@ -27,7 +28,9 @@ from reefcase.core.schemas import (
     Site,
     Survey,
     SurveyStatus,
+    ToolResult,
 )
+from reefcase.llm.providers import build_model
 
 __all__ = ["MAX_VIDEO_BYTES", "VIDEO_SUFFIXES", "FrameDetail", "router"]
 
@@ -189,3 +192,66 @@ async def get_survey_frames(survey_id: str, request: Request) -> list[FrameDetai
         )
         for frame in frames
     ]
+
+
+@router.post(
+    "/surveys/{survey_id}/ask",
+    response_model=Answer,
+    operation_id="askSurvey",
+    summary="Ask a question about the survey's investigation",
+    responses={
+        404: {"description": "Survey not found."},
+        409: {"description": "Investigation not ready yet."},
+        422: {"description": "Invalid question."},
+    },
+)
+async def ask_survey(
+    survey_id: str,
+    payload: AskRequest,
+    request: Request,
+) -> Answer:
+    """Answer a follow-up question about the survey's investigation."""
+    store = request.app.state.store
+    try:
+        await store.surveys.get(survey_id)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=f"Survey {survey_id} not found.") from exc
+
+    try:
+        investigation = await store.investigations.get_by_survey(survey_id)
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=409, detail=f"Survey {survey_id} has no investigation yet."
+        ) from exc
+
+    frames = await store.frames.list_by_survey(survey_id)
+    segs = await store.segmentations.list_by_survey(survey_id)
+    assessments = await store.assessments.list_by_survey(survey_id)
+
+    events = await store.events.list(survey_id)
+    tool_results: list[ToolResult] = []
+    seen_ids: set[str] = set()
+    for ev in events:
+        if getattr(ev, "type", None) == "tool_returned":
+            tr_id = getattr(ev, "tool_result_id", None)
+            if tr_id and tr_id not in seen_ids:
+                seen_ids.add(tr_id)
+                try:
+                    tr = await store.tool_results.get(tr_id)
+                    tool_results.append(tr)
+                except NotFoundError:
+                    pass
+
+    model = build_model("agent", request.app.state.settings)
+    if model is None:
+        raise HTTPException(status_code=500, detail="agent model not configured")
+
+    return await ask(
+        payload.question,
+        investigation,
+        frames,
+        segs,
+        assessments,
+        tool_results,
+        model=model,
+    )

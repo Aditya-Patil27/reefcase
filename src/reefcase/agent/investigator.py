@@ -48,6 +48,7 @@ __all__ = [
     "INVESTIGATOR_TOOLS",
     "TOOL_BUDGET",
     "InvestigationDraft",
+    "frame_line",
     "investigate",
 ]
 
@@ -181,6 +182,9 @@ def _frame_line(frame: Frame, seg: Segmentation | None, assessment: FrameAssessm
             f"damage: {', '.join(assessment.damage) or 'none'} | notes: {assessment.notes}"
         )
     return f"- {frame.id} at {frame.t_sec:.1f} s | cover: {cover} | {health}"
+
+
+frame_line = _frame_line
 
 
 def _prompt(

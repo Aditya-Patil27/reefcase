@@ -429,6 +429,55 @@
           }
         }
       }
+    },
+    "/api/surveys/{survey_id}/ask": {
+      "post": {
+        "summary": "Ask a question about the survey's investigation",
+        "description": "Answer a follow-up question about the survey's investigation.",
+        "operationId": "askSurvey",
+        "parameters": [
+          {
+            "name": "survey_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Survey Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Answer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Survey not found."
+          },
+          "409": {
+            "description": "Investigation not ready yet."
+          },
+          "422": {
+            "description": "Invalid question."
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1475,6 +1524,44 @@
             "$ref": "#/components/schemas/survey_failed"
           }
         ]
+      },
+      "AskRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "title": "Question",
+            "description": "Question about the case file"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "AskRequest",
+        "description": "Question asked about a survey's investigation."
+      },
+      "Answer": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "title": "Answer",
+            "description": "2 to 4 plain sentences answering the question"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceRef"
+            },
+            "type": "array",
+            "title": "Citations",
+            "description": "Every frame or tool result cited in the answer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer"
+        ],
+        "title": "Answer",
+        "description": "A cited answer to a question about the case file."
       }
     }
   }

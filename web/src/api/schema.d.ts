@@ -191,6 +191,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/surveys/{survey_id}/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask a question about the survey's investigation
+         * @description Answer a follow-up question about the survey's investigation.
+         */
+        post: operations["askSurvey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -491,6 +511,33 @@ export interface components {
         };
         /** @description Discriminated union on `type` (architecture §4.3). */
         Event: components["schemas"]["survey_started"] | components["schemas"]["frames_extracted"] | components["schemas"]["frame_scored"] | components["schemas"]["segmented"] | components["schemas"]["assessed"] | components["schemas"]["disagreement"] | components["schemas"]["tool_called"] | components["schemas"]["tool_returned"] | components["schemas"]["finding"] | components["schemas"]["report_ready"] | components["schemas"]["survey_failed"];
+        /**
+         * AskRequest
+         * @description Question asked about a survey's investigation.
+         */
+        AskRequest: {
+            /**
+             * Question
+             * @description Question about the case file
+             */
+            question: string;
+        };
+        /**
+         * Answer
+         * @description A cited answer to a question about the case file.
+         */
+        Answer: {
+            /**
+             * Answer
+             * @description 2 to 4 plain sentences answering the question
+             */
+            answer: string;
+            /**
+             * Citations
+             * @description Every frame or tool result cited in the answer
+             */
+            citations?: components["schemas"]["EvidenceRef"][];
+        };
     };
     responses: never;
     parameters: never;
@@ -804,6 +851,53 @@ export interface operations {
             };
             /** @description No such file. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    askSurvey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                survey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Answer"];
+                };
+            };
+            /** @description Survey not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Investigation not ready yet. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid question. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

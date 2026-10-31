@@ -1,5 +1,5 @@
 ---
-status: ready-for-dev
+status: review
 ---
 
 # Story 8.6: Ask this case
@@ -85,11 +85,11 @@ that is empty or over 500 characters (after stripping) → `422`
 
 ## Tasks
 
-1. [ ] `git merge main` in `met-wt/lead-d`.
-2. [ ] Tests above, red.
-3. [ ] `agent/ask.py` + `prompts/ask.md`, then the route.
-4. [ ] Snapshot + `gen:api`, `AskCase.tsx`, mount it in `surveys.$id.tsx`.
-5. [ ] `uv run poe gate` and `pnpm -C web run gate`.
-6. [ ] Self-review against `.opencode/agents/reviewer.md`, then
+1. [x] `git merge main` in `met-wt/lead-d`.
+2. [x] Tests above, red.
+3. [x] `agent/ask.py` + `prompts/ask.md`, then the route.
+4. [x] Snapshot + `gen:api`, `AskCase.tsx`, mount it in `surveys.$id.tsx`.
+5. [x] `uv run poe gate` and `pnpm -C web run gate`.
+6. [x] Self-review against `.opencode/agents/reviewer.md`, then
    `python scripts/integrate.py 8-6-ask-this-case --status review`. Add a handoff entry for the
    live check (deploy is the guide's step).
