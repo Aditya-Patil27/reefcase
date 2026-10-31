@@ -178,8 +178,6 @@ function SiteRoute() {
               </p>
             </div>
           ) : null}
-
-
         </aside>
 
         <section aria-label="Evidence" className="min-w-0 px-4 py-7 sm:px-7">
@@ -241,17 +239,15 @@ function SiteRoute() {
             </p>
           ) : investigation ? (
             <div className="space-y-6">
-              <div className="space-y-3">
-                <h2
-                  className={
-                    verdictFirst.length > 120
-                      ? "max-w-[60ch] text-title font-bold text-fg"
-                      : "text-display font-bold text-fg"
-                  }
-                >
-                  {verdictFirst}
-                </h2>
-              </div>
+              <h2
+                className={
+                  verdictFirst.length > 120
+                    ? "max-w-[60ch] text-title font-bold text-fg"
+                    : "text-display font-bold text-fg"
+                }
+              >
+                {verdictFirst}
+              </h2>
               {topHypothesis ? (
                 <div className="space-y-2">
                   <div className="flex items-baseline justify-between gap-2">
