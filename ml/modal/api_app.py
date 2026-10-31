@@ -1,7 +1,8 @@
 """ReefCase API and web app on Modal (Story 8.3, architecture §12).
 
 One origin: the API serves the web build too (``REEFCASE_WEB_DIST``). The DuckDB store and
-blobs live on the ``reefcase-data`` volume; segmentation runs on CPU with ReefStudent
+blobs live on the ``reefcase-data`` volume. Live uploads segment with SAM 3 on its Modal GPU
+endpoint (the secret's ``REEFCASE_SAM_MODAL_*``); the historical seed uses ReefStudent on CPU
 (``/data/models/reefstudent.pt``).
 
 Human deployment steps, from a clean checkout (the image is synced from ``uv.lock``):
@@ -41,20 +42,19 @@ except ImportError:  # pragma: no cover - Modal is a human deployment dependency
 APP_DIR = "/app"
 DATA_DIR = "/data"
 WEB_DIST = f"{APP_DIR}/web/dist"
-# ReefStudent runs in the API container during a live upload (NFR1: 180 s); the seed is a batch.
-API_CPU = 8
+# The API calls SAM 3 over HTTP; the seed runs ReefStudent in its own container.
+API_CPU = 2
 SEED_CPU = 2
 
 
 def api_settings() -> Settings:
-    """The deployed settings: the volume, the baked web build and ReefStudent on CPU win over the
-    secret's env (a laptop ``.env`` may say ``fake`` or ``sam3_local``)."""
-    return Settings(
-        data_dir=Path(DATA_DIR),
-        web_dist=Path(WEB_DIST),
-        segmenter="student",
-        student_weights=Path(DATA_DIR + "/models/reefstudent.pt"),
-    )
+    """The deployed settings: the volume, the baked web build and SAM 3 on Modal win over the
+    secret's env (a laptop ``.env`` may say ``fake`` or ``sam3_local``).
+
+    Not ReefStudent: on the 2024 demo clip it read 46% live coral where SAM 3, the 2013-2019
+    history and the assessor all say about 5%, and the investigator looped on the contradiction.
+    """
+    return Settings(data_dir=Path(DATA_DIR), web_dist=Path(WEB_DIST), segmenter="sam3_modal")
 
 
 def seed_env(environ: Mapping[str, str]) -> dict[str, str]:
@@ -106,8 +106,6 @@ if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
     @modal.concurrent(max_inputs=100)
     @modal.asgi_app()
     def api():
-        # Before create_app loads ReefStudent: torch reads this when it is first imported.
-        os.environ["OMP_NUM_THREADS"] = str(API_CPU)
         from reefcase.api.main import create_app
 
         return create_app(api_settings())
