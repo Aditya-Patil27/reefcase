@@ -1,0 +1,62 @@
+{
+  "base_model": "meta-models/Muse-Glimmer-30B",
+  "adapter": "glimmer-reef",
+  "built_with": "Built with Muse Spark Open",
+  "split": {
+    "train": 3012,
+    "test": 354,
+    "by": "frame"
+  },
+  "load_s": 27.7,
+  "base": {
+    "n": 354,
+    "json_valid": 1.0,
+    "severity_exact": 0.7006,
+    "severity_within_one": 0.9605,
+    "agree_valid": 0.7006,
+    "teacher_bleached": 95,
+    "recall_bleached": 0.7789,
+    "truncated": 0,
+    "reasoning": "low",
+    "s_per_row": 2.64,
+    "samples": [
+      " to=self<|message|>Frame frm_6e6be4494a100082 at 0.0 s. Segmentation cover (sam3): other: 68.8%, live_coral: 31.2%, bleached_coral: 0.0%, algae: 0.0%, rubble: 0.0%, sand: 0.0%.\n\nJudge only what is visible. Report bleaching severity, coral growth forms, physical damage and a short note.\n\nVisible coral: large massive boulder in foreground, also left side massive/encrusting. Color brownish, no bleaching. Bleaching severity 0 none.\n\nMorphology: massive, maybe encrusting? The large one is massive boulder. Also maybe? So list massive.\n\nDamage: none visible. No broken etc.\n\nNotes: underwater reef with massive coral, survey tape, fish.\n\nReturn via tool.<|eom|><|start|>assistant to=final_result<|message|><atem:function_calls>\n<atem:invoke name=\"final_result\">\n<atem:parameter name=\"bleaching_severity\">0</atem:parameter>\n<atem:parameter name=\"morphology\">[\"massive\"]</atem:parameter>\n<atem:parameter name=\"damage\">[\"none\"]</atem:parameter>\n<atem:parameter name=\"notes\">Underwater reef with a large brown massive coral in foreground and additional massive/encrusting colonies on the left. Survey tape is visible and fish are present. No bleaching is apparent.</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eot|>",
+      " to=self<|message|>Frame frm_b12b2c30a04928b5 at 0.0 s. Segmentation cover (sam3): other:81.1%, live_coral:18.9%, bleached_coral:0.0%, algae:0.0%, rubble:0.0%, sand:0.0%.\n\nJudge only what is visible. Bleaching severity? No bleached coral visible. Live coral present, large massive? At bottom large mushroom? Looks like a large plating/massive coral. Also rubble? Segmentation says live_coral 18.9%. No bleaching. So severity 0 none.\n\nMorphology: massive, encrusting? The large coral at bottom looks like massive/encrusting? Maybe foliose? Could be massive. Also branching? Not clear. Might be massive.\n\nDamage: none visible. No broken etc. So damage [\"none\"].\n\nNotes: underwater reef with fish, survey tape, live coral.\n\nReturn via final_result.<|eom|><|start|>assistant to=final_result<|message|><atem:function_calls>\n<atem:invoke name=\"final_result\">\n<atem:parameter name=\"bleaching_severity\">0</atem:parameter>\n<atem:parameter name=\"morphology\">[\"massive\", \"encrusting\"]</atem:parameter>\n<atem:parameter name=\"damage\">[\"none\"]</atem:parameter>\n<atem:parameter name=\"notes\">Rugged reef with live coral cover and a large massive/encrusting colony at bottom. Survey tape crosses frame, clownfish and yellow damselfish present. No bleaching visible.</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eot|>",
+      "sage|>Frame frm_09f8450d45393a11 at 0.0 s. Segmentation cover (sam3): other: 55.2%, live_coral: 44.8%, bleached_coral: 0.0%, algae: 0.0%, rubble: 0.0%, sand: 0.0%.\n\nJudge only what is visible. Report bleaching severity, coral growth forms, physical damage and a short note.\n\nVisible corals: massive/encrusting? The corals look like massive boulder, maybe Porites. Growth forms: massive, encrusting? Also maybe branching? Looks like massive boulder.\n\nBleaching severity: segmentation says bleached_coral 0.0%. Corals appear brownish green, not bleached. So 0 none.\n\nDamage: no obvious broken, overturned, anchor scar, disease. Maybe none. There's a crown-of-thorns starfish? Dark spiny at bottom left. That's not damage to coral? Might be predator. Physical damage none.\n\nMorphology: massive, maybe boulder.\n\nNotes: underwater reef with massive corals, a crown-of-thorns starfish visible, water slightly turbid.\n\nReturn via tool.<|eom|><|start|>assistant to=final_result<|message|><atem:function_calls>\n<atem:invoke name=\"final_result\">\n<atem:parameter name=\"bleaching_severity\">0</atem:parameter>\n<atem:parameter name=\"morphology\">[\"massive\", \"boulder\"]</atem:parameter>\n<atem:parameter name=\"damage\">[\"none\"]</atem:parameter>\n<atem:parameter name=\"notes\">Reef flat with healthy-looking massive boulder corals in green-brown tones. No visible bleaching. A crown-of-thorns starfish is under the coral on the left. Water is slightly turbid.</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eot|>"
+    ]
+  },
+  "train": {
+    "rows": 3290,
+    "optimizer_steps": 412,
+    "loss_first": 0.8428,
+    "loss_last": 0.4322,
+    "s_per_row": 1.75,
+    "peak_gib": 64.5,
+    "lora": {
+      "r": 16,
+      "alpha": 32,
+      "lr": 0.0001,
+      "batch": 8,
+      "epochs": 1
+    }
+  },
+  "tuned": {
+    "n": 354,
+    "json_valid": 1.0,
+    "severity_exact": 0.7797,
+    "severity_within_one": 0.9831,
+    "agree_valid": 0.7797,
+    "teacher_bleached": 95,
+    "recall_bleached": 0.4632,
+    "truncated": 0,
+    "reasoning": "template default (as served)",
+    "s_per_row": 1.29,
+    "samples": [
+      " to=final_result<|message|><atem:function_calls>\n<atem:invoke name=\"final_result\">\n<atem:parameter name=\"bleaching_severity\">0</atem:parameter>\n<atem:parameter name=\"morphology\">[\"massive\"]</atem:parameter>\n<atem:parameter name=\"damage\">[\"none\"]</atem:parameter>\n<atem:parameter name=\"notes\">Large massive/boulder coral in foreground with healthy brown coloration, no bleaching visible. Background reef shows mixed rock and coral with transect tape. No physical damage observed.</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eot|>",
+      " to=final_result<|message|><atem:function_calls>\n<atem:invoke name=\"final_result\">\n<atem:parameter name=\"bleaching_severity\">0</atem:parameter>\n<atem:parameter name=\"morphology\">[\"massive\", \"encrusting\"]</atem:parameter>\n<atem:parameter name=\"damage\">[\"none\"]</atem:parameter>\n<atem:parameter name=\"notes\">Large foliose/massive coral in foreground with healthy brown coloration, no bleaching visible. Transect tape over reef with fish present. Segmentation indicates ~19% live coral, consistent with visible cover.</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eot|>",
+      " to=final_result<|message|><atem:function_calls>\n<atem:invoke name=\"final_result\">\n<atem:parameter name=\"bleaching_severity\">0</atem:parameter>\n<atem:parameter name=\"morphology\">[\"massive\", \"encrusting\"]</atem:parameter>\n<atem:parameter name=\"damage\">[\"none\"]</atem:parameter>\n<atem:parameter name=\"notes\">Healthy reef with massive/boulder and encrusting corals showing normal brown-green pigmentation; no bleaching visible. Crown-of-thorns starfish present at bottom left but no physical damage evident.</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eot|>"
+    ]
+  },
+  "gpu_s": 7164.3,
+  "usd_est": 7.86
+}
