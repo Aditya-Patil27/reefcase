@@ -1,4 +1,4 @@
-<img src="docs/media/hero.svg" width="100%" alt="ReefCase. Turn a diver's reef video into a cited investigation. A real frame from NOAA station HAW-41 is swept by a light that reveals its SAM 3 segmentation: 13% live coral.">
+<img src="docs/media/hero.svg" width="100%" alt="ReefCase. A diver swims a transect at NOAA station HAW-41 at night; each camera strobe lights the real reef, and the last flash develops Frame 15 with its SAM 3 mask: 13.0% live coral, 0.2% bleached.">
 
 <p align="center">
   <a href="https://app2732006--reefcase-api-api.us-east.modal.run"><b>Open the live app</b></a>
@@ -56,10 +56,7 @@ a valid citation is rejected and repaired before anyone sees it.
 
 ## How it works
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/media/pipeline-dark.svg">
-  <img src="docs/media/pipeline-light.svg" width="100%" alt="Pipeline: upload, frames, segment with SAM 3 or ReefStudent, assess with Muse Spark Open, investigate with five data tools, report a cited case file.">
-</picture>
+<img src="docs/media/pipeline.svg" width="100%" alt="The evidence chain from the real HAW-41 run. Frames: 24 sampled from the clip. Segment: Frame 06 masked by SAM 3, 7.0% live coral. Assess: Muse Spark Open notes most colonies appear pale white. Investigate: five tools, from NOAA heat stress to the NCRMP site history of 40.2% coral in 2019. Report: a verdict with five ranked hypotheses.">
 
 Each stage streams to the browser as it runs, so the live view fills in frame by frame and tool
 call by tool call. Tool results are stored with the survey, so every citation opens to the data the
