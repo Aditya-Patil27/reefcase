@@ -55,12 +55,12 @@ development_status:
   4-7-site-endpoints: done # B P0
   epic-4-retrospective: optional
 
-  epic-5: in-progress
+  epic-5: done
   5-1-frame-assessor: done # B P0
   5-2-investigator-agent: done # B P0
   5-3-citation-validator-and-repair-loop: done # D P0
   5-4-investigate-stage-and-report-persistence: done # D P0
-  5-5-teacher-student-disagreement: backlog # B P1
+  5-5-teacher-student-disagreement: done # B P1
   epic-5-retrospective: optional
 
   epic-6: done
