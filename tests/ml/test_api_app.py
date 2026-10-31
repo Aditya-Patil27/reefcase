@@ -35,8 +35,7 @@ def test_api_settings_pin_the_volume_and_web_build(monkeypatch: pytest.MonkeyPat
 
     assert settings.data_dir == Path("/data")
     assert settings.web_dist == Path("/app/web/dist")
-    assert settings.segmenter == "student"
-    assert settings.student_weights == Path("/data/models/reefstudent.pt")
+    assert settings.segmenter == "sam3_modal"
 
 
 def test_seed_env_uses_the_volume_and_student() -> None:
@@ -53,5 +52,6 @@ def test_seed_env_uses_the_volume_and_student() -> None:
         "REEFCASE_SEGMENTER": "student",
         "REEFCASE_STUDENT_WEIGHTS": "/data/models/reefstudent.pt",
         "REEFCASE_DATA_DIR": "/data",
+        "OMP_NUM_THREADS": "2",
         "PATH": "/bin",
     }

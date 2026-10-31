@@ -11,7 +11,7 @@ readable after the app shuts down (the store is the only database).
 import asyncio
 from datetime import UTC, date, datetime
 from pathlib import PurePosixPath
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Form, HTTPException, Request, UploadFile
 from pydantic import BaseModel
@@ -63,6 +63,7 @@ async def create_survey(
     lon: Annotated[float, Form()],
     dive_date: Annotated[date, Form()],
     site_name: Annotated[str | None, Form()] = None,
+    source: Annotated[Literal["upload", "bot"], Form()] = "upload",
 ) -> Survey:
     """Store an uploaded clip as a queued survey at the nearest site (or a new one)."""
     suffix = _video_suffix(video.filename)
@@ -114,7 +115,7 @@ async def create_survey(
         site_id=site.id,
         dive_date=dive_date,
         status=SurveyStatus.QUEUED,
-        source="upload",
+        source=source,
         video_path=video_ref,
         created_at=_now(),
     )

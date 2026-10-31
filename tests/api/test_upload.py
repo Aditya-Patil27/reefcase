@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from PIL import Image
 
 from reefcase.api.main import create_app
-from reefcase.core.errors import NotFoundError
+from reefcase.core.errors import ConfigError, NotFoundError
 from reefcase.store.db import Store
 
 CLIP_BYTES = (Path(__file__).parents[1] / "fixtures" / "clip_10s.mp4").read_bytes()
@@ -240,3 +240,48 @@ def test_server_runs_an_uploaded_survey(make_settings, tmp_path) -> None:
 
     assert status == "done"
     assert ran == [survey_id]
+
+
+def test_server_runs_the_stages_with_the_app_settings(
+    make_settings, tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The deployed API pins its settings in code while the Modal secret still names another
+    # segmenter; the stage chain must follow the app's settings, not re-read the environment.
+    settings = make_settings(data_dir=str(tmp_path / "var"), segmenter="fake")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("REEFCASE_SEGMENTER", "student")
+
+    with TestClient(create_app(settings)) as client:
+        survey_id = client.post(
+            "/api/surveys",
+            data=GOOD_FIELDS,
+            files={"video": ("clip.mp4", CLIP_BYTES, "video/mp4")},
+        ).json()["id"]
+        status = "queued"
+        for _ in range(1500):
+            status = client.get(f"/api/surveys/{survey_id}").json()["status"]
+            if status in {"done", "failed"}:
+                break
+            time.sleep(0.02)
+        frames = client.get(f"/api/surveys/{survey_id}/frames").json()
+
+    assert status == "done"
+    assert frames
+    assert {item["segmentation"]["backend"] for item in frames} == {"fake"}
+
+
+def test_create_app_fails_fast_on_a_segmenter_it_cannot_build(make_settings, tmp_path) -> None:
+    # Built once at startup, so a missing weights file stops the deploy, not the first upload.
+    settings = make_settings(data_dir=str(tmp_path / "var"), segmenter="student")
+    with pytest.raises(ConfigError, match="REEFCASE_STUDENT_WEIGHTS"):
+        create_app(settings)
+
+
+@pytest.mark.asyncio
+async def test_upload_with_source_bot(make_settings, tmp_path) -> None:
+    app = build_app(make_settings, tmp_path)
+    async with client_for(app) as client:
+        response = await post_survey(client, source="bot")
+    assert response.status_code == 201
+    body = response.json()
+    assert body["source"] == "bot"

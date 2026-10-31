@@ -14,7 +14,7 @@
 # Priority: P0 by Sat Oct 31, P1 by Mon Nov 2, P2 by Tue Nov 3; freeze Wed Nov 4
 
 generated: 2026-10-26
-last_updated: 2026-10-30
+last_updated: 2026-10-31
 project: met
 project_key: NOKEY
 tracking_system: file-system
@@ -55,12 +55,12 @@ development_status:
   4-7-site-endpoints: done # B P0
   epic-4-retrospective: optional
 
-  epic-5: in-progress
+  epic-5: done
   5-1-frame-assessor: done # B P0
   5-2-investigator-agent: done # B P0
   5-3-citation-validator-and-repair-loop: done # D P0
   5-4-investigate-stage-and-report-persistence: done # D P0
-  5-5-teacher-student-disagreement: backlog # B P1
+  5-5-teacher-student-disagreement: done # B P1
   epic-5-retrospective: optional
 
   epic-6: done
@@ -84,8 +84,8 @@ development_status:
 
   epic-8: in-progress
   8-1-historical-survey-import: done # B P1
-  8-2-telegram-bot: backlog # D P2
+  8-2-telegram-bot: review # D P2
   8-3-deployment: review # B P1
-  8-4-demo-dataset-and-rehearsal: backlog # C P1
-  8-5-readme-and-submission: backlog # B P0
+  8-4-demo-dataset-and-rehearsal: review # C P1
+  8-5-readme-and-submission: review # B P0
   epic-8-retrospective: optional

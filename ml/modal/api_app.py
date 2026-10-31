@@ -1,7 +1,8 @@
 """ReefCase API and web app on Modal (Story 8.3, architecture §12).
 
 One origin: the API serves the web build too (``REEFCASE_WEB_DIST``). The DuckDB store and
-blobs live on the ``reefcase-data`` volume; segmentation runs on CPU with ReefStudent
+blobs live on the ``reefcase-data`` volume. Live uploads segment with SAM 3 on its Modal GPU
+endpoint (the secret's ``REEFCASE_SAM_MODAL_*``); the historical seed uses ReefStudent on CPU
 (``/data/models/reefstudent.pt``).
 
 Human deployment steps, from a clean checkout (the image is synced from ``uv.lock``):
@@ -41,17 +42,19 @@ except ImportError:  # pragma: no cover - Modal is a human deployment dependency
 APP_DIR = "/app"
 DATA_DIR = "/data"
 WEB_DIST = f"{APP_DIR}/web/dist"
+# The API calls SAM 3 over HTTP; the seed runs ReefStudent in its own container.
+API_CPU = 2
+SEED_CPU = 2
 
 
 def api_settings() -> Settings:
-    """The deployed settings: the volume, the baked web build and ReefStudent on CPU win over the
-    secret's env (a laptop ``.env`` may say ``fake`` or ``sam3_local``)."""
-    return Settings(
-        data_dir=Path(DATA_DIR),
-        web_dist=Path(WEB_DIST),
-        segmenter="student",
-        student_weights=Path(DATA_DIR + "/models/reefstudent.pt"),
-    )
+    """The deployed settings: the volume, the baked web build and SAM 3 on Modal win over the
+    secret's env (a laptop ``.env`` may say ``fake`` or ``sam3_local``).
+
+    Not ReefStudent: on the 2024 demo clip it read 46% live coral where SAM 3, the 2013-2019
+    history and the assessor all say about 5%, and the investigator looped on the contradiction.
+    """
+    return Settings(data_dir=Path(DATA_DIR), web_dist=Path(WEB_DIST), segmenter="sam3_modal")
 
 
 def seed_env(environ: Mapping[str, str]) -> dict[str, str]:
@@ -62,6 +65,9 @@ def seed_env(environ: Mapping[str, str]) -> dict[str, str]:
         "REEFCASE_DATA_DIR": DATA_DIR,
         "REEFCASE_SEGMENTER": "student",
         "REEFCASE_STUDENT_WEIGHTS": DATA_DIR + "/models/reefstudent.pt",
+        # torch sizes its pool to the host's cores, not the container's; ReefStudent was
+        # benchmarked at 807 ms a frame on 2 threads.
+        "OMP_NUM_THREADS": str(SEED_CPU),
     }
 
 
@@ -71,9 +77,6 @@ if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
         modal.Image.debian_slim(python_version="3.14")
         .uv_sync(frozen=True, extra_options="--no-dev --group gpu")
         .workdir(APP_DIR)
-        # torch sizes its pool to the host's cores, not the container's 2; ReefStudent was
-        # benchmarked at 807 ms a frame on 2 threads.
-        .env({"OMP_NUM_THREADS": "2"})
         # The geo tools read data/geo/*.parquet relative to the working directory.
         .add_local_dir("data/geo", f"{APP_DIR}/data/geo", ignore=["raw"])
         .add_local_file(
@@ -90,8 +93,8 @@ if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
 
     @app.function(
         image=image,
-        # Frame extraction and JPEG work starve on the 0.125-core default.
-        cpu=2.0,
+        # Frame extraction, JPEG work and ReefStudent starve on the 0.125-core default.
+        cpu=float(API_CPU),
         volumes={DATA_DIR: data},
         secrets=secrets,
         max_containers=1,
@@ -107,7 +110,7 @@ if modal is not None:  # pragma: no cover - requires Modal CLI and credentials.
 
         return create_app(api_settings())
 
-    @app.function(image=image, cpu=2.0, volumes={DATA_DIR: data}, secrets=secrets, timeout=3600)
+    @app.function(image=image, cpu=float(SEED_CPU), volumes={DATA_DIR: data}, secrets=secrets, timeout=3600)
     def seed() -> None:
         """Import the historical surveys (8.1) onto the volume."""
         subprocess.run(
