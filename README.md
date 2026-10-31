@@ -101,14 +101,16 @@ The demo dive is stitched from survey photos. To test ReefCase on real video, we
 stretch, without talking heads or title cards. They include hard cases on purpose: rubble, a diver
 blocking the view, 1998 VHS footage and edited films with many cuts.
 
-Three clips have been through the full pipeline so far. The dive dates are guesses based on each
+Five clips have been through the full pipeline so far. The dive dates are guesses based on each
 video's upload date, and the dive positions are approximate.
 
 | Clip | Live coral | Bleached | What the case file said |
 |---|---|---|---|
 | DLNR, Kāneʻohe Bay, Oʻahu, Feb 2019 | 67% | 2% | Healthy, with minor paling and no heat stress (DHW 0). The video's title says DLNR was investigating a new threat to these corals. It was most likely the Caribbean corkscrew anemone, first found in the bay a month earlier ([DLNR](https://dlnr.hawaii.gov/ais/2020/08/28/august-september-ais-team-update/)): in the clip a diver points into a crevice and takes a sample. ReefCase measures coral cover and bleaching, so it can't see a small anemone. |
 | TRACC transect, Malaysia, 2014 | 12% | 0% | Sparse coral, no bleaching, DHW 0.67. It flagged 8 of 24 frames as uncertain and said the diver blocking the reef limits certainty. |
+| DLNR, Molokini, Maui, autumn 2015 | 28% | 3% | Heat stress, at 0.95 confidence. Heat stress (DHW) peaked at 9.26 on 20 Oct 2015, above the severe threshold of 8. Branching corals were bleached white while massive ones kept their colour. This matches the 2015 Hawaiʻi bleaching event. |
 | DLNR, Hanauma Bay, Oʻahu, late 2014 | | | Rejected: too few frames passed the blur check, so no case file was made. |
+| Reef Check manta tow, Haiti, Feb 2011 | | | Rejected: too blurry, so no case file was made. |
 
 We don't redistribute the clips. Each link below opens the source video at the clip's start. None of
 the clips are US federal footage, so each owner's permission is needed before a clip is published.
