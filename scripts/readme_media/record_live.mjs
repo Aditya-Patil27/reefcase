@@ -94,7 +94,7 @@ await page.waitForTimeout(1400);
 const chooser = page.waitForEvent("filechooser");
 await clickEl(page.getByText("Drop a clip here or choose one from your device"), 900);
 await (await chooser).setFiles(clip);
-await page.locator("p.truncate", { hasText: path.basename(clip) }).waitFor();
+await page.getByText(/^Length [0-9]/).waitFor();
 await page.waitForTimeout(900);
 await hoverEl(page.getByRole("group", { name: "Dive site map" }), 800);
 await page.waitForTimeout(900);

@@ -15,7 +15,12 @@ from pydantic_ai.messages import (
 )
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 
-from reefcase.agent.investigator import INVESTIGATOR_PROMPT, InvestigationDraft, investigate
+from reefcase.agent.investigator import (
+    INVESTIGATOR_PROMPT,
+    TOOL_BUDGET,
+    InvestigationDraft,
+    investigate,
+)
 from reefcase.core.events import Event, ToolCalled, ToolReturned
 from reefcase.core.schemas import (
     Cause,
@@ -383,3 +388,63 @@ async def test_failed_tool_reports_error_to_model_and_keeps_going(
     tool_return = _tool_returns(seen[-1][0])[0]
     assert "error" in str(tool_return.content)
     assert investigation.survey_id == SURVEY_ID
+
+
+@pytest.mark.asyncio
+async def test_tool_budget_ends_a_runaway_tool_loop(store: Store, make_settings: Any) -> None:
+    heat, _ = await _seed(store)
+    offered: list[set[str]] = []
+
+    # A model that never stops calling heat_stress while it is offered.
+    def respond(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+        names = {t.name for t in info.function_tools}
+        offered.append(names)
+        if "heat_stress" in names:
+            return _call("heat_stress", HEAT_ARGS, f"call_{len(offered)}")
+        draft = _draft("frm_inv_0", [heat.id, "frm_inv_1"])
+        return ModelResponse(parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=draft)])
+
+    frames = _frames()
+    emitted: list[Event] = []
+
+    async def emit(event: Event) -> None:
+        emitted.append(event)
+
+    investigation = await investigate(
+        _survey(),
+        frames,
+        _segs(frames),
+        _assessments(frames),
+        _ctx(store, make_settings),
+        emit,
+        model=FunctionModel(respond, model_name="spark-agent"),
+    )
+
+    calls = [e for e in emitted if isinstance(e, ToolCalled)]
+    assert len(calls) == TOOL_BUDGET
+    assert offered[-1] == set()
+    assert investigation.survey_id == SURVEY_ID
+
+
+def test_system_prompt_states_the_tool_budget() -> None:
+    assert f"{TOOL_BUDGET} tool calls" in INVESTIGATOR_PROMPT
+
+
+@pytest.mark.asyncio
+async def test_calls_past_the_budget_in_one_response_get_an_error(
+    store: Store, make_settings: Any
+) -> None:
+    heat, _ = await _seed(store)
+    burst = ModelResponse(
+        parts=[
+            ToolCallPart(tool_name="heat_stress", args=HEAT_ARGS, tool_call_id=f"call_{i}")
+            for i in range(TOOL_BUDGET + 2)
+        ]
+    )
+    steps = [burst, _final(_draft("frm_inv_0", [heat.id, "frm_inv_1"]))]
+
+    _, emitted, seen = await _run(store, make_settings, steps)
+
+    assert len([e for e in emitted if isinstance(e, ToolCalled)]) == TOOL_BUDGET
+    extras = _tool_returns(seen[-1][0])[-2:]
+    assert all("tool budget spent" in str(r.content) for r in extras)

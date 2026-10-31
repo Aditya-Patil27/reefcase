@@ -7,7 +7,9 @@ tool call goes through ``registry.call`` (so its result is persisted and has a
 one at a time: events stay in call order and GFW's one-report limit holds.
 
 A tool that fails answers ``{"error": ...}`` to the model instead of failing
-the survey. Citation checking is ``agent.citations`` (story 5.3).
+the survey. After ``TOOL_BUDGET`` calls the tools are withdrawn, so the model
+has to write its case file instead of looping until the request limit. Citation
+checking is ``agent.citations`` (story 5.3).
 """
 
 import json
@@ -20,6 +22,7 @@ from typing import Any
 from pydantic import BaseModel, Field, ValidationError
 from pydantic_ai import Agent, ModelRetry, RunContext, Tool
 from pydantic_ai.models import Model
+from pydantic_ai.tools import ToolDefinition
 from pydantic_ai.toolsets import FunctionToolset
 
 from reefcase.agent.citations import repair, validate
@@ -43,6 +46,7 @@ __all__ = [
     "INVESTIGATOR_AGENT",
     "INVESTIGATOR_PROMPT",
     "INVESTIGATOR_TOOLS",
+    "TOOL_BUDGET",
     "InvestigationDraft",
     "investigate",
 ]
@@ -55,6 +59,8 @@ INVESTIGATOR_PROMPT = (Path(__file__).parent / "prompts" / "investigator.md").re
     encoding="utf-8"
 )
 SUMMARY_CHARS = 200
+# Two calls per tool, well under pydantic-ai's 50-request limit. The prompt states the same number.
+TOOL_BUDGET = 10
 
 Emit = Callable[[Event], Awaitable[None]]
 
@@ -77,6 +83,7 @@ class _Deps:
     ctx: ToolContext
     emit: Emit
     known_ids: set[str]
+    calls: int = 0
 
 
 INVESTIGATOR_AGENT = Agent(
@@ -117,6 +124,10 @@ def _agent_tool(spec: ToolSpec) -> Tool[_Deps]:
             params = spec.params_type.model_validate(kwargs)
         except ValidationError as exc:
             raise ModelRetry(f"invalid {spec.name} params: {exc}") from exc
+        # Several calls in one response can pass the filter together; the extras get this answer.
+        if deps.calls >= TOOL_BUDGET:
+            return {"error": "tool budget spent; write the case file now"}
+        deps.calls += 1
         call_id = run_ctx.tool_call_id or ""
         await _emit(
             deps,
@@ -144,6 +155,10 @@ def _agent_tool(spec: ToolSpec) -> Tool[_Deps]:
         takes_ctx=True,
         sequential=True,
     )
+
+
+def _within_budget(run_ctx: RunContext[_Deps], _tool: ToolDefinition) -> bool:
+    return run_ctx.deps.calls < TOOL_BUDGET
 
 
 def _tools() -> list[Tool[_Deps]]:
@@ -204,7 +219,7 @@ async def investigate(
         _prompt(survey, frames, segs, assessments),
         model=model,
         deps=deps,
-        toolsets=[FunctionToolset(_tools())],
+        toolsets=[FunctionToolset(_tools()).filtered(_within_budget)],
     )
     return Investigation(
         id=new_id(INVESTIGATION),

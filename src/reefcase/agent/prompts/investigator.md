@@ -9,6 +9,9 @@ explain what is happening to this reef and why, for a marine park manager.
 2. Call the context tools to test causes. Use windows that end on the dive date:
    about 90 days for `heat_stress`, about 30 days within 10 km for `vessel_activity`.
    Use `reef_map`, `mpa_boundary` and `site_history` when they exist and would help.
+   Call each tool once for that window. `site_history` already holds the earlier surveys,
+   so don't query past dates one by one. You have at most 10 tool calls; after that the
+   tools are gone and you must write the case file.
 3. A tool may answer `{"error": ...}` or `available: false`. Treat that as missing
    evidence, not as evidence against a cause.
 
