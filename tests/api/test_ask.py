@@ -78,6 +78,61 @@ async def test_ask_409_when_survey_has_no_investigation_yet(make_settings, tmp_p
 
 
 @pytest.mark.asyncio
+async def test_ask_504_when_the_model_times_out(
+    make_settings, tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    app = build_app(make_settings, tmp_path)
+    store = app.state.store
+    survey = Survey(
+        id="srv_ask_slow",
+        site_id="site_test",
+        dive_date=date(2026, 10, 25),
+        status=SurveyStatus.DONE,
+        source="upload",
+        created_at=_now(),
+    )
+    await store.surveys.save(survey)
+    await store.investigations.save(
+        Investigation(
+            id="inv_ask_slow",
+            survey_id=survey.id,
+            findings=[
+                Finding(
+                    statement="Bleaching observed.",
+                    evidence=[EvidenceRef(kind="frame", id="frm_slow_1")],
+                )
+            ],
+            hypotheses=[
+                Hypothesis(
+                    cause=Cause.HEAT_STRESS,
+                    confidence=0.5,
+                    supporting=[EvidenceRef(kind="frame", id="frm_slow_1")],
+                    contradicting=[],
+                    rationale="Unclear.",
+                )
+            ],
+            verdict="Unclear.",
+            actions=[],
+            uncertain_frames=[],
+            model="Muse Spark Open",
+        )
+    )
+
+    async def hung_ask(*_args: Any, **_kwargs: Any) -> None:
+        raise TimeoutError
+
+    monkeypatch.setattr(surveys_route, "build_model", lambda *_args: object())
+    monkeypatch.setattr(surveys_route, "ask", hung_ask)
+
+    async with client_for(app) as client:
+        resp = await client.post(
+            f"/api/surveys/{survey.id}/ask",
+            json={"question": "Why not heat stress?"},
+        )
+    assert resp.status_code == 504
+
+
+@pytest.mark.asyncio
 async def test_ask_422_when_question_empty_or_whitespace(make_settings, tmp_path) -> None:
     app = build_app(make_settings, tmp_path)
     async with client_for(app) as client:

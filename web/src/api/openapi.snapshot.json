@@ -475,6 +475,9 @@
           },
           "422": {
             "description": "Invalid question."
+          },
+          "504": {
+            "description": "The model took too long to answer."
           }
         }
       }

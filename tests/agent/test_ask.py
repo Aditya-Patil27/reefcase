@@ -1,5 +1,6 @@
 """Tests for the ask agent and citation validation (Story 8.6)."""
 
+import asyncio
 from datetime import UTC, date, datetime
 
 import pytest
@@ -14,6 +15,7 @@ from pydantic_ai.messages import (
 )
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 
+import reefcase.agent.ask as ask_module
 from reefcase.agent.ask import ask
 from reefcase.core.schemas import (
     Cause,
@@ -235,6 +237,54 @@ async def test_ask_second_bad_draft_drops_bad_ref() -> None:
     # Exactly 1 retry happened (2 total calls), then the bad ref was dropped
     assert len(calls) == 2
     assert ans.citations == [EvidenceRef(kind="tool_result", id=TR_ID)]
+
+
+@pytest.mark.asyncio
+async def test_ask_citation_with_wrong_kind_is_treated_as_unknown() -> None:
+    calls: list[ModelMessage] = []
+
+    def respond(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+        calls.append(messages[-1])
+        # A tool-result ID labelled as a frame would open the drawer on a frame that isn't there.
+        draft = {
+            "answer": "Heat stress was severe.",
+            "citations": [{"kind": "frame", "id": TR_ID}],
+        }
+        return ModelResponse(parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=draft)])
+
+    model = FunctionModel(respond, model_name="fake-ask")
+    ans = await ask(
+        "Why heat stress?",
+        _investigation(),
+        [_frame()],
+        [_seg()],
+        [_assessment()],
+        [_tool_result()],
+        model=model,
+    )
+
+    assert len(calls) == 2
+    assert ans.citations == []
+
+
+@pytest.mark.asyncio
+async def test_ask_times_out_on_a_hung_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ask_module, "ASK_TIMEOUT_S", 0.05)
+
+    async def respond(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+        await asyncio.sleep(5)
+        raise AssertionError("unreachable")
+
+    with pytest.raises(TimeoutError):
+        await ask(
+            "Why heat stress?",
+            _investigation(),
+            [_frame()],
+            [_seg()],
+            [_assessment()],
+            [_tool_result()],
+            model=FunctionModel(respond, model_name="fake-ask"),
+        )
 
 
 @pytest.mark.asyncio

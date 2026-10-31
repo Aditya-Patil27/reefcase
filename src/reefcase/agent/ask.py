@@ -6,6 +6,7 @@ and the tool results this survey's agent received. Register no tools and make no
 
 from __future__ import annotations
 
+import asyncio
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -36,6 +37,10 @@ __all__ = [
 
 ASK_PROMPT = (Path(__file__).parent / "prompts" / "ask.md").read_text(encoding="utf-8")
 
+#: Seconds one question may take. A hung Baseten request would otherwise wait out the OpenAI
+#: client's 600 s timeout while the reader watches "Reading the case…".
+ASK_TIMEOUT_S = 90
+
 
 class AskRequest(BaseModel):
     """Question asked about a survey's investigation."""
@@ -65,7 +70,7 @@ class Answer(BaseModel):
 
 @dataclass(slots=True)
 class _AskDeps:
-    known_ids: set[str]
+    known_refs: set[tuple[str, str]]
 
 
 ASK_AGENT = Agent(
@@ -78,14 +83,15 @@ ASK_AGENT = Agent(
 
 @ASK_AGENT.output_validator
 def _validate_ask_citations(ctx: RunContext[_AskDeps], answer: Answer) -> Answer:
-    known = ctx.deps.known_ids
-    bad_refs = [ref for ref in answer.citations if ref.id not in known]
+    # Match on (kind, id): a tool-result ID cited as a frame would open the wrong drawer.
+    known = ctx.deps.known_refs
+    bad_refs = [ref for ref in answer.citations if (ref.kind, ref.id) not in known]
     if not bad_refs:
         return answer
     if ctx.retry >= ctx.max_retries:
-        valid_citations = [ref for ref in answer.citations if ref.id in known]
+        valid_citations = [ref for ref in answer.citations if (ref.kind, ref.id) in known]
         return answer.model_copy(update={"citations": valid_citations})
-    bullet_list = "\n".join(f"- {ref.id}" for ref in bad_refs)
+    bullet_list = "\n".join(f"- {ref.kind}:{ref.id}" for ref in bad_refs)
     raise ModelRetry(
         f"The following citations cite unknown evidence IDs:\n{bullet_list}\n"
         "Every citation must cite only valid frame IDs or tool_result IDs from this survey."
@@ -153,15 +159,19 @@ async def ask(
     *,
     model: Model,
 ) -> Answer:
-    """Answer a question about the survey's investigation, citing only valid evidence."""
-    known_ids = {f.id for f in frames} | {tr.id for tr in tool_results}
-    deps = _AskDeps(known_ids=known_ids)
+    """Answer a question about the survey's investigation, citing only valid evidence.
+
+    Raises ``TimeoutError`` when the model takes longer than ``ASK_TIMEOUT_S``.
+    """
+    known_refs = {("frame", f.id) for f in frames} | {("tool_result", tr.id) for tr in tool_results}
+    deps = _AskDeps(known_refs=known_refs)
     prompt = _build_prompt(question, investigation, frames, segs, assessments, tool_results)
-    result = await ASK_AGENT.run(
-        prompt,
-        model=model,
-        deps=deps,
-        model_settings=OpenAIChatModelSettings(openai_reasoning_effort="low", max_tokens=1500),
-        usage_limits=UsageLimits(request_limit=3),
-    )
+    async with asyncio.timeout(ASK_TIMEOUT_S):
+        result = await ASK_AGENT.run(
+            prompt,
+            model=model,
+            deps=deps,
+            model_settings=OpenAIChatModelSettings(openai_reasoning_effort="low", max_tokens=1500),
+            usage_limits=UsageLimits(request_limit=3),
+        )
     return result.output

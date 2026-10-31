@@ -9,6 +9,7 @@ readable after the app shuts down (the store is the only database).
 """
 
 import asyncio
+import contextlib
 from datetime import UTC, date, datetime
 from pathlib import PurePosixPath
 from typing import Annotated, Literal
@@ -18,6 +19,7 @@ from pydantic import BaseModel
 
 from reefcase.agent.ask import Answer, AskRequest, ask
 from reefcase.core.errors import NotFoundError
+from reefcase.core.events import ToolReturned
 from reefcase.core.ids import SITE, SURVEY, new_id
 from reefcase.core.schemas import (
     Frame,
@@ -203,6 +205,7 @@ async def get_survey_frames(survey_id: str, request: Request) -> list[FrameDetai
         404: {"description": "Survey not found."},
         409: {"description": "Investigation not ready yet."},
         422: {"description": "Invalid question."},
+        504: {"description": "The model took too long to answer."},
     },
 )
 async def ask_survey(
@@ -232,26 +235,24 @@ async def ask_survey(
     tool_results: list[ToolResult] = []
     seen_ids: set[str] = set()
     for ev in events:
-        if getattr(ev, "type", None) == "tool_returned":
-            tr_id = getattr(ev, "tool_result_id", None)
-            if tr_id and tr_id not in seen_ids:
-                seen_ids.add(tr_id)
-                try:
-                    tr = await store.tool_results.get(tr_id)
-                    tool_results.append(tr)
-                except NotFoundError:
-                    pass
+        if isinstance(ev, ToolReturned) and ev.tool_result_id not in seen_ids:
+            seen_ids.add(ev.tool_result_id)
+            with contextlib.suppress(NotFoundError):
+                tool_results.append(await store.tool_results.get(ev.tool_result_id))
 
     model = build_model("agent", request.app.state.settings)
     if model is None:
         raise HTTPException(status_code=500, detail="agent model not configured")
 
-    return await ask(
-        payload.question,
-        investigation,
-        frames,
-        segs,
-        assessments,
-        tool_results,
-        model=model,
-    )
+    try:
+        return await ask(
+            payload.question,
+            investigation,
+            frames,
+            segs,
+            assessments,
+            tool_results,
+            model=model,
+        )
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="The model took too long to answer.") from exc

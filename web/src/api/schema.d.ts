@@ -903,6 +903,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description The model took too long to answer. */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
 }

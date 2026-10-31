@@ -1,5 +1,5 @@
 ---
-status: review
+status: done
 ---
 
 # Story 8.6: Ask this case

@@ -167,7 +167,7 @@ def _tools() -> list[Tool[_Deps]]:
     return [_agent_tool(registry.spec(name)) for name in INVESTIGATOR_TOOLS if name in available]
 
 
-def _frame_line(frame: Frame, seg: Segmentation | None, assessment: FrameAssessment | None) -> str:
+def frame_line(frame: Frame, seg: Segmentation | None, assessment: FrameAssessment | None) -> str:
     cover = (
         ", ".join(f"{cls.value}: {share * 100:.1f}%" for cls, share in seg.cover.items())
         if seg is not None
@@ -184,9 +184,6 @@ def _frame_line(frame: Frame, seg: Segmentation | None, assessment: FrameAssessm
     return f"- {frame.id} at {frame.t_sec:.1f} s | cover: {cover} | {health}"
 
 
-frame_line = _frame_line
-
-
 def _prompt(
     survey: Survey,
     frames: list[Frame],
@@ -199,7 +196,7 @@ def _prompt(
         f"Survey {survey.id} at site {survey.site_id}, dive date {survey.dive_date.isoformat()}.",
         f"Frames ({len(frames)}):",
         *(
-            _frame_line(frame, seg_by_frame.get(frame.id), assessment_by_frame.get(frame.id))
+            frame_line(frame, seg_by_frame.get(frame.id), assessment_by_frame.get(frame.id))
             for frame in frames
         ),
     ]
