@@ -86,6 +86,6 @@ development_status:
   8-1-historical-survey-import: done # B P1
   8-2-telegram-bot: review # D P2
   8-3-deployment: review # B P1
-  8-4-demo-dataset-and-rehearsal: backlog # C P1
+  8-4-demo-dataset-and-rehearsal: review # C P1
   8-5-readme-and-submission: backlog # B P0
   epic-8-retrospective: optional
