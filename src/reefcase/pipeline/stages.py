@@ -286,14 +286,16 @@ async def assess_stage(
     settings: Settings | None = None,
     model: Model | None = None,
 ) -> list[FrameAssessment]:
-    """Assess each segmented frame with the teacher model, ``ASSESS_CONCURRENCY`` at a time.
+    """Assess each segmented frame, ``ASSESS_CONCURRENCY`` at a time, with the student model
+    (Glimmer-Reef, 7.7) when ``REEFCASE_LLM_STUDENT_*`` is set, else the teacher.
 
     Stores each ``FrameAssessment`` and emits ``assessed``. A frame whose model
     output is invalid twice is skipped with a warning; the rest carry on. Returns
     the assessments in frame order.
     """
     event_bus = bus or EventBus(store)
-    llm = model or build_model("teacher", settings or Settings())
+    cfg = settings or Settings()
+    llm = model or build_model("student", cfg) or build_model("teacher", cfg)
     if llm is None:  # build_model only returns None for "student"
         raise ConfigError("REEFCASE_LLM_TEACHER_* is not configured")
 
@@ -430,7 +432,8 @@ async def run_stages(
         segmenter=segmenter,
         checker=checker or build_checker(cfg),
     )
-    if teacher_model is None and cfg.llm_role("teacher") is None:
+    no_llm = cfg.llm_role("student") is None and cfg.llm_role("teacher") is None
+    if teacher_model is None and no_llm:
         logger.warning("REEFCASE_LLM_TEACHER_* is not configured; skipping frame assessment")
         assessments: list[FrameAssessment] = []
     else:

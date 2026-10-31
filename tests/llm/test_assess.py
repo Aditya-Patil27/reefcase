@@ -297,9 +297,9 @@ async def test_run_stages_assesses_kept_frames_with_the_teacher(
     monkeypatch.setattr(stages_module, "Settings", lambda: settings)
     roles: list[str] = []
 
-    def fake_build_model(role: str, _settings: Settings) -> FunctionModel:
+    def fake_build_model(role: str, _settings: Settings) -> FunctionModel | None:
         roles.append(role)
-        return _valid_model()
+        return None if role == "student" else _valid_model()  # as build_model when unset
 
     monkeypatch.setattr(stages_module, "build_model", fake_build_model)
     await _create_survey(store, store.blobs.save_video(SURVEY_ID, CLIP_PATH.read_bytes()))
@@ -310,8 +310,36 @@ async def test_run_stages_assesses_kept_frames_with_the_teacher(
     assert survey.status is SurveyStatus.DONE, survey.failure_reason
     frames = await store.frames.list_by_survey(SURVEY_ID)
     assessed = await store.assessments.list_by_survey(SURVEY_ID)
-    assert roles == ["teacher"]
+    assert roles == ["student", "teacher"]
     assert [a.frame_id for a in assessed] == [f.id for f in frames]
+
+
+@pytest.mark.asyncio
+async def test_run_stages_prefers_the_student_when_configured(
+    store: Store,
+    make_settings: Callable[..., Settings],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = make_settings(
+        llm_student_base_url="https://glimmer.example/v1",
+        llm_student_api_key="sk-test",
+        llm_student_model="glimmer-reef",
+    )
+    monkeypatch.setattr(stages_module, "Settings", lambda: settings)
+    roles: list[str] = []
+
+    def fake_build_model(role: str, _settings: Settings) -> FunctionModel:
+        roles.append(role)
+        return FunctionModel(lambda _, info: _answer(info, VALID), model_name=f"{role}-model")
+
+    monkeypatch.setattr(stages_module, "build_model", fake_build_model)
+    await _create_survey(store, store.blobs.save_video(SURVEY_ID, CLIP_PATH.read_bytes()))
+
+    assert await JobRunner(store, stages_module.run_stages).run_once() is True
+
+    assessed = await store.assessments.list_by_survey(SURVEY_ID)
+    assert roles == ["student"]
+    assert assessed and {a.model for a in assessed} == {"student-model"}
 
 
 @pytest.mark.asyncio
