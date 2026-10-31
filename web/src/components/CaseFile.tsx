@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
 import type { FrameView, ToolCallView } from "../live/reducer";
-import { evidenceLabel, frameLabel, humanize } from "../format";
+import { causeLabel, evidenceLabel, frameLabel, modelName, splitFirstSentence } from "../format";
 import { CHIP, CHIP_ALERT, LIT_RING, RULE_CITED, RULE_PENDING } from "./strobe";
 
 type Investigation = components["schemas"]["Investigation"];
@@ -118,7 +118,7 @@ export function CaseFile({
   alert = null,
   showLeadFrame = true,
 }: CaseFileProps): ReactElement {
-  const topHypothesis = investigation.hypotheses[0];
+  const [headline, verdictRest] = splitFirstSentence(investigation.verdict);
   const frameIds = frames.map((f) => f.id);
   const toolByResultId = toolNamesByResultId(toolCalls);
   const label = (ev: EvidenceRef) => evidenceLabel(ev, frameIds, toolByResultId);
@@ -143,25 +143,24 @@ export function CaseFile({
     <article aria-label="Case file" className="@container space-y-8 text-fg">
       <section aria-label="Verdict" className="grid gap-5 @2xl:grid-cols-[1fr_minmax(0,18rem)]">
         <div className="space-y-3">
-          {/* A one-line verdict reads as a headline; a model's paragraph-long one drops to title size. */}
+          {/* The first sentence is the headline; a long one drops to title size. The top
+              hypothesis's rationale is not repeated here: it sits under Hypotheses. */}
           <h2
             className={
-              investigation.verdict.length > 120
+              headline.length > 120
                 ? "max-w-[60ch] text-title font-bold text-fg"
                 : "text-display font-bold text-fg"
             }
           >
-            {investigation.verdict}
+            {headline}
           </h2>
+          {verdictRest ? <p className="text-body text-secondary">{verdictRest}</p> : null}
           {alert ? (
             <p className="flex flex-wrap gap-2">
               <span className={CHIP_ALERT}>{alert}</span>
             </p>
           ) : null}
-          {topHypothesis?.rationale ? (
-            <p className="text-body text-secondary">{topHypothesis.rationale}</p>
-          ) : null}
-          <p className="text-label text-muted">Written by {investigation.model}</p>
+          <p className="text-label text-muted">Written by {modelName(investigation.model)}</p>
         </div>
 
         {showLeadFrame && worstFrame?.thumbUrl && worstFrame.cover ? (
@@ -189,7 +188,7 @@ export function CaseFile({
             <figcaption className="flex justify-between text-label">
               <span className="font-bold text-fg">{frameLabel(frameIds, worstFrame.id)}</span>
               <span className="font-semibold text-fg">
-                {Math.round(worstFrame.cover.bleached_coral * 100)}% bleached
+                {Math.round(worstFrame.cover.live_coral * 100)}% live coral
               </span>
             </figcaption>
           </figure>
@@ -197,16 +196,19 @@ export function CaseFile({
       </section>
 
       <section aria-labelledby="hypotheses-heading" className="space-y-3">
-        <h3 id="hypotheses-heading" className={HEADING}>
-          Hypotheses
-        </h3>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 id="hypotheses-heading" className={HEADING}>
+            Hypotheses
+          </h3>
+          <p className="text-label text-muted">Each cause is scored on its own</p>
+        </div>
         <ul className="space-y-5">
           {investigation.hypotheses.map((hyp) => {
             const percent = Math.round(hyp.confidence * 100);
             return (
               <li key={hyp.cause} className="space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-ui font-bold text-fg">{humanize(hyp.cause)}</span>
+                  <span className="text-ui font-bold text-fg">{causeLabel(hyp.cause)}</span>
                   <span className="text-ui font-bold text-fg">{percent}%</span>
                 </div>
                 <div className="h-2 w-full bg-sunken">

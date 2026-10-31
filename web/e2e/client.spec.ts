@@ -43,7 +43,7 @@ test("the mock survey and site resolve by their real ids", async ({ page }) => {
   await stubBasemap(page);
 
   await page.goto(`/surveys/${SURVEY_ID}`);
-  await expect(page.getByRole("main")).toContainText(SURVEY_ID);
+  await expect(page.getByRole("heading", { name: "Lizard Island" })).toBeVisible();
   // The mock paces the event stream, so findings arrive a few seconds in.
   await expect(page.getByRole("main")).toContainText("Findings", { timeout: 15_000 });
 

@@ -57,8 +57,9 @@ function SiteRoute() {
   const covered = surveys
     .filter((survey) => survey.cover)
     .sort((a, b) => a.dive_date.localeCompare(b.dive_date));
-  const first = covered[0];
   const latest = covered[covered.length - 1];
+  // The headline change is against the dive before the latest: what this dive found.
+  const previous = covered.filter((survey) => survey.dive_date < (latest?.dive_date ?? "")).pop();
   // The evidence board shows the latest dive that came with footage.
   const evidenceSurvey = covered.filter((survey) => survey.video_path).pop() ?? latest;
 
@@ -107,7 +108,7 @@ function SiteRoute() {
   }
 
   const latestLive = latest?.cover?.live_coral ?? 0;
-  const firstLive = first?.cover?.live_coral ?? 0;
+  const previousLive = previous?.cover?.live_coral ?? 0;
 
   const columns: DataColumn<Survey & Record<string, unknown>>[] = [
     {
@@ -138,15 +139,6 @@ function SiteRoute() {
         ) : null,
     },
     {
-      // Measured bleached cover, not a label inferred from low live cover.
-      key: "bleached_cover",
-      label: "Bleached",
-      numeric: true,
-      render: (_, row) => (
-        <span className="text-ui text-fg">{row.cover ? percent(row.cover.bleached_coral) : "—"}</span>
-      ),
-    },
-    {
       key: "actions",
       label: "",
       render: (_, row) => (
@@ -171,17 +163,23 @@ function SiteRoute() {
             {site?.mpa_id ? <p className={CHIP}>MPA protected</p> : null}
           </header>
 
-          {latest && first ? (
+          {latest ? (
             <div aria-label="Site key figures" className="space-y-2">
               <p className="flex items-baseline gap-2">
                 <span className="text-hero font-extrabold">{percent(latestLive)}</span>{" "}
                 <span className="text-title font-semibold">live coral</span>
               </p>{" "}
               <p className="text-body text-secondary">
-                <span className="font-bold text-fg">
-                  {formatSignedPp((latestLive - firstLive) * 100)} since {first.dive_date.slice(0, 4)}
-                </span>{" "}
-                · {surveys.length} {surveys.length === 1 ? "survey" : "surveys"} · latest dive{" "}
+                {previous ? (
+                  <>
+                    <span className="font-bold text-fg">
+                      {formatSignedPp((latestLive - previousLive) * 100)} since{" "}
+                      {previous.dive_date.slice(0, 4)}
+                    </span>{" "}
+                    ·{" "}
+                  </>
+                ) : null}
+                {surveys.length} {surveys.length === 1 ? "survey" : "surveys"} · latest dive{" "}
                 {latest.dive_date}
               </p>
             </div>

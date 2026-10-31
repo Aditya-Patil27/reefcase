@@ -14,6 +14,29 @@ export function humanize(snake: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+/**
+ * A hypothesis cause as a reader sees it. `unknown` is the agent's bucket for a cause none of its
+ * tools measure (runoff, water quality), so it must not read as "we don't know".
+ */
+export function causeLabel(cause: string): string {
+  return cause === "unknown" ? "Cause outside our data" : humanize(cause);
+}
+
+/** "meta-models/muse-spark-open-1026" → "Muse Spark Open": the name, not the deployment id. */
+export function modelName(id: string): string {
+  const name = (id.split("/").pop() ?? id).replace(/-\d+$/, "");
+  return name
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+/** The first sentence, and whatever follows it. */
+export function splitFirstSentence(text: string): [string, string] {
+  const match = /^(.+?[.!?])\s+(\S[\s\S]*)$/.exec(text.trim());
+  return match ? [match[1]!, match[2]!] : [text.trim(), ""];
+}
+
 /** "Frame 06" from the frame's arrival order. */
 export function frameLabel(frameIds: string[], id: string): string {
   const index = frameIds.indexOf(id);

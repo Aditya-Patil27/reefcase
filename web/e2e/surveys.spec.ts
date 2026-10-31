@@ -14,9 +14,9 @@ test("/surveys/$id renders live investigation view with frames, trace, and findi
 
   await page.goto(`/surveys/${SURVEY_ID}`);
 
-  // Header readout contains survey ID and Lizard Island
+  // Header names the site; the survey id stays out of the readout
   await expect(page.getByRole("heading", { name: "Lizard Island" })).toBeVisible();
-  await expect(page.getByText(SURVEY_ID).first()).toBeVisible();
+  await expect(page.getByText(SURVEY_ID)).toHaveCount(0);
 
   // Pipeline stages (responsive)
   const isMobile = (page.viewportSize()?.width ?? 1440) < 640;

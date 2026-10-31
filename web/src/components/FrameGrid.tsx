@@ -31,9 +31,10 @@ export function FrameGrid({
   litId,
   onOpenFrame,
   title = "Frames",
-  description = "Frames sit in the water's cast until you open one. An opened frame shows in true colour with its SAM 3 mask.",
+  description = "Open a frame to see it in true colour with its SAM 3 mask.",
 }: FrameGridProps) {
-  const [mode, setMode] = useState<ViewMode>("both");
+  // The photo first: a mask over every thumbnail reads as a wall of flat colour.
+  const [mode, setMode] = useState<ViewMode>("frame");
 
   return (
     <section aria-labelledby="frames-heading" className={`space-y-4 ${className}`}>

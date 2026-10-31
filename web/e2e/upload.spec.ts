@@ -60,7 +60,7 @@ test("/upload renders form, handles clip drop, shows progress and navigates", as
 
   // Navigates to /surveys/$id
   await expect(page).toHaveURL(new RegExp(`/surveys/${SURVEY_ID}$`), { timeout: 10_000 });
-  await expect(page.getByRole("main")).toContainText(SURVEY_ID);
+  await expect(page.getByRole("heading", { name: "Lizard Island" })).toBeVisible();
 
   await expectNoHorizontalOverflow(page, "/upload");
   expect(consoleErrors).toEqual([]);

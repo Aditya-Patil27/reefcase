@@ -11,7 +11,6 @@ import { CaseFile, useCitedToolResults } from "../components/CaseFile";
 import { BUTTON_PRIMARY, CHIP, RULE_CITED } from "../components/strobe";
 import { toFrameView, type FrameView } from "../live/reducer";
 import { EvidenceDrawer, type EvidenceItem } from "../components/EvidenceDrawer";
-import { CopyButton } from "../components/arc/copy-button/copy-button";
 import { Stepper, type StepperStep } from "../components/arc/stepper/stepper";
 import { ResizablePanels, ResizablePanel } from "../components/arc/resizable-panels/resizable-panels";
 import TextShimmer from "../components/arc/text-shimmer/text-shimmer";
@@ -245,6 +244,7 @@ function SurveyRouteComponent() {
       status={status}
       reconnectSeq={reconnectSeq}
       frameIds={state.frames.map((f) => f.id)}
+      siteName={site?.name}
       onSelectEvidence={(kind, evId) => handleOpenEvidence({ kind, id: evId })}
     />
   );
@@ -258,10 +258,6 @@ function SurveyRouteComponent() {
             <p className="flex flex-wrap items-center gap-x-2 text-label text-secondary tabular-nums">
               {site ? <span>{formatCoordinates(site.location)}</span> : null}
               {survey?.dive_date ? <span>Dive {survey.dive_date}</span> : null}
-              <span className="flex items-center gap-1">
-                {id}
-                <CopyButton value={id} iconOnly />
-              </span>
             </p>
           </div>
 
