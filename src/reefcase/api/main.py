@@ -41,17 +41,22 @@ def _health_payload(settings: Settings) -> dict[str, object]:
     """
     agent = settings.llm_role("agent") is not None
     teacher = settings.llm_role("teacher") is not None
+    student = settings.llm_role("student") is not None
     return {
         "status": "ok" if agent else "degraded",
         "detail": "models ok" if agent else "agent model not configured",
         "providers": {
             "segmenter": settings.segmenter,
             "investigator": "configured" if agent else "missing",
-            "assessor": "configured" if teacher else "missing",
+            "assessor": "configured" if teacher or student else "missing",
         },
+        # Muse Licence attribution: the assessor, agent and Glimmer-Reef all build on Muse.
+        "built_with": "Built with Muse Spark Open",
         "segmenter": settings.segmenter,
         "agent_llm": agent,
         "teacher_llm": teacher,
+        # The assess stage uses Glimmer-Reef (ml/modal/glimmer_endpoint.py) when this is on.
+        "student_llm": student,
     }
 
 

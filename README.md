@@ -74,7 +74,8 @@ We use open-weight Meta models only.
 | **SAM 3** (`facebook/sam3`) | Modal T4 endpoint ([ml/modal/sam_endpoint.py](ml/modal/sam_endpoint.py)) | Text-prompted segmentation of each frame into six reef classes. Also the teacher that pseudo-labelled training frames for ReefStudent. |
 | **Muse Spark Open** (Baseten) | Frame assessor ([src/reefcase/llm/assess.py](src/reefcase/llm/assess.py)) | Reads each frame with its segmentation and returns a bleaching severity (0–4), growth forms, damage and notes. |
 | **Muse Spark Open** | Investigator agent ([src/reefcase/agent/investigator.py](src/reefcase/agent/investigator.py)) | Calls the five data tools, weighs the evidence and writes the cited case file. |
-| **Muse Spark Open** | Teacher dataset ([ml/modal/gen_assessments.py](ml/modal/gen_assessments.py)) | 3,366 frame assessments of Coralscapes images, as training data for a fast Muse Glimmer frame assessor. |
+| **Muse Spark Open** | Teacher dataset ([ml/modal/gen_assessments.py](ml/modal/gen_assessments.py)) | 3,366 frame assessments of Coralscapes images, as training data for a Muse Glimmer frame assessor. |
+| **Glimmer-Reef** (LoRA on Muse Glimmer-30B) | Optional frame assessor ([ml/modal/glimmer_endpoint.py](ml/modal/glimmer_endpoint.py)) | Distilled from those assessments; agrees with Muse Spark Open's severity on 80% of held-out frames (base Glimmer 70%) and catches 76% of bleached ones ([ml/results/glimmer_v2_eval.json](ml/results/glimmer_v2_eval.json)). Off by default: at about 39 s a frame on one H100 it is slower than the teacher. |
 
 ## Two segmenters that check each other
 

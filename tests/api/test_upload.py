@@ -172,6 +172,8 @@ def test_health_reports_provider_config(make_settings, tmp_path) -> None:
     assert body["segmenter"] == "fake"
     assert body["agent_llm"] is False
     assert body["teacher_llm"] is False
+    assert body["student_llm"] is False
+    assert body["built_with"] == "Built with Muse Spark Open"
 
 
 def test_dive_date_is_a_real_date() -> None:
