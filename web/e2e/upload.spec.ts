@@ -49,8 +49,8 @@ test("/upload renders form, handles clip drop, shows progress and navigates", as
     buffer: Buffer.from("synthetic-dive-video-clip-bytes"),
   });
 
-  // Filename appears in the file readout paragraph
-  await expect(page.locator("p.truncate", { hasText: "lizard-island.mp4" })).toBeVisible();
+  // The dropzone file card names the clip, once
+  await expect(page.getByText("lizard-island.mp4")).toBeVisible();
 
   // Submit
   await submitButton.click();
