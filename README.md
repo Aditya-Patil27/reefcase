@@ -1,11 +1,55 @@
-# ReefCase
+<img src="docs/media/hero.svg" width="100%" alt="ReefCase. Turn a diver's reef video into a cited investigation. A real frame from NOAA station HAW-41 is swept by a light that reveals its SAM 3 segmentation: 13% live coral.">
 
-Turn a diver's reef video into a cited investigation.
+<p align="center">
+  <a href="https://app2732006--reefcase-api-api.us-east.modal.run"><b>Open the live app</b></a>
+  &nbsp;·&nbsp;
+  <a href="docs/media/tour.mp4">Watch the 42-second tour</a>
+  &nbsp;·&nbsp;
+  <a href="#how-it-works">How it works</a>
+  &nbsp;·&nbsp;
+  <a href="#evaluation">Evaluation</a>
+</p>
 
-**Live:** https://app2732006--reefcase-api-api.us-east.modal.run · Team **Yours Truly** · Meta
-Global AI Developer Hackathon (Oct 26–Nov 4, 2026)
+<p align="center">
+  Team <b>Yours Truly</b> · Meta Global AI Developer Hackathon, Oct 26–Nov 4, 2026<br>
+  Built with Muse Spark Open and SAM 3. Powered by Global Fishing Watch.
+</p>
 
-<!-- TODO(8.4/8.5): demo GIF from the final recording, e.g. ![ReefCase demo](docs/media/demo.gif) -->
+<br>
+
+A marine park manager gets a number: "coral cover down 20%". ReefCase gives them a case. Upload a
+reef clip, pin the dive site and set the date. Minutes later there is a case file that says what
+happened to the reef, which causes the data supports and which it rules out, with every claim
+linked to the frame or the dataset it came from.
+
+## See it work
+
+<!--
+  Inline player: on github.com, edit this file and drag docs/media/tour.mp4 into the editor.
+  GitHub uploads it and inserts a https://github.com/user-attachments/assets/... URL on its own
+  line, which renders as a video player. Put that line here, above the GIFs.
+-->
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/media/site.gif" width="100%" alt="The reef map with HAW-41, then the site page: cover by dive since 2013 and the 24 segmented frames from the 2024 dive.">
+<p><b>The site.</b> Every monitored reef on one map. HAW-41 opens on its NOAA survey history since
+2013 and the new dive, split frame by frame into live coral, bleached coral, algae, rubble, sand
+and other.</p>
+</td>
+<td width="50%" valign="top">
+<img src="docs/media/casefile.gif" width="100%" alt="The case file: verdict, hypotheses with confidences, a cited frame opened in the evidence drawer, then the raw NOAA Coral Reef Watch tool result.">
+<p><b>The case file.</b> Muse Spark Open writes a verdict and competing hypotheses with
+confidences. Open any citation to see the frame, or the exact query and result the agent got
+back from NOAA Coral Reef Watch.</p>
+</td>
+</tr>
+</table>
+
+<sub>Real-time screen capture of the live deployment, not a mock-up. Two page loads are cut. The
+2024 "dive" is stitched from that station's NCRMP survey photos (see <a href="#how-it-works">the
+demo site</a>).</sub>
 
 ## The problem
 
@@ -34,7 +78,19 @@ Every claim in the case file cites a frame or a tool result. A claim without a v
 is rejected and repaired before anyone sees it. Clicking a finding opens the evidence drawer on
 the exact frame or data record.
 
-## Architecture
+## How it works
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/pipeline-dark.svg">
+  <img src="docs/media/pipeline-light.svg" width="100%" alt="Pipeline: upload, frames, segment with SAM 3 or ReefStudent, assess with Muse Spark Open, investigate with five data tools, report a cited case file.">
+</picture>
+
+Each stage streams to the browser over SSE as it runs, so the live view fills in frame by frame
+and tool call by tool call. The agent's tool results are cached and stored with the survey, which
+is why every citation still opens to the data the agent actually saw.
+
+<details>
+<summary><b>Full architecture diagram</b></summary>
 
 ```mermaid
 flowchart LR
@@ -58,6 +114,8 @@ flowchart LR
     pipeline --- store[(DuckDB + blobs)]
     store --> web[Web app<br/>map, live view,<br/>case file, timeline]
 ```
+
+</details>
 
 - **Backend:** Python 3.14, FastAPI, pydantic-ai, DuckDB with the spatial extension. Code is in
   [src/reefcase/](src/reefcase/).
@@ -122,7 +180,10 @@ rows). It never saw the test split. Severity spread: 2,362 rows at 0 (none), 670
 
 <!-- TODO(8.3): end-to-end time for the 60 s demo clip on the deployment (NFR1), from the re-timed SAM 3 run -->
 
-## Running locally
+## Run it yourself
+
+<details>
+<summary><b>Running locally</b></summary>
 
 You need [uv](https://docs.astral.sh/uv/) and [pnpm](https://pnpm.io/).
 
@@ -147,7 +208,10 @@ REEFCASE_WEB_DIST=web/dist uv run uvicorn --factory reefcase.api.main:create_app
 
 Then open http://localhost:8000.
 
-## Tests
+</details>
+
+<details>
+<summary><b>Tests</b></summary>
 
 ```bash
 uv run poe gate               # ruff, format, pyright strict, import-linter, pytest
@@ -157,7 +221,10 @@ pnpm -C web run gate          # typecheck, oxlint, vitest, playwright
 Tests run offline. HTTP calls replay from cassettes, and models are replaced by fakes. Tests
 marked `gpu` or `live` are skipped by the gate.
 
-## Deploying
+</details>
+
+<details>
+<summary><b>Deploying</b></summary>
 
 The API runs as a Modal ASGI app ([ml/modal/api_app.py](ml/modal/api_app.py)) that serves the
 built web app on 2 CPUs and segments live uploads with SAM 3 on its own Modal GPU endpoint, a
@@ -169,6 +236,21 @@ pnpm -C web build
 PYTHONUTF8=1 uv run --with modal modal run ml/modal/api_app.py::seed
 PYTHONUTF8=1 uv run --with modal modal deploy ml/modal/api_app.py
 ```
+
+</details>
+
+<details>
+<summary><b>Rebuilding the README media</b></summary>
+
+The hero and pipeline graphics are generated, not drawn: the hero embeds a real HAW-41 frame and
+its SAM 3 mask from the live deployment. The tour is recorded against the live app.
+
+```bash
+uv run python scripts/readme_media/build_svgs.py <frame.jpg> <mask.png>
+node scripts/readme_media/record_tour.mjs     # then the ffmpeg steps in its header
+```
+
+</details>
 
 ## Built during the hackathon (Oct 26–Nov 4)
 
