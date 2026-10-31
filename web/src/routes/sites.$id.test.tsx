@@ -1,4 +1,4 @@
-﻿import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Route } from "./sites.$id";
@@ -217,7 +217,7 @@ describe("SiteTimelineRoute", () => {
     expect(screen.queryByText(/No surveys at this site yet/)).not.toBeInTheDocument();
   });
 
-  it("lays out the latest dive's frames and case file beside the site record", async () => {
+  it("lays out the latest dive's frames and slim case file beside the site record", async () => {
     mockFrames = [
       {
         frame: {
@@ -244,8 +244,9 @@ describe("SiteTimelineRoute", () => {
       findings: [{ statement: "Bleaching is widespread on the slope.", evidence: [{ kind: "frame", id: "frm_a" }] }],
       hypotheses: [
         { cause: "heat_stress", confidence: 0.62, supporting: [], contradicting: [], rationale: "Hot summer." },
+        { cause: "cyclone", confidence: 0.15, supporting: [], contradicting: [], rationale: "Wave impact." },
       ],
-      verdict: "Thermal stress drove most of the bleaching.",
+      verdict: "Thermal stress drove most of the bleaching. Marine heatwaves exceeded 8 degree heating weeks.",
       actions: ["Re-survey in February."],
       uncertain_frames: [],
       model: "Muse Spark Open",
@@ -265,7 +266,40 @@ describe("SiteTimelineRoute", () => {
     expect(lit).toHaveAttribute("data-lit", "true");
     expect(screen.getByAltText("Frame 01")).toHaveAttribute("src", "/media/srv_03/thumbs/frm_a.jpg");
 
+    // Right column shows only first sentence, top hypothesis, and Open full case file
     expect(await screen.findByText("Thermal stress drove most of the bleaching.")).toBeInTheDocument();
+    expect(screen.queryByText("Marine heatwaves exceeded 8 degree heating weeks.")).not.toBeInTheDocument();
+    expect(screen.getByText("Heat stress")).toBeInTheDocument();
+    expect(screen.getByText("62%")).toBeInTheDocument();
+    expect(screen.queryByText("Cyclone")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open full case file" })).toBeInTheDocument();
+
+    // No findings, other hypotheses, or actions headings
+    expect(screen.queryByRole("heading", { name: "Findings" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Actions" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Hypotheses" })).not.toBeInTheDocument();
+
+    // No "Cover by dive" in left column
+    expect(screen.queryByRole("heading", { name: "Cover by dive" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Cover classes")).not.toBeInTheDocument();
+  });
+
+  it("shows empty state in right column when latest dive has no investigation yet", async () => {
+    mockFrames = [];
+    mockInvestigation = null;
+
+    const Component = (Route as any).options.component;
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Component />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByText("No case file for the 2026 dive"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("The agent has not investigated this dive yet."),
+    ).toBeInTheDocument();
   });
 });

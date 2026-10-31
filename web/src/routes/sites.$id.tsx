@@ -1,35 +1,26 @@
-﻿import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, dataOrNull } from "../api/client";
 import type { components } from "../api/schema";
 import { formatCoordinates } from "../components/SitePicker";
-import { CaseFile, useCitedToolResults, type EvidenceRef } from "../components/CaseFile";
 import { CoverChart } from "../components/CoverChart";
 import { CoverStrip } from "../components/CoverStrip";
 import { EvidenceDrawer } from "../components/EvidenceDrawer";
 import { FrameGrid } from "../components/FrameGrid";
 import { SortableDataTable, type DataColumn } from "../components/arc/sortable-data-table/sortable-data-table";
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, CHIP, TEXT_LINK } from "../components/strobe";
-import { formatSignedPp } from "../format";
+import { causeLabel, formatSignedPp, splitFirstSentence } from "../format";
 import { toFrameView, type FrameView } from "../live/reducer";
 
 type SiteDetail = components["schemas"]["SiteDetail"];
 type Survey = components["schemas"]["Survey"];
 type Investigation = components["schemas"]["Investigation"];
+type EvidenceRef = components["schemas"]["EvidenceRef"];
 
 export const Route = createFileRoute("/sites/$id")({
   component: SiteRoute,
 });
-
-const LEGEND = [
-  { label: "Live coral", colour: "bg-reef-live" },
-  { label: "Bleached coral", colour: "bg-reef-bleached shadow-[inset_0_0_0_1px_var(--border)]" },
-  { label: "Algae", colour: "bg-reef-algae" },
-  { label: "Rubble", colour: "bg-reef-rubble" },
-  { label: "Sand", colour: "bg-reef-sand" },
-  { label: "Rock and unclassified", colour: "bg-reef-other" },
-];
 
 function percent(fraction: number): string {
   return `${Math.round(fraction * 100)}%`;
@@ -91,7 +82,10 @@ function SiteRoute() {
 
   const frames = framesQuery.data ?? [];
   const investigation = investigationQuery.data ?? undefined;
-  const cited = useCitedToolResults(investigation);
+  const [verdictFirst] = investigation ? splitFirstSentence(investigation.verdict) : ["", ""];
+  const topHypothesis = investigation?.hypotheses
+    ? [...investigation.hypotheses].sort((a, b) => b.confidence - a.confidence)[0]
+    : undefined;
 
   // Until a reader opens one, the most bleached frame is the one under the strobe.
   const worst = frames.reduce<FrameView | undefined>(
@@ -184,40 +178,6 @@ function SiteRoute() {
               </p>
             </div>
           ) : null}
-
-          {covered.length > 0 ? (
-            <section aria-labelledby="years-heading" className="space-y-3">
-              <h2 id="years-heading" className="text-ui font-bold">
-                Cover by dive
-              </h2>
-              <ol className="space-y-2.5">
-                {covered.map((survey) => {
-                  const current = survey.id === latest?.id;
-                  return (
-                    <li
-                      key={survey.id}
-                      className={`grid grid-cols-[52px_1fr_44px] items-center gap-3 text-ui ${current ? "font-bold" : "text-secondary"}`}
-                    >
-                      <span>{survey.dive_date.slice(0, 4)}</span>
-                      <CoverStrip
-                        cover={survey.cover!}
-                        className={`h-3.5 ${current ? "outline-2 outline-offset-1 outline-deep" : ""}`}
-                      />
-                      <span className="text-right">{percent(survey.cover!.live_coral)}</span>
-                    </li>
-                  );
-                })}
-              </ol>
-              <ul aria-label="Cover classes" className="flex flex-wrap gap-x-4 gap-y-1.5 pt-1">
-                {LEGEND.map((entry) => (
-                  <li key={entry.label} className="flex items-center gap-1.5 text-label text-secondary">
-                    <span aria-hidden="true" className={`size-3 ${entry.colour}`} />
-                    {entry.label}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
         </aside>
 
         <section aria-label="Evidence" className="min-w-0 px-4 py-7 sm:px-7">
@@ -278,24 +238,38 @@ function SiteRoute() {
               The case file for the {evidenceYear} dive did not load. Reload the page to try again.
             </p>
           ) : investigation ? (
-            <>
-              <CaseFile
-                investigation={investigation}
-                onOpenEvidence={openEvidence}
-                frames={frames}
-                toolCalls={cited.toolCalls}
-                alert={cited.alert}
-                showLeadFrame={false}
-              />
-              <div className="flex flex-wrap gap-3">
+            <div className="space-y-6">
+              <h2
+                className={
+                  verdictFirst.length > 120
+                    ? "max-w-[60ch] text-title font-bold text-fg"
+                    : "text-display font-bold text-fg"
+                }
+              >
+                {verdictFirst}
+              </h2>
+              {topHypothesis ? (
+                <div className="space-y-2">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-ui font-bold text-fg">{causeLabel(topHypothesis.cause)}</span>
+                    <span className="text-ui font-bold text-fg">
+                      {Math.round(topHypothesis.confidence * 100)}%
+                    </span>
+                  </div>
+                  <div className="h-2 w-full bg-sunken">
+                    <div
+                      className="h-full bg-deep"
+                      style={{ width: `${Math.round(topHypothesis.confidence * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ) : null}
+              <div>
                 <Link to="/surveys/$id" params={{ id: evidenceSurvey.id }} className={BUTTON_PRIMARY}>
                   Open full case file
                 </Link>
-                <Link to="/upload" className={BUTTON_SECONDARY}>
-                  Upload a new dive
-                </Link>
               </div>
-            </>
+            </div>
           ) : (
             <div className="space-y-4">
               <p className="text-title font-bold">No case file for the {evidenceYear} dive</p>

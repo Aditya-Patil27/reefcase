@@ -53,11 +53,11 @@ legend are gone.
 
 ## Tasks
 
-1. [ ] `git merge main` in `met-wt/lead-d`.
-2. [ ] Tests first: right column has the verdict's first sentence, the top hypothesis and the
+1. [x] `git merge main` in `met-wt/lead-d`.
+2. [x] Tests first: right column has the verdict's first sentence, the top hypothesis and the
    button, and no "Findings" or "Actions" heading; no "Cover by dive" heading; the empty state
    is unchanged.
-3. [ ] Slim `sites.$id.tsx`.
-4. [ ] `pnpm -C web run gate`.
-5. [ ] Self-review against `.opencode/agents/reviewer.md`, then
+3. [x] Slim `sites.$id.tsx`.
+4. [x] `pnpm -C web run gate`.
+5. [x] Self-review against `.opencode/agents/reviewer.md`, then
    `python scripts/integrate.py 8-7-slim-site-page --status review`.

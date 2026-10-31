@@ -16,6 +16,7 @@ from reefcase.bot.main import (
     ChatSession,
     LocationPayload,
     VideoPayload,
+    follow_survey_events,
     handle_location,
     handle_video,
 )
@@ -235,3 +236,29 @@ async def test_survey_failed_event() -> None:
     fail_msg = sender.messages[2][1]
     assert "Investigation failed" in fail_msg
     assert "Water turbidity too high" in fail_msg
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_stream_that_ends_early_is_resumed_after_the_last_event(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The API ends the stream while a survey is queued; the bot must reconnect, not go silent.
+    monkeypatch.setattr("reefcase.bot.main.RECONNECT_S", 0.0)
+    sender = MockSender()
+    failed = SurveyFailed(survey_id="srv_q", seq=8, ts=datetime.now(UTC), reason="no frames")
+    route = respx.get(f"{API_URL}/api/surveys/srv_q/events")
+    route.side_effect = [
+        httpx.Response(200, content=": stream_end\n\n"),
+        httpx.Response(200, content="id: 7\nevent: frame_scored\ndata: {}\n\n: stream_end\n\n"),
+        httpx.Response(
+            200, content=f"id: 8\nevent: survey_failed\ndata: {failed.model_dump_json()}\n\n"
+        ),
+    ]
+
+    async with httpx.AsyncClient() as client:
+        await follow_survey_events("srv_q", 606, sender, client, API_URL)
+
+    assert [m for _, m in sender.messages] == ["Investigation failed: no frames"]
+    headers = [call.request.headers.get("last-event-id") for call in route.calls]
+    assert headers == [None, None, "7"]
