@@ -64,6 +64,9 @@ logger = logging.getLogger(__name__)
 
 #: Frames assessed at once (Story 5.1); bounds load on the LLM endpoint.
 ASSESS_CONCURRENCY = 4
+#: Seconds one frame's assessment may take. Live calls take 3 to 80 s, but a hung Baseten
+#: request would otherwise wait out the OpenAI client's 600 s timeout and two retries.
+ASSESS_TIMEOUT_S = 150
 
 # Mask PNG palette: the reef colours from docs/agents/ui.md, by §4.2 class id, so
 # the web can overlay the mask as-is while its pixel values stay class ids.
@@ -290,7 +293,8 @@ async def assess_stage(
     (Glimmer-Reef, 7.7) when ``REEFCASE_LLM_STUDENT_*`` is set, else the teacher.
 
     Stores each ``FrameAssessment`` and emits ``assessed``. A frame whose model
-    output is invalid twice is skipped with a warning; the rest carry on. Returns
+    output is invalid twice, whose call fails, or which takes longer than
+    ``ASSESS_TIMEOUT_S`` is skipped with a warning; the rest carry on. Returns
     the assessments in frame order.
     """
     event_bus = bus or EventBus(store)
@@ -308,12 +312,18 @@ async def assess_stage(
         image_bytes = store.blobs.read(frame.image_path)
         async with limit:
             try:
-                assessment = await assess_frame(llm, frame, image_bytes, seg)
+                async with asyncio.timeout(ASSESS_TIMEOUT_S):
+                    assessment = await assess_frame(llm, frame, image_bytes, seg)
             except UnexpectedModelBehavior as exc:
                 logger.warning("skipping frame %s: invalid assessment output (%s)", frame.id, exc)
                 return None
             except ModelAPIError as exc:  # HTTP error, timeout, refused connection
                 logger.warning("skipping frame %s: model API error (%s)", frame.id, exc)
+                return None
+            except TimeoutError:
+                logger.warning(
+                    "skipping frame %s: assessment timed out after %s s", frame.id, ASSESS_TIMEOUT_S
+                )
                 return None
         async with publish_lock:
             await store.assessments.save(assessment)

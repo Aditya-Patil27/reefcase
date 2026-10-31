@@ -385,3 +385,31 @@ async def test_assess_stage_skips_a_frame_when_the_model_api_fails(
 
     assert [a.frame_id for a in result] == [frames[0].id, frames[2].id]
     assert any(bad_frame in r.getMessage() and "503" in r.getMessage() for r in caplog.records)
+
+
+@pytest.mark.asyncio
+async def test_assess_stage_skips_a_frame_whose_model_call_hangs(
+    store: Store, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    await _create_survey(store)
+    frames = await _save_frames(store, 3)
+    stuck_frame = frames[1].id
+    monkeypatch.setattr(stages_module, "ASSESS_TIMEOUT_S", 0.05)
+
+    async def respond(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+        request = messages[0]
+        assert isinstance(request, ModelRequest)
+        prompt = next(part for part in request.parts if isinstance(part, UserPromptPart))
+        if stuck_frame in str(prompt.content):
+            await asyncio.sleep(3600)
+        return _answer(info, VALID)
+
+    with caplog.at_level(logging.WARNING, logger="reefcase.pipeline.stages"):
+        result = await assess_stage(
+            store, SURVEY_ID, frames, model=FunctionModel(respond, model_name="spark-test")
+        )
+
+    assert [a.frame_id for a in result] == [frames[0].id, frames[2].id]
+    assert any(
+        stuck_frame in r.getMessage() and "timed out" in r.getMessage() for r in caplog.records
+    )
