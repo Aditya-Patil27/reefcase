@@ -13,9 +13,10 @@ Decoding is greedy. Requests that arrive together are generated as one batch: on
 one 1024x1024 frame takes about 39 s warm and four concurrent frames about 70 s.
 
 Deploy from the repo root (``GLIMMER_ADAPTER`` picks a directory under ``/adapters`` on the
-``reefcase-glimmer`` volume; the default is v1):
+``reefcase-glimmer`` volume; the default is v2, which beat v1 on bleached recall,
+0.76 against 0.46-0.51, in ml/results/glimmer_v2_eval.json):
     modal secret create reefcase-glimmer GLIMMER_API_KEY=<random>
-    GLIMMER_ADAPTER=glimmer-reef PYTHONUTF8=1 uv run --with modal modal deploy \\
+    GLIMMER_ADAPTER=glimmer-reef-v2 PYTHONUTF8=1 uv run --with modal modal deploy \\
         ml/modal/glimmer_endpoint.py
 
 Credit guards: one H100 ($3.95/h) at most, scale to zero after 120 s idle, and no warm
@@ -40,7 +41,7 @@ except ImportError:  # pragma: no cover - Modal is a human deployment dependency
 
 __all__ = ["completion", "template_messages", "tool_call"]
 
-ADAPTER = os.environ.get("GLIMMER_ADAPTER", "glimmer-reef")
+ADAPTER = os.environ.get("GLIMMER_ADAPTER", "glimmer-reef-v2")
 MAX_NEW_TOKENS = 1024
 MAX_BATCH = 8
 _INVOKE = re.compile(r'<atem:invoke name="(?P<name>[^"]+)">(?P<body>.*?)</atem:invoke>', re.DOTALL)
