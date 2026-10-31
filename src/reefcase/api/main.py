@@ -13,6 +13,7 @@ Configuration comes only from ``Settings`` (env vars); nothing here reads
 import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from functools import partial
 from pathlib import PurePath
 
 from fastapi import FastAPI, Request
@@ -27,6 +28,7 @@ from reefcase.pipeline import stages
 from reefcase.pipeline.bus import EventBus
 from reefcase.pipeline.runner import JobRunner, RunStages
 from reefcase.store.db import Store
+from reefcase.vision.segmenter import build_segmenter
 
 __all__ = ["create_app"]
 
@@ -59,10 +61,17 @@ def create_app(
 ) -> FastAPI:
     """Build the API app: open the store, mount the routers, wire the lifespan.
 
-    ``run_stages`` defaults to the real stage chain (``pipeline.stages``);
-    tests inject a stub (2.2's SSE tests) or ``None`` for no stages.
+    ``run_stages`` defaults to the real stage chain (``pipeline.stages``), bound to this
+    app's settings and a segmenter built once here; tests inject a stub (2.2's SSE tests) or
+    ``None`` for no stages.
     """
     resolved = settings if settings is not None else Settings()
+    if run_stages is stages.run_stages:
+        # Settings pinned in code (the Modal API) must reach the runs, and a model load
+        # belongs at startup, where a missing weights file stops the deploy, not an upload.
+        run_stages = partial(
+            stages.run_stages, settings=resolved, segmenter=build_segmenter(resolved)
+        )
 
     store = Store.open(resolved.data_dir)
     bus = EventBus(store)

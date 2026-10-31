@@ -382,11 +382,12 @@ async def run_stages(
     teacher_model: Model | None = None,
     agent_model: Model | None = None,
     http_client: httpx.AsyncClient | None = None,
+    segmenter: Segmenter | None = None,
 ) -> None:
     """Run all pipeline stages in sequence."""
     cfg = settings or Settings()
     frames = await ingest_stage(store, survey_id, settings=cfg)
-    await segment_stage(store, survey_id, frames, settings=cfg)
+    await segment_stage(store, survey_id, frames, settings=cfg, segmenter=segmenter)
     if teacher_model is None and cfg.llm_role("teacher") is None:
         logger.warning("REEFCASE_LLM_TEACHER_* is not configured; skipping frame assessment")
         assessments: list[FrameAssessment] = []

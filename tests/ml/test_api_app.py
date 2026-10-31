@@ -53,5 +53,6 @@ def test_seed_env_uses_the_volume_and_student() -> None:
         "REEFCASE_SEGMENTER": "student",
         "REEFCASE_STUDENT_WEIGHTS": "/data/models/reefstudent.pt",
         "REEFCASE_DATA_DIR": "/data",
+        "OMP_NUM_THREADS": "2",
         "PATH": "/bin",
     }
