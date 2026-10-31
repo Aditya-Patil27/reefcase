@@ -3,7 +3,7 @@
 <p align="center">
   <a href="https://app2732006--reefcase-api-api.us-east.modal.run"><b>Open the live app</b></a>
   &nbsp;·&nbsp;
-  <a href="docs/media/tour.mp4">Watch the 42-second tour</a>
+  <a href="docs/media/tour.mp4">Watch the 83-second tour</a>
   &nbsp;·&nbsp;
   <a href="#how-it-works">How it works</a>
   &nbsp;·&nbsp;
@@ -60,7 +60,7 @@ a valid citation is rejected and repaired before anyone sees it.
 
 Each stage streams to the browser as it runs, so the live view fills in frame by frame and tool
 call by tool call. Tool results are stored with the survey, so every citation opens to the data the
-agent actually saw. On the deployment, a 24-frame clip goes from upload to case file in 183 s.
+agent actually saw. On the deployment, a 24-frame clip goes from upload to case file in 3 to 5 minutes.
 
 **Stack:** Python 3.14, FastAPI, pydantic-ai and DuckDB ([src/reefcase/](src/reefcase/)) · React 19,
 Vite, TanStack and MapLibre ([web/](web/)) · SAM 3 and ReefStudent on Modal ([ml/](ml/)).
