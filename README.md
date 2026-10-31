@@ -106,7 +106,7 @@ video's upload date, and the dive positions are approximate.
 
 | Clip | Live coral | Bleached | What the case file said |
 |---|---|---|---|
-| DLNR, Kāneʻohe Bay, Oʻahu, Feb 2019 | 67% | 2% | Healthy, with minor paling and no heat stress (DHW 0). The video's title says DLNR was investigating a new threat to these corals. The case file found none, and we haven't checked what that threat was. |
+| DLNR, Kāneʻohe Bay, Oʻahu, Feb 2019 | 67% | 2% | Healthy, with minor paling and no heat stress (DHW 0). The video's title says DLNR was investigating a new threat to these corals. It was most likely the Caribbean corkscrew anemone, first found in the bay a month earlier ([DLNR](https://dlnr.hawaii.gov/ais/2020/08/28/august-september-ais-team-update/)): in the clip a diver points into a crevice and takes a sample. ReefCase measures coral cover and bleaching, so it can't see a small anemone. |
 | TRACC transect, Malaysia, 2014 | 12% | 0% | Sparse coral, no bleaching, DHW 0.67. It flagged 8 of 24 frames as uncertain and said the diver blocking the reef limits certainty. |
 | DLNR, Hanauma Bay, Oʻahu, late 2014 | | | Rejected: too few frames passed the blur check, so no case file was made. |
 
