@@ -63,7 +63,7 @@ call by tool call. Tool results are stored with the survey, so every citation op
 agent actually saw. On the deployment, a 24-frame clip goes from upload to case file in 183 s.
 
 **Stack:** Python 3.14, FastAPI, pydantic-ai and DuckDB ([src/reefcase/](src/reefcase/)) · React 19,
-Vite, TanStack and deck.gl ([web/](web/)) · SAM 3 and ReefStudent on Modal ([ml/](ml/)).
+Vite, TanStack and MapLibre ([web/](web/)) · SAM 3 and ReefStudent on Modal ([ml/](ml/)).
 
 ## Meta models and how we use them
 
@@ -75,7 +75,7 @@ We use open-weight Meta models only.
 | **Muse Spark Open** (Baseten) | Frame assessor ([src/reefcase/llm/assess.py](src/reefcase/llm/assess.py)) | Reads each frame with its segmentation and returns a bleaching severity (0–4), growth forms, damage and notes. |
 | **Muse Spark Open** | Investigator agent ([src/reefcase/agent/investigator.py](src/reefcase/agent/investigator.py)) | Calls the five data tools, weighs the evidence and writes the cited case file. |
 | **Muse Spark Open** | Teacher dataset ([ml/modal/gen_assessments.py](ml/modal/gen_assessments.py)) | 3,366 frame assessments of Coralscapes images, as training data for a Muse Glimmer frame assessor. |
-| **Glimmer-Reef** (LoRA on Muse Glimmer-30B) | Optional frame assessor ([ml/modal/glimmer_endpoint.py](ml/modal/glimmer_endpoint.py)) | Distilled from those assessments; agrees with Muse Spark Open's severity on 80% of held-out frames (base Glimmer 70%) and catches 76% of bleached ones ([ml/results/glimmer_v2_eval.json](ml/results/glimmer_v2_eval.json)). Off by default: at about 39 s a frame on one H100 it is slower than the teacher. |
+| **Glimmer-Reef** (LoRA on Muse Glimmer-30B) | Optional frame assessor ([ml/modal/glimmer_endpoint.py](ml/modal/glimmer_endpoint.py)) | Distilled from those assessments; agrees with Muse Spark Open's severity on 80% of held-out frames (base Glimmer 70%) and, like base Glimmer, catches 76% of bleached ones (the v1 adapter caught 46%) ([ml/results/glimmer_v2_eval.json](ml/results/glimmer_v2_eval.json)). Off by default: at about 39 s a frame on one H100 it is slower than the teacher. |
 
 ## Two segmenters that check each other
 
@@ -89,10 +89,10 @@ same held-out 392-frame test split.
 | SAM 3 (teacher) | 0.300 | 1,247 |
 
 ReefStudent wins the benchmark at 8× the speed, but the win didn't transfer to our Hawaiian demo
-site: it read 46% live coral where SAM 3, the site's history and the assessor all put it near 5%.
-So live uploads segment with SAM 3, and the disagreement check runs both models on every frame:
-where their coral masks overlap by less than 0.5 IoU, the case file keeps the SAM 3 mask and flags
-the frame as uncertain. Details are in [ml/results/MODEL_CARD.md](ml/results/MODEL_CARD.md).
+site: it read 46% live coral where SAM 3 and the assessor both put it near 5%. So live uploads
+segment with SAM 3. When ReefStudent is the segmenter, an optional disagreement check
+(`REEFCASE_DISAGREEMENT_CHECK=true`) also runs SAM 3 on every frame: where their coral masks
+overlap by less than 0.5 IoU, the case file keeps the SAM 3 mask and flags the frame as uncertain. Details are in [ml/results/MODEL_CARD.md](ml/results/MODEL_CARD.md).
 
 ## Run it yourself
 
@@ -126,13 +126,22 @@ Tests run offline: HTTP calls replay from cassettes and models are replaced by f
 
 </details>
 
-## Built during the hackathon
+## Built during the hackathon (Oct 26–Nov 4)
 
-Everything here was written between Oct 26 and Nov 4. The first commit (`4207fe3`) holds only the
-plan: the PRD, architecture and story list in
-[planning/planning-artifacts/](planning/planning-artifacts/). Every component was built
-after it, story by story, as tracked in
-[sprint-status.yaml](planning/implementation-artifacts/sprint-status.yaml).
+The first commit (`4207fe3`) holds only planning and tooling: the PRD, architecture and story list
+in [planning/planning-artifacts/](planning/planning-artifacts/), plus agent configs. It has
+no application code. Everything below was built after it, story by story, as tracked in
+[sprint-status.yaml](planning/implementation-artifacts/sprint-status.yaml):
+
+- The FastAPI service and DuckDB store, with the live event stream
+- The pipeline: frame sampling and quality scoring, segmentation, the Muse Spark Open frame assessor
+- The investigator agent, its five data tools and the citation validator with its repair loop
+- The React web app: reef map, site timeline, live view and case file with the evidence drawer
+- The Telegram bot ([src/reefcase/bot/](src/reefcase/bot/))
+- ReefStudent: SAM 3 pseudo-labels, training and the evaluation against human labels
+- The Modal apps: the SAM 3 endpoint, the API deploy and the Glimmer-Reef endpoint
+- The Muse Spark Open teacher dataset and the Glimmer-Reef LoRA fine-tune
+- The NCRMP history import and the demo-clip scripts
 
 ## Data and licences
 

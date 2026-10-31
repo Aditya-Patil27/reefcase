@@ -9,9 +9,9 @@ Demo 25%. Done when three uninterrupted rehearsals come in under 3:00 (story 8.4
       `/api/health` reports `sam3_modal`. Warm the SAM 3 endpoint too, not just the API.
 - [ ] The live-view speed-up label matches the re-timed run. 0:35–1:25 assumes about 200 s of
       pipeline at 4×; re-pick the factor from the 8.3 NFR1 re-time.
-- [ ] Glimmer-Reef (7.6, 7.7) is served as the student assessor, or the decision is made to
-      record without it. If it's skipped, drop the Glimmer line at 2:15 and give the time to the
-      case file.
+- [x] Decided: Muse Spark Open stays the live assessor and Glimmer-Reef (7.6, 7.7) is not served
+      during the recording. Keep the Glimmer line at 2:15 as a trained model (80% agreement with
+      the teacher against base Glimmer's 70%); don't show it running live.
 - [ ] Record after the last volume reseed. Survey IDs change on every reseed and old links break.
 - [ ] Open `/api/health` 1–2 minutes before recording so the container is warm. It scales to zero
       after 10 minutes idle.
@@ -36,7 +36,7 @@ Demo 25%. Done when three uninterrupted rehearsals come in under 3:00 (story 8.4
 - Credits on screen at the end: "Built with Muse Spark Open", "Powered by Global Fishing
   Watch", NOAA CRW / NCRMP, Allen Coral Atlas, WDPA (see `data/LICENSES.md`).
 - Don't claim numbers the run didn't produce. Read the verdict and findings off the actual
-  case file, and fill in the Glimmer-Reef numbers from `ml/results/glimmer_eval.json`.
+  case file, and fill in the Glimmer-Reef numbers from `ml/results/glimmer_v2_eval.json`.
 
 ## Rehearsals
 
