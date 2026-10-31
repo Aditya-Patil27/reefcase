@@ -41,7 +41,7 @@ flowchart LR
     clip([Reef clip + site + date]) --> ingest
     subgraph pipeline [Pipeline, streamed live over SSE]
         ingest[Ingest<br/>frames, quality scoring,<br/>site matching] --> segment
-        segment[Segment<br/>ReefStudent on CPU<br/>or SAM 3 on Modal] --> assess
+        segment[Segment<br/>SAM 3 on Modal] --> assess
         assess[Assess<br/>Muse Spark Open<br/>one assessment per frame] --> investigate
         investigate[Investigate<br/>Muse Spark Open agent] --> cite
         cite[Citation validator<br/>reject + repair]
@@ -90,9 +90,9 @@ switching provider needs no code change.
 
 ### ReefStudent vs SAM 3
 
-ReefStudent is a U-Net (EfficientNet-B0) segmenter that we trained on Coralscapes, and it is
-the segmenter the live deployment runs. All three models were scored on the same held-out
-392-frame Coralscapes test split, mapped to the six classes.
+ReefStudent is a U-Net (EfficientNet-B0) segmenter that we trained on Coralscapes. All three
+models were scored on the same held-out 392-frame Coralscapes test split, mapped to the six
+classes.
 
 | Model | Test mIoU | ms per frame (T4) |
 |---|---|---|
@@ -101,9 +101,18 @@ the segmenter the live deployment runs. All three models were scored on the same
 | SAM 3 (teacher) | 0.300 | 1,247 |
 
 ReefStudent beats SAM 3 on every class at about 8× the speed. Distilling from SAM 3 alone only
-matches the teacher, so the student trained on human labels ships. The training data, per-class
-IoU, speeds and known failure modes are in [ml/results/MODEL_CARD.md](ml/results/MODEL_CARD.md).
-The raw numbers are in [ml/results/eval.json](ml/results/eval.json).
+matches the teacher, so the student trained on human labels is the one we kept. The training
+data, per-class IoU, speeds and known failure modes are in
+[ml/results/MODEL_CARD.md](ml/results/MODEL_CARD.md). The raw numbers are in
+[ml/results/eval.json](ml/results/eval.json).
+
+The benchmark win didn't carry over to our demo site. On the 2024 HAW-41 clip, ReefStudent read
+46% live coral, where SAM 3, the 2013–2019 history and the Muse Spark Open assessor all put it at
+about 5%. Given that contradiction, the investigator kept calling tools until it hit the request
+limit. So live uploads segment with SAM 3, and ReefStudent segments the historical surveys in
+the seed. `REEFCASE_DISAGREEMENT_CHECK` runs SAM 3 next to ReefStudent on every frame. Where
+their coral masks overlap by less than 0.5 IoU, it keeps the SAM 3 mask and flags the frame as
+uncertain in the case file.
 
 ### Teacher assessments
 
@@ -111,7 +120,7 @@ Muse Spark Open assessed 1,683 Coralscapes train and val frames, as left and rig
 rows). It never saw the test split. Severity spread: 2,362 rows at 0 (none), 670 at 1, 182 at 2,
 84 at 3 and 68 at 4. Summary: [ml/results/assessments_summary.json](ml/results/assessments_summary.json).
 
-<!-- TODO(8.3): end-to-end time for the 60 s demo clip on the deployment (NFR1), from the re-timed ReefStudent run -->
+<!-- TODO(8.3): end-to-end time for the 60 s demo clip on the deployment (NFR1), from the re-timed SAM 3 run -->
 
 ## Running locally
 
@@ -151,8 +160,9 @@ marked `gpu` or `live` are skipped by the gate.
 ## Deploying
 
 The API runs as a Modal ASGI app ([ml/modal/api_app.py](ml/modal/api_app.py)) that serves the
-built web app and segments with ReefStudent on 8 CPUs. The SAM 3 endpoint is a separate Modal
-app. The Modal secret `reefcase` holds the `.env` keys.
+built web app on 2 CPUs and segments live uploads with SAM 3 on its own Modal GPU endpoint, a
+separate app. The seed segments the historical surveys with ReefStudent on CPU. The Modal secret
+`reefcase` holds the `.env` keys.
 
 ```bash
 pnpm -C web build

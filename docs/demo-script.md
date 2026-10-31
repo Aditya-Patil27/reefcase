@@ -5,8 +5,8 @@ Demo 25%. Done when three uninterrupted rehearsals come in under 3:00 (story 8.4
 
 ## Before recording
 
-- [ ] Final deploy is live: ReefStudent on 8 CPUs, loaded at container start, map layers served.
-      `/api/health` reports `student`.
+- [ ] Final deploy is live: the API on 2 CPUs segmenting with SAM 3 on Modal, map layers served.
+      `/api/health` reports `sam3_modal`. Warm the SAM 3 endpoint too, not just the API.
 - [ ] The live-view speed-up label matches the re-timed run. 0:35–1:25 assumes about 200 s of
       pipeline at 4×; re-pick the factor from the 8.3 NFR1 re-time.
 - [ ] Glimmer-Reef (7.6, 7.7) is served as the student assessor, or the decision is made to
@@ -25,7 +25,7 @@ Demo 25%. Done when three uninterrupted rehearsals come in under 3:00 (story 8.4
 | 0:20–0:35 | Upload: pick the clip, pin HAW-41, set 2024-07-06. Cut the upload wait. Caption: *clip stitched from NCRMP 2024 survey photos of HAW-41* | "A diver surfaces with a new clip. They upload it, pin the site, set the date." |
 | 0:35–1:25 | Live view at a labelled 4× speed: masks arriving per frame, assessments, then tool calls landing on the map (heat stress, vessels, MPA) | "ReefCase segments every usable frame into live coral, bleaching, algae, rubble and sand, then an agent investigates: heat stress from NOAA Coral Reef Watch, vessel activity from Global Fishing Watch, the reef map and protected-area boundaries." |
 | 1:25–2:15 | Case file: verdict, competing hypotheses with confidences. Click a finding: the evidence drawer opens on the exact frame or tool record | "The result is a case file, not a dashboard. Every finding cites a frame or a data record, and uncited claims are rejected and repaired before you see them." |
-| 2:15–2:45 | Model slide: ReefStudent (0.683 mIoU vs SAM 3's 0.300 on the Coralscapes test split, about 8× faster); Muse Spark Open teacher → 3,366 frame assessments → Glimmer-Reef. "Built with Muse Spark Open" | "Everything is open-weight. ReefStudent, a small segmenter trained on human-labelled reef images, beats SAM 3 on reef classes at about eight times the speed. Muse Spark Open labelled 3,366 frames to fine-tune Glimmer-Reef, a Muse Glimmer that assesses frames." |
+| 2:15–2:45 | Model slide: ReefStudent (0.683 mIoU vs SAM 3's 0.300 on the Coralscapes test split, about 8× faster); Muse Spark Open teacher → 3,366 frame assessments → Glimmer-Reef. "Built with Muse Spark Open" | "Everything is open-weight. ReefStudent, a small segmenter trained on human-labelled reef images, beats SAM 3 on the Coralscapes benchmark at about eight times the speed, and it segmented this site's decade of history. Live uploads use SAM 3, which held up better on new footage. Muse Spark Open labelled 3,366 frames to fine-tune Glimmer-Reef, a Muse Glimmer that assesses frames." |
 | 2:45–3:00 | Live URL, team name, data credits | "A park manager gets a cited case in minutes instead of a field season. ReefCase, by Yours Truly." |
 
 ## Rules for the recording
