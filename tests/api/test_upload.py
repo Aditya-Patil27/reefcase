@@ -275,3 +275,13 @@ def test_create_app_fails_fast_on_a_segmenter_it_cannot_build(make_settings, tmp
     settings = make_settings(data_dir=str(tmp_path / "var"), segmenter="student")
     with pytest.raises(ConfigError, match="REEFCASE_STUDENT_WEIGHTS"):
         create_app(settings)
+
+
+@pytest.mark.asyncio
+async def test_upload_with_source_bot(make_settings, tmp_path) -> None:
+    app = build_app(make_settings, tmp_path)
+    async with client_for(app) as client:
+        response = await post_survey(client, source="bot")
+    assert response.status_code == 201
+    body = response.json()
+    assert body["source"] == "bot"

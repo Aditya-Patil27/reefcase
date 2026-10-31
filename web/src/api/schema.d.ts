@@ -537,6 +537,11 @@ export interface operations {
                     /** Format: date */
                     dive_date: string;
                     site_name?: string;
+                    /**
+                     * @default upload
+                     * @enum {string}
+                     */
+                    source?: "upload" | "bot";
                 };
             };
         };
