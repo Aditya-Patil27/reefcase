@@ -4,6 +4,9 @@ AC 1: When scripts/build_geo.py runs, it writes the two GeoParquet files clipped
 AC 2: Given a point inside a known MPA polygon, when mpa_boundary runs,
       then inside_mpa=true with its name and no_take flag.
 
+A site outside the region the files were built for is available=false from both tools: "not in
+an MPA" or "no reef" there would be a false claim.
+
 The build test runs the script ``--offline`` on tiny inline GeoJSON. The tool tests query the
 committed data/geo files, built from real WDPA and Allen Coral Atlas data for West Hawaii, so
 the expected values below are real attributes of those polygons.
@@ -25,6 +28,7 @@ import pytest
 from reefcase.core.errors import NotFoundError, ToolError
 from reefcase.core.schemas import GeoPoint, Site, ToolResult
 from reefcase.store.db import Store
+from reefcase.tools import geo_coverage as geo_coverage_module
 from reefcase.tools import mpa as mpa_module
 from reefcase.tools import reef_map as reef_map_module
 from reefcase.tools.http import ToolContext
@@ -34,8 +38,11 @@ from reefcase.tools.registry import registry
 
 # Inside Kealakekua Bay MLCD (WDPA 13086, NO_TAKE 'Part'), which sits outside the sanctuary.
 KEALAKEKUA = (19.48, -155.93)
-# North Kohala: a Reef Slope polygon over Coral/Algae, no MPA.
+# North Kohala: a Reef Slope polygon over Coral/Algae, inside the humpback whale sanctuary.
 KOHALA_REEF = (20.230846225, -155.89974295)
+# Off Kona, inside the mapped region: no MPA and no mapped reef.
+KONA_OFFSHORE = (20.0, -156.05)
+# Outside the mapped region (data/geo/coverage.json).
 OPEN_OCEAN = (19.0, -157.0)
 
 
@@ -135,6 +142,7 @@ def test_build_geo_clips_to_region(tmp_path: Path) -> None:
         ("benthic", "Coral/Algae", 0.8, 0.0, 1.0, 0.5),
         ("geomorphic", "Reef Slope", 0.1, 0.1, 0.4, 0.4),
     ]
+    assert json.loads((tmp_path / "coverage.json").read_text()) == {"bbox": [0.0, 0.0, 1.0, 1.0]}
 
 
 def test_build_geo_offline_requires_raw_files(tmp_path: Path) -> None:
@@ -157,6 +165,7 @@ async def test_mpa_boundary_inside_known_mpa(store: Store, make_settings: Any) -
     assert result.id.startswith("tr_")
     assert result.source_url == "https://www.protectedplanet.net/en/thematic-areas/wdpa"
     assert result.data == {
+        "available": True,
         "inside_mpa": True,
         "mpa_name": "Kealakekua Bay Marine Life Conservation District",
         # WDPA NO_TAKE is 'Part': no-take in some zones only, so not definite for the point.
@@ -167,14 +176,15 @@ async def test_mpa_boundary_inside_known_mpa(store: Store, make_settings: Any) -
 
 @pytest.mark.asyncio
 async def test_mpa_boundary_outside_mpa(store: Store, make_settings: Any) -> None:
-    """Point outside known MPAs returns inside_mpa=False with None fields."""
-    site = await _create_site(store, "site_mpa_out", *OPEN_OCEAN, name="Open Ocean")
+    """Point in the mapped region but outside every MPA returns inside_mpa=False."""
+    site = await _create_site(store, "site_mpa_out", *KONA_OFFSHORE, name="Off Kona")
 
     async with _strict_mock_client() as client:
         ctx = ToolContext(http=client, store=store, settings=make_settings())
         result = await mpa_boundary(MPABoundaryParams(site_id=site.id), ctx)
 
     assert result.data == {
+        "available": True,
         "inside_mpa": False,
         "mpa_name": None,
         "no_take": None,
@@ -197,6 +207,7 @@ async def test_reef_map_query(store: Store, make_settings: Any) -> None:
     assert result.source_url == "https://doi.org/10.5281/zenodo.3833242"
 
     data = result.data
+    assert data["available"] is True
     assert data["geomorphic_zone"] == "Reef Slope"
     assert data["benthic_class"] == "Coral/Algae"
     # Mapped reef inside the 3.14 km² disk, measured in UTM zone 5N.
@@ -204,18 +215,38 @@ async def test_reef_map_query(store: Store, make_settings: Any) -> None:
 
 
 @pytest.mark.asyncio
-async def test_reef_map_open_ocean_has_no_reef(store: Store, make_settings: Any) -> None:
-    site = await _create_site(store, "site_reef_out", *OPEN_OCEAN, name="Open Ocean")
+async def test_reef_map_open_water_has_no_reef(store: Store, make_settings: Any) -> None:
+    site = await _create_site(store, "site_reef_out", *KONA_OFFSHORE, name="Off Kona")
 
     async with _strict_mock_client() as client:
         ctx = ToolContext(http=client, store=store, settings=make_settings())
         result = await reef_map(ReefMapParams(site_id=site.id), ctx)
 
     assert result.data == {
+        "available": True,
         "geomorphic_zone": None,
         "benthic_class": None,
         "reef_area_km2_within_1km": 0.0,
     }
+
+
+@pytest.mark.asyncio
+async def test_outside_mapped_region_is_unavailable(store: Store, make_settings: Any) -> None:
+    """No 'not in an MPA' or 'no reef' claim for a site the data doesn't cover."""
+    site = await _create_site(store, "site_elsewhere", *OPEN_OCEAN, name="Open Ocean")
+
+    async with _strict_mock_client() as client:
+        ctx = ToolContext(http=client, store=store, settings=make_settings())
+        results = [
+            await mpa_boundary(MPABoundaryParams(site_id=site.id), ctx),
+            await reef_map(ReefMapParams(site_id=site.id), ctx),
+        ]
+
+    for result in results:
+        assert result.data["available"] is False
+        assert "outside the mapped region" in result.data["reason"]
+        assert "inside_mpa" not in result.data
+        assert "reef_area_km2_within_1km" not in result.data
 
 
 @pytest.mark.asyncio
@@ -226,6 +257,22 @@ async def test_missing_parquet_raises_tool_error(
     monkeypatch.setattr(mpa_module, "DEFAULT_MPA_PARQUET", tmp_path / "mpa.parquet")
     monkeypatch.setattr(reef_map_module, "DEFAULT_REEF_PARQUET", tmp_path / "reef_map.parquet")
     site = await _create_site(store, "site_nodata", *KEALAKEKUA)
+
+    async with _strict_mock_client() as client:
+        ctx = ToolContext(http=client, store=store, settings=make_settings())
+        with pytest.raises(ToolError, match="build_geo"):
+            await mpa_boundary(MPABoundaryParams(site_id=site.id), ctx)
+        with pytest.raises(ToolError, match="build_geo"):
+            await reef_map(ReefMapParams(site_id=site.id), ctx)
+
+
+@pytest.mark.asyncio
+async def test_missing_coverage_raises_tool_error(
+    store: Store, make_settings: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Without the coverage file the tools can't tell 'no MPA' from 'no data', so they fail."""
+    monkeypatch.setattr(geo_coverage_module, "DEFAULT_COVERAGE_JSON", tmp_path / "coverage.json")
+    site = await _create_site(store, "site_nocoverage", *KEALAKEKUA)
 
     async with _strict_mock_client() as client:
         ctx = ToolContext(http=client, store=store, settings=make_settings())

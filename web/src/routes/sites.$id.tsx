@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { api, dataOrNull } from "../api/client";
 import type { components } from "../api/schema";
 import { formatCoordinates } from "../components/SitePicker";
@@ -23,6 +23,16 @@ type EvidenceRef = components["schemas"]["EvidenceRef"];
 export const Route = createFileRoute("/sites/$id")({
   component: SiteRoute,
 });
+
+/**
+ * The site title is 56px, but the 330px column (274px of text) must hold its longest word whole,
+ * or "Lakshadweep" breaks mid-word. Extrabold glyphs average about 0.62em wide.
+ */
+function siteTitleStyle(name: string): CSSProperties | undefined {
+  const longest = Math.max(...name.split(/\s+/).map((word) => word.length));
+  const px = Math.floor(270 / (longest * 0.62));
+  return px < 56 ? { fontSize: `${Math.max(px, 28)}px`, lineHeight: 1.05 } : undefined;
+}
 
 function percent(fraction: number): string {
   return `${Math.round(fraction * 100)}%`;
@@ -157,7 +167,12 @@ function SiteRoute() {
       <div className="grid border-b border-rule lg:grid-cols-[330px_minmax(0,1fr)] xl:grid-cols-[330px_minmax(0,1fr)_440px]">
         <aside aria-label="Site" className="space-y-6 border-rule px-4 py-7 sm:px-7 lg:border-r">
           <header className="space-y-2">
-            <h1 className="font-sans text-display font-bold break-words text-ink">{site?.name ?? "Site"}</h1>
+            <h1
+              className="font-sans text-display font-bold break-words text-ink"
+              style={siteTitleStyle(site?.name ?? "Site")}
+            >
+              {site?.name ?? "Site"}
+            </h1>
             {site?.location ? (
               <p className="font-mono text-mono-sm text-mute">{formatCoordinates(site.location)}</p>
             ) : null}
