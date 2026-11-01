@@ -9,6 +9,7 @@ box and written as GeoParquet:
 - ``mpa.parquet``: wdpa_id, name, designation, no_take ('All'|'Part'|'None'|...),
   marine_area_km2, geom
 - ``reef_map.parquet``: layer ('geomorphic'|'benthic'), class_name, geom
+- ``coverage.json``: the box itself, so the tools can tell "outside the data" from "no MPA"
 
 Usage:
     uv run python scripts/build_geo.py                  # download if not cached, then build
@@ -169,6 +170,8 @@ def build(raw_dir: Path, out_dir: Path, bbox: tuple[float, float, float, float])
     con.execute(
         f"COPY ({layers} ORDER BY layer, class_name) TO '{reef_out.as_posix()}' (FORMAT PARQUET)"
     )
+
+    (out_dir / "coverage.json").write_text(json.dumps({"bbox": list(bbox)}) + "\n")
 
     for out in (mpa_out, reef_out):
         row = con.execute(f"SELECT count(*) FROM read_parquet('{out.as_posix()}')").fetchone()

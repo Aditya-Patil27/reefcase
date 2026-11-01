@@ -2,7 +2,8 @@
 
 Queries the GeoParquet built by ``scripts/build_geo.py`` (data/geo/mpa.parquet) through DuckDB
 spatial to find the WDPA protected area a site lies in and whether it is no-take. Where areas
-nest (an MLCD inside a national marine sanctuary) the smallest, most specific one wins. Runs
+nest (an MLCD inside a national marine sanctuary) the smallest, most specific one wins. A site
+outside the region the file was built for is ``available=false``, not "not in an MPA". Runs
 entirely offline with zero network calls at runtime.
 """
 
@@ -14,6 +15,7 @@ from pathlib import Path
 from reefcase.core.errors import ToolError
 from reefcase.core.ids import TOOL_RESULT, new_id
 from reefcase.core.schemas import ToolResult
+from reefcase.tools.geo_coverage import outside_coverage
 from reefcase.tools.http import ToolContext
 from reefcase.tools.registry import ToolParams, tool
 
@@ -44,27 +46,31 @@ async def mpa_boundary(params: MPABoundaryParams, ctx: ToolContext) -> ToolResul
     if not DEFAULT_MPA_PARQUET.is_file():
         raise ToolError(f"{DEFAULT_MPA_PARQUET} missing; run scripts/build_geo.py")
 
-    row = await ctx.store.fetchone(
-        f"""
-        SELECT name, designation, no_take
-        FROM read_parquet('{DEFAULT_MPA_PARQUET.as_posix()}')
-        WHERE ST_Within(ST_Point(?, ?), geom)
-        ORDER BY marine_area_km2 ASC NULLS LAST
-        LIMIT 1
-        """,
-        [site.location.lon, site.location.lat],
-    )
+    data = outside_coverage(site.location.lat, site.location.lon)
+    if data is None:
+        row = await ctx.store.fetchone(
+            f"""
+            SELECT name, designation, no_take
+            FROM read_parquet('{DEFAULT_MPA_PARQUET.as_posix()}')
+            WHERE ST_Within(ST_Point(?, ?), geom)
+            ORDER BY marine_area_km2 ASC NULLS LAST
+            LIMIT 1
+            """,
+            [site.location.lon, site.location.lat],
+        )
+        data = {
+            "available": True,
+            "inside_mpa": row is not None,
+            "mpa_name": row[0] if row else None,
+            "no_take": _NO_TAKE.get(row[2]) if row else None,
+            "designation": row[1] if row else None,
+        }
 
     return ToolResult(
         id=new_id(TOOL_RESULT),
         tool="mpa_boundary",
         params=params.model_dump(mode="json"),
-        data={
-            "inside_mpa": row is not None,
-            "mpa_name": row[0] if row else None,
-            "no_take": _NO_TAKE.get(row[2]) if row else None,
-            "designation": row[1] if row else None,
-        },
+        data=data,
         source_url=MPA_SOURCE_URL,
         retrieved_at=datetime.now(UTC),
     )

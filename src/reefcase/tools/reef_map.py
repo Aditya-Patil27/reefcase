@@ -2,7 +2,8 @@
 
 Queries the GeoParquet built by ``scripts/build_geo.py`` (data/geo/reef_map.parquet) through
 DuckDB spatial: the geomorphic zone and benthic class under the site, and the mapped reef area
-(geomorphic polygons) within 1 km. Runs entirely offline with zero network calls at runtime.
+(geomorphic polygons) within 1 km. A site outside the region the file was built for is
+``available=false``, not "no reef". Runs entirely offline with zero network calls at runtime.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from pathlib import Path
 from reefcase.core.errors import ToolError
 from reefcase.core.ids import TOOL_RESULT, new_id
 from reefcase.core.schemas import ToolResult
+from reefcase.tools.geo_coverage import outside_coverage
 from reefcase.tools.http import ToolContext
 from reefcase.tools.registry import ToolParams, tool
 
@@ -49,6 +51,17 @@ async def reef_map(params: ReefMapParams, ctx: ToolContext) -> ToolResult:
 
     lon = site.location.lon
     lat = site.location.lat
+    unavailable = outside_coverage(lat, lon)
+    if unavailable is not None:
+        return ToolResult(
+            id=new_id(TOOL_RESULT),
+            tool="reef_map",
+            params=params.model_dump(mode="json"),
+            data=unavailable,
+            source_url=REEF_MAP_SOURCE_URL,
+            retrieved_at=datetime.now(UTC),
+        )
+
     parquet = f"read_parquet('{DEFAULT_REEF_PARQUET.as_posix()}')"
 
     rows = await ctx.store.fetchall(
@@ -80,6 +93,7 @@ async def reef_map(params: ReefMapParams, ctx: ToolContext) -> ToolResult:
         tool="reef_map",
         params=params.model_dump(mode="json"),
         data={
+            "available": True,
             "geomorphic_zone": classes.get("geomorphic"),
             "benthic_class": classes.get("benthic"),
             "reef_area_km2_within_1km": reef_area_km2,
