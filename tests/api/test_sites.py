@@ -87,6 +87,8 @@ async def test_sites_list_latest_cover_and_trend(make_settings, tmp_path: Path) 
         "mpa_id": "mpa_a",
         "latest_cover": {c.value: pytest.approx(v) for c, v in cover(0.30).items()},
         "latest_dive_date": "2026-10-21",
+        "first_dive_date": "2019-08-19",
+        "live_coral_change": pytest.approx(-0.15),
         "trend": "declining",
     }
 
@@ -118,6 +120,7 @@ async def test_trend_is_live_coral_since_the_first_survey(
         [summary] = (await client.get("/api/sites")).json()
 
     assert summary["trend"] == trend
+    assert summary["live_coral_change"] == pytest.approx(latest - first)
 
 
 @pytest.mark.asyncio
@@ -129,6 +132,8 @@ async def test_a_single_survey_is_stable(make_settings, tmp_path: Path) -> None:
         [summary] = (await client.get("/api/sites")).json()
 
     assert summary["trend"] == "stable"
+    assert summary["live_coral_change"] == 0.0
+    assert summary["first_dive_date"] == summary["latest_dive_date"] == "2026-10-21"
 
 
 @pytest.mark.asyncio

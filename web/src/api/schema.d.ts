@@ -254,6 +254,9 @@ export interface components {
             latest_cover: components["schemas"]["Cover"];
             /** Format: date */
             latest_dive_date: string;
+            /** Format: date */
+            first_dive_date: string;
+            live_coral_change: number;
             trend: components["schemas"]["SiteTrend"];
         };
         SiteDetail: {

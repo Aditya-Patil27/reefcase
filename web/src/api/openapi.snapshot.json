@@ -598,6 +598,8 @@
           "mpa_id",
           "latest_cover",
           "latest_dive_date",
+          "first_dive_date",
+          "live_coral_change",
           "trend"
         ],
         "properties": {
@@ -622,6 +624,13 @@
           "latest_dive_date": {
             "type": "string",
             "format": "date"
+          },
+          "first_dive_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "live_coral_change": {
+            "type": "number"
           },
           "trend": {
             "$ref": "#/components/schemas/SiteTrend"

@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { api, dataOrNull } from "../api/client";
 import type { components } from "../api/schema";
-import { humanize } from "../format";
+import { formatSignedPp, humanize } from "../format";
 import { ReefMap, type LayerVisibility } from "../map/ReefMap";
 import { CoverStrip } from "../components/CoverStrip";
 import { Switch } from "../components/arc/switch/switch";
@@ -94,7 +94,10 @@ function MapRoute() {
                   </div>
 
                   <p className="mt-0.5 font-mono text-mono-sm text-mute">
-                    {humanize(site.trend)} · latest dive {site.latest_dive_date}
+                    {site.first_dive_date === site.latest_dive_date
+                      ? "One survey"
+                      : `${humanize(site.trend)}, ${formatSignedPp(site.live_coral_change * 100)} since ${site.first_dive_date.slice(0, 4)}`}{" "}
+                    · <span className="whitespace-nowrap">latest dive {site.latest_dive_date}</span>
                   </p>
 
                   <div className="mt-1.5">

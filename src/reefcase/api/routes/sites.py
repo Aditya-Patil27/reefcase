@@ -29,7 +29,11 @@ class SiteTrend(StrEnum):
 
 
 class SiteSummary(BaseModel):
-    """A site on the map: where it is and its latest completed survey."""
+    """A site on the map: where it is and its latest completed survey.
+
+    ``live_coral_change`` is latest minus first live coral, as a fraction, between the surveys dated
+    ``first_dive_date`` and ``latest_dive_date``; ``trend`` names it. One survey gives 0.0.
+    """
 
     id: str
     name: str
@@ -37,6 +41,8 @@ class SiteSummary(BaseModel):
     mpa_id: str | None
     latest_cover: dict[SegClass, float]
     latest_dive_date: date
+    first_dive_date: date
+    live_coral_change: float
     trend: SiteTrend
 
 
@@ -80,6 +86,7 @@ def _summary(site: Site, history: list[Survey]) -> SiteSummary:
     """Summarise ``site`` from its completed surveys, oldest first."""
     first, latest = history[0], history[-1]
     assert first.cover is not None and latest.cover is not None
+    change = latest.cover[SegClass.LIVE_CORAL] - first.cover[SegClass.LIVE_CORAL]
     return SiteSummary(
         id=site.id,
         name=site.name,
@@ -87,12 +94,13 @@ def _summary(site: Site, history: list[Survey]) -> SiteSummary:
         mpa_id=site.mpa_id,
         latest_cover=latest.cover,
         latest_dive_date=latest.dive_date,
-        trend=_trend(first.cover[SegClass.LIVE_CORAL], latest.cover[SegClass.LIVE_CORAL]),
+        first_dive_date=first.dive_date,
+        live_coral_change=change,
+        trend=_trend(change),
     )
 
 
-def _trend(first_live: float, latest_live: float) -> SiteTrend:
-    change = latest_live - first_live
+def _trend(change: float) -> SiteTrend:
     if change < -TREND_THRESHOLD:
         return SiteTrend.DECLINING
     if change > TREND_THRESHOLD:

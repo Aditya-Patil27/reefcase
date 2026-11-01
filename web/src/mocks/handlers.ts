@@ -33,6 +33,8 @@ export const sites: SiteSummary[] = [
     mpa_id: "mpa_lizard_island_reef",
     latest_cover: lizardCover,
     latest_dive_date: "2026-10-21",
+    first_dive_date: "2019-08-19",
+    live_coral_change: -0.17,
     trend: "declining",
   },
   {
@@ -49,6 +51,8 @@ export const sites: SiteSummary[] = [
       other: 0.02,
     },
     latest_dive_date: "2026-09-18",
+    first_dive_date: "2020-10-06",
+    live_coral_change: -0.14,
     trend: "declining",
   },
   {
@@ -65,6 +69,8 @@ export const sites: SiteSummary[] = [
       other: 0.02,
     },
     latest_dive_date: "2026-03-04",
+    first_dive_date: "2021-02-23",
+    live_coral_change: 0.09,
     trend: "improving",
   },
   {
@@ -81,6 +87,8 @@ export const sites: SiteSummary[] = [
       other: 0.02,
     },
     latest_dive_date: "2026-02-11",
+    first_dive_date: "2022-01-18",
+    live_coral_change: 0.02,
     trend: "stable",
   },
   {
@@ -97,6 +105,8 @@ export const sites: SiteSummary[] = [
       other: 0.02,
     },
     latest_dive_date: "2025-12-09",
+    first_dive_date: "2021-12-14",
+    live_coral_change: -0.03,
     trend: "stable",
   },
   {
@@ -113,6 +123,8 @@ export const sites: SiteSummary[] = [
       other: 0.02,
     },
     latest_dive_date: "2026-01-27",
+    first_dive_date: "2022-02-08",
+    live_coral_change: 0.07,
     trend: "improving",
   },
   {
@@ -129,6 +141,8 @@ export const sites: SiteSummary[] = [
       other: 0.02,
     },
     latest_dive_date: "2026-04-16",
+    first_dive_date: "2019-04-10",
+    live_coral_change: 0.06,
     trend: "improving",
   },
   {
@@ -145,6 +159,8 @@ export const sites: SiteSummary[] = [
       other: 0.02,
     },
     latest_dive_date: "2026-05-02",
+    first_dive_date: "2020-05-12",
+    live_coral_change: -0.01,
     trend: "stable",
   },
 ];

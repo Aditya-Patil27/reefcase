@@ -38,6 +38,8 @@ const mockSites = [
       other: 0.02,
     },
     latest_dive_date: "2026-10-21",
+    first_dive_date: "2019-08-19",
+    live_coral_change: -0.17,
     trend: "declining" as const,
   },
   {
@@ -54,6 +56,8 @@ const mockSites = [
       other: 0.02,
     },
     latest_dive_date: "2026-03-04",
+    first_dive_date: "2026-03-04",
+    live_coral_change: 0,
     trend: "improving" as const,
   },
 ];
@@ -95,6 +99,9 @@ describe("MapRoute", () => {
     await waitFor(() => {
       expect(screen.getByText("Lizard Island")).toBeInTheDocument();
       expect(screen.getByText("Swaraj Dweep, Andaman")).toBeInTheDocument();
+      // The trend word carries its signed figure; a site with one survey says so.
+      expect(screen.getByText(/Declining, −17\.0 pp since 2019/)).toBeInTheDocument();
+      expect(screen.getByText(/One survey/)).toBeInTheDocument();
     });
 
     // Layer switch labels
