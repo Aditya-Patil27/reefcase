@@ -1,5 +1,5 @@
 ---
-status: ready-for-dev
+status: done
 ---
 
 # Story 8.7: Slim site page

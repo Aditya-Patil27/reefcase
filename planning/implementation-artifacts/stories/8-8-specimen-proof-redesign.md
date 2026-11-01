@@ -147,7 +147,7 @@ side panel under the frame, the tray scrolls sideways inside its own row, and th
 under the tray. Tap targets are at least 44px.
 
 **Given** the whole app
-**Then** `python ../scripts/agents/ui_check.py` prints `clean`, axe reports no serious or critical
+**Then** `python ../scripts/ui_check.py` prints `clean`, axe reports no serious or critical
 violations, every interactive element shows a visible 2px ink focus ring (red on the stage keys is
 the button colour, not the ring), and nothing animates except the running-step shimmer and a 150ms
 stage swap that is skipped under reduced motion.

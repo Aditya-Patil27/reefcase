@@ -96,7 +96,7 @@ story makes it read the multipart body and validate it (decision 6).
 - Icons: `lucide-react` at 16px with `strokeWidth={1.5}`.
 - Motion: 120–240ms, opacity/transform only, honour `useReducedMotion`; the only looping animation is the shimmer on something actually running.
 - Copy: a field scientist's voice, sentence case, no exclamation marks; buttons say what happens; every error names the real thing.
-- Slop check: `python ../scripts/agents/ui_check.py` from `web/` must print `clean`. No raw colours outside `src/styles/` and `src/components/arc/`, no Tailwind palette colours, no arbitrary text sizes, no emoji, no filler copy.
+- Slop check: `python ../scripts/ui_check.py` from `web/` must print `clean`. No raw colours outside `src/styles/` and `src/components/arc/`, no Tailwind palette colours, no arbitrary text sizes, no emoji, no filler copy.
 
 ## Decisions fixed by this story
 
@@ -169,7 +169,7 @@ story makes it read the multipart body and validate it (decision 6).
    - screenshots at 1440×900 and 390×844 in `.scratch/ui/6-2-upload-page/upload-<width>.png`, taken in mock mode.
    - Call `stubBasemap(page)` before `goto` so the map never touches the network. If headless Chromium cannot create a WebGL context, add `launchOptions: { args: ["--use-angle=swiftshader"] }` to `web/playwright.config.ts` (that is the only 6.1 file this story may touch) and note it in the report.
    - `pnpm -C web exec playwright install chromium` first if the browser is missing.
-8. **Green.** `pnpm -C web run gate` passes from the repo root; `python scripts/agents/ui_check.py` (run by the gate from `web/`) prints `clean`; `pnpm gen:api` leaves `src/api/schema.d.ts` unchanged.
+8. **Green.** `pnpm -C web run gate` passes from the repo root; `python scripts/ui_check.py` (run by the gate from `web/`) prints `clean`; `pnpm gen:api` leaves `src/api/schema.d.ts` unchanged.
 
 ## Tasks
 

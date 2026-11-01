@@ -349,7 +349,10 @@ function SiteRoute() {
             </h2>
             <div className="max-w-full overflow-x-auto border-y border-rule">
               <SortableDataTable
-                rows={covered.slice().reverse() as (Survey & Record<string, unknown>)[]}
+                rows={covered
+                  .slice()
+                  .reverse()
+                  .map((survey) => ({ ...survey, live_cover: survey.cover?.live_coral ?? null }))}
                 columns={columns}
                 rowKey="id"
                 caption="Recorded site surveys"

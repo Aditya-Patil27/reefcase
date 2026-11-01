@@ -32,7 +32,7 @@ So that the UI can't drift from the API.
 ## Files (verbatim from epics.md)
 
 - Files: `web/**` scaffold, `web/src/api/{openapi.snapshot.json,schema.d.ts,client.ts}`, `web/src/live/reducer.ts`, `web/src/live/reducer.test.ts`, `web/src/mocks/{events.json,handlers.ts,browser.ts}`, `web/public/mockServiceWorker.js`, `web/src/styles/{theme.css,palette.ts}`, `web/src/config.ts`, `web/src/components/{AppShell,CoverStrip}.tsx`, `web/src/components/arc/**` (via `scripts/agents/arc_add.py`)
-- Done when: `pnpm -C web run gate` passes. `gate` runs typecheck, lint, vitest, `playwright test` and `python ../scripts/agents/ui_check.py`
+- Done when: `pnpm -C web run gate` passes. `gate` runs typecheck, lint, vitest, `playwright test` and `python ../scripts/ui_check.py`
 
 `web/**` scaffold therefore also covers the build config, `index.html`, `src/main.tsx`, `src/test/setup.ts`, `src/vite-env.d.ts`, the route files needed for AC2 (`src/routes/{__root,index,upload,surveys.$id,sites.$id}.tsx`, generated `src/routeTree.gen.ts`), `web/e2e/**` and their tests.
 
@@ -259,7 +259,7 @@ Use real reef sites; never write `Site 1`. Site fixture rows (ui.md): Lizard Isl
 The mock survey is **Lizard Island, dive date 2026-10-21**, matching ui.md's header readout example.
 
 ### Slop check
-`python ../scripts/agents/ui_check.py` from `web/` must print `clean` (the gate runs it). Each hit prints its own fix; apply it as given and never reword code to dodge the pattern. `src/styles/`, `src/components/arc/`, `*.test.tsx`, `*.d.ts` and `schema.d.ts` are skipped by the checker — everything else is scanned, including `web/index.html` and `web/src/mocks/events.json`.
+`python ../scripts/ui_check.py` from `web/` must print `clean` (the gate runs it). Each hit prints its own fix; apply it as given and never reword code to dodge the pattern. `src/styles/`, `src/components/arc/`, `*.test.tsx`, `*.d.ts` and `schema.d.ts` are skipped by the checker — everything else is scanned, including `web/index.html` and `web/src/mocks/events.json`.
 
 ### Visual evidence (e2e-tester)
 Every route the story touches gets a Playwright check at 390×844 asserting `document.documentElement.scrollWidth <= window.innerWidth` and no console errors. Screenshots at 1440×900 and 390×844, taken in mock mode, go to `.scratch/ui/6-1-web-scaffold-typed-client-and-event-reducer/<route>-<width>.png`.
@@ -268,7 +268,7 @@ Every route the story touches gets a Playwright check at 390×844 asserting `doc
 
 1. **Lint is `oxlint@1.89.0`, not eslint.** `typescript-eslint@8.72.1` peers `typescript: ">=4.8.4 <6.1.0"`; the pinned `typescript@7.0.2` is the native compiler and exports no JS API (`import ts from "typescript"` gives only `version`), so any typescript-eslint setup is dead on arrival. oxlint parses TS/TSX itself, implements `react/rules-of-hooks` and `react/exhaustive-deps`, and satisfies ui.md's intent ("exclude `src/components/arc/**` from lint, keep it under `tsc`"). Record this in the story report; do **not** add eslint.
 2. **`gate`** (in `web/package.json`), exactly:
-   `"gate": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run e2e && python ../scripts/agents/ui_check.py"` with
+   `"gate": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run e2e && python ../scripts/ui_check.py"` with
    `typecheck` = `tsc --noEmit -p tsconfig.json`, `lint` = `oxlint src e2e --deny-warnings`, `test` = `vitest run`, `e2e` = `playwright test`, `gen:api` = `openapi-typescript src/api/openapi.snapshot.json -o src/api/schema.d.ts`.
 3. **Types come only from the generated schema.** `web/src/api/schema.d.ts` is generated; nothing hand-writes an `Event`, `SegClass`, `Cover` or `Survey` type. `reducer.ts`, `client.ts`, `CoverStrip.tsx`, `handlers.ts` and the later routes import from `src/api/schema`. `CoverStrip` takes its cover type as `Cover` from the schema. That is what makes AC1's "build fails if the code uses a field that doesn't exist" true: `tsc` is the build's typecheck.
 4. **Snapshot shape.** `openapi.snapshot.json` is OpenAPI 3.1.0: `info` title `ReefCase API`, the eleven §6.3 paths above (POST `/api/surveys` with `multipart/form-data` body and a `422` validation-error response; `/api/surveys/{survey_id}/events` as `text/event-stream`), and `components.schemas` for `GeoSegments`: `SegClass`, `Cover` (exactly six required numeric properties, `additionalProperties: false`), `GeoPoint`, `Site`, `Survey`, `QualityScore`, `Frame`, `Segmentation`, `FrameAssessment`, `EvidenceRef`, `ToolResult`, `Finding`, `Cause`, `Hypothesis`, `Investigation`, one schema per §4.3 event plus `Event` as `oneOf` with `discriminator.propertyName = "type"` (each event's `type` is `"type": "string", "enum": ["<name>"]` so it generates a literal), and `Health`. Path parameter names are `{survey_id}`, `{site_id}`, `{tool_result_id}`, `{layer}`.

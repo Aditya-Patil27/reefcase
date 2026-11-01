@@ -681,7 +681,7 @@ So that the UI can't drift from the API.
 
 - Owner: C · Priority: P0 · Depends on: none
 - Files: `web/**` scaffold, `web/src/api/{openapi.snapshot.json,schema.d.ts,client.ts}`, `web/src/live/reducer.ts`, `web/src/live/reducer.test.ts`, `web/src/mocks/{events.json,handlers.ts,browser.ts}`, `web/public/mockServiceWorker.js`, `web/src/styles/{theme.css,palette.ts}`, `web/src/config.ts`, `web/src/components/{AppShell,CoverStrip}.tsx`, `web/src/components/arc/**` (via `scripts/agents/arc_add.py`)
-- Done when: `pnpm -C web run gate` passes. `gate` runs typecheck, lint, vitest, `playwright test` and `python ../scripts/agents/ui_check.py`
+- Done when: `pnpm -C web run gate` passes. `gate` runs typecheck, lint, vitest, `playwright test` and `python ../scripts/ui_check.py`
 
 **Acceptance Criteria:**
 

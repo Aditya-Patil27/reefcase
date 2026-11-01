@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Route } from "./sites.$id";
 import type { components } from "../api/schema";
@@ -129,6 +129,33 @@ describe("SiteTimelineRoute", () => {
     // Surveys table contains Case file links
     const caseFileLinks = screen.getAllByRole("link", { name: /Case file/i });
     expect(caseFileLinks.length).toBeGreaterThan(0);
+  });
+
+  it("sorts the surveys table by live cover", async () => {
+    const Component = (Route as any).options.component;
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Component />
+      </QueryClientProvider>,
+    );
+
+    const table = await screen.findByRole("table", { name: "Recorded site surveys" });
+    const order = () =>
+      within(table)
+        .getAllByRole("row")
+        .slice(1)
+        .map((row) => within(row).getAllByRole("cell")[1]?.textContent);
+    const header = within(table).getByRole("columnheader", { name: /Live cover/ });
+    const sort = within(header).getByRole("button");
+
+    fireEvent.click(sort);
+    const first = header.getAttribute("aria-sort");
+    const firstOrder = order();
+    fireEvent.click(sort);
+    const secondOrder = order();
+
+    expect(first === "ascending" ? firstOrder : secondOrder).toEqual(["37%", "48%"]);
+    expect(first === "ascending" ? secondOrder : firstOrder).toEqual(["48%", "37%"]);
   });
 
   it("leaves a survey without cover out of the key figures", async () => {
