@@ -3,7 +3,7 @@
 <p align="center">
   <a href="https://app2732006--reefcase-api-api.us-east.modal.run"><b>Open the live app</b></a>
   &nbsp;·&nbsp;
-  <a href="docs/media/tour.mp4">Watch the 83-second tour</a>
+  <a href="docs/media/tour.mp4">Watch the 52-second tour</a>
   &nbsp;·&nbsp;
   <a href="#how-it-works">How it works</a>
   &nbsp;·&nbsp;
