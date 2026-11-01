@@ -172,9 +172,8 @@ Tests run offline: HTTP calls replay from cassettes and models are replaced by f
 
 ## Built during the hackathon (Oct 26–Nov 4)
 
-The first commit (`4207fe3`) holds only planning and tooling: the PRD, architecture and story list
-in [planning/planning-artifacts/](planning/planning-artifacts/), plus agent configs. It has
-no application code. Everything below was built after it, story by story, as tracked in
+The first commit holds only the plan: the PRD, architecture and story list in
+[planning/planning-artifacts/](planning/planning-artifacts/). It has no application code. Everything below was built after it, story by story, as tracked in
 [sprint-status.yaml](planning/implementation-artifacts/sprint-status.yaml):
 
 - The FastAPI service and DuckDB store, with the live event stream

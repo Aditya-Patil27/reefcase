@@ -30,3 +30,12 @@ data/demo/*.mp4
 
 # Local full-length demo render, too large for git
 docs/media/demo-3min.mp4
+
+# Agent tooling and internal notes (kept locally, not published)
+.claude/
+.opencode/
+opencode.json
+AGENTS.md
+ops/
+docs/agents/
+scripts/agents/
