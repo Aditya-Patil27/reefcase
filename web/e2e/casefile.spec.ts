@@ -74,3 +74,18 @@ test("/surveys/$id displays CaseFile on report ready and opens Evidence on stage
 
   expect(consoleErrors).toEqual([]);
 });
+
+test("a full specimen tray scrolls inside itself instead of widening the page", async ({ page }) => {
+  // A real dive has 24 frames; the mock has 8, which fit at 390px. Fill the tray to 24 so it has
+  // to scroll: every tile's screen-reader label is absolutely positioned and must stay clipped.
+  await stubBasemap(page);
+  await page.goto(`/surveys/${SURVEY_ID}`);
+  const tray = page.getByRole("region", { name: "Frame specimen tray" });
+  await expect(tray.getByRole("button", { name: /Open Frame/ })).toHaveCount(8, { timeout: 15_000 });
+  await tray.evaluate((el) => {
+    const tiles = [...el.children];
+    for (let i = 0; i < 2; i++) for (const tile of tiles) el.appendChild(tile.cloneNode(true));
+  });
+  await expect(tray.getByRole("button", { name: /Open Frame/ })).toHaveCount(24);
+  await expectNoHorizontalOverflow(page, "/surveys/$id with a 24-frame tray");
+});

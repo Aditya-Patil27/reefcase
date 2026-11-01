@@ -48,9 +48,11 @@ export function SpecimenTray({
     <div className={`space-y-1.5 ${className}`}>
       <div
         ref={containerRef}
+        // relative: the tiles' absolutely positioned sr-only labels resolve against this scroller,
+        // so they are clipped with the tiles instead of stretching the page.
         role="region"
         aria-label="Frame specimen tray"
-        className="flex w-full gap-1 overflow-x-auto pb-1"
+        className="relative flex w-full gap-1 overflow-x-auto pb-1"
         style={{ scrollbarWidth: "thin" }}
       >
         {frames.map((frame, idx) => {
