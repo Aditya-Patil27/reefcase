@@ -1,5 +1,5 @@
 ---
-status: review
+status: done
 ---
 
 # Story 8.3: Deployment
