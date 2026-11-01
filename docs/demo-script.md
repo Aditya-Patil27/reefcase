@@ -1,7 +1,7 @@
 # ReefCase demo script
 
 The 3-minute submission video. Rubric: Impact 30%, Use of Meta tooling 25%, Technical 20%,
-Demo 25%. Done when three uninterrupted rehearsals come in under 3:00 (story 8.4).
+Demo 25%. The final cut runs 2:45, under the 3:00 limit (story 8.4).
 
 ## Before recording
 
@@ -63,10 +63,8 @@ about −22 LUFS under 0:06–1:45 and −23 under 1:47–2:35, and lifts in the
 - Don't claim numbers the run didn't produce. Read the verdict and findings off the actual
   case file, and fill in the Glimmer-Reef numbers from `ml/results/glimmer_v2_eval.json`.
 
-## Rehearsals
+## Final cut
 
-| # | Date | Length | Notes |
-|---|---|---|---|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
+| Date | Length | Notes |
+|---|---|---|
+| 2026-11-01 | 2:45 | Rendered with the voice-over above and published at https://youtu.be/_EvOoO_15yc |
