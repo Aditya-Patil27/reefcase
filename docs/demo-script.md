@@ -17,16 +17,40 @@ Demo 25%. Done when three uninterrupted rehearsals come in under 3:00 (story 8.4
       after 10 minutes idle.
 - [ ] Fresh browser, no dev tools, 1920×1080.
 
-## Script
+## Voice-over (final cut, 2:45)
 
-| Time | Screen | Voice-over (draft) |
-|---|---|---|
-| 0:00–0:20 | Reef map → HAW-41 site timeline, coral cover for 2013, 2016 and 2019 | "This is HAW-41, a NOAA monitoring station off West Hawaii. Its live coral has been falling for a decade. Is it still dying, and why?" |
-| 0:20–0:35 | Upload: pick the clip, pin HAW-41, set 2024-07-06. Cut the upload wait. Caption: *clip stitched from NCRMP 2024 survey photos of HAW-41* | "A diver surfaces with a new clip. They upload it, pin the site, set the date." |
-| 0:35–1:25 | Live view at a labelled 4× speed: masks arriving per frame, assessments, then tool calls landing on the map (heat stress, vessels, MPA) | "ReefCase segments every usable frame into live coral, bleaching, algae, rubble and sand, then an agent investigates: heat stress from NOAA Coral Reef Watch, vessel activity from Global Fishing Watch, the reef map and protected-area boundaries." |
-| 1:25–2:15 | Case file: verdict, competing hypotheses with confidences. Click a finding: the evidence drawer opens on the exact frame or tool record | "The result is a case file, not a dashboard. Every finding cites a frame or a data record, and uncited claims are rejected and repaired before you see them." |
-| 2:15–2:45 | Model slide: ReefStudent (0.683 mIoU vs SAM 3's 0.300 on the Coralscapes test split, about 8× faster); Muse Spark Open teacher → 3,366 frame assessments → Glimmer-Reef. "Built with Muse Spark Open" | "Everything is open-weight. ReefStudent, a small segmenter trained on human-labelled reef images, beats SAM 3 on the Coralscapes benchmark at about eight times the speed, and it segmented this site's decade of history. Live uploads use SAM 3, which held up better on new footage. Muse Spark Open labelled 3,366 frames to fine-tune Glimmer-Reef, a Muse Glimmer that assesses frames." |
-| 2:45–3:00 | Live URL, team name, data credits | "A park manager gets a cited case in minutes instead of a field season. ReefCase, by Yours Truly." |
+Timed to the rendered film (2:45, light redesign, Tunetank "Documentary Nature Music" bed).
+Each line must start at or after its time and finish inside its window. The music plays at
+full level for 0:00–0:04 and 2:37–2:45, so no voice there. Pace is about 2 words a second,
+calm and documentary.
+
+| # | Window | On screen | Line |
+|---|---|---|---|
+| 1 | 0:04.5–0:09.5 | Map of Hawaiʻi, pin on HAW-41, North Kohala | "This is HAW-41, a NOAA survey site off North Kohala, Hawaiʻi." |
+| 2 | 0:10–0:19.5 | Live coral cover: 4.9, 8.5, 40.2 (2019), then 5 (2024 dive), "−35 pts" | "In 2019, NOAA divers measured forty percent live coral here. Our July 2024 dive reads five. What happened?" |
+| 3 | 0:20.5–0:35.5 | Upload: clip, pin, date. Caption: footage stitched from NCRMP 2024 photos | "A diver uploads the clip, pins the site and sets the dive date. This clip is stitched from NOAA's own 2024 survey photos of HAW-41." |
+| 4 | 0:37–0:48 | Segment, 6× speed badge, masks arriving per frame | "SAM 3 masks every sampled frame into live coral, bleaching, algae, rubble and sand, shown here at six times speed." |
+| 5 | 0:49–0:55 | Assess, 24× speed badge | "Muse Spark Open then grades every frame for bleaching." |
+| 6 | 0:56–1:05 | Investigate: tool calls land in the trace | "An agent investigates: heat stress from NOAA Coral Reef Watch, vessel activity from Global Fishing Watch, the reef map, protected areas and the site's history." |
+| 7 | 1:05–1:16.5 | Case file ready (04:21): verdict, hypotheses 78 / 18 / 12 / 5% | "Four minutes later, a case file. The reef has collapsed to turf algae, with no sign of heat stress or physical damage. Each competing cause gets its own score." |
+| 8 | 1:17–1:23.5 | Citations, a tool result opens | "Every claim cites a frame or a tool result. Open one to check it." |
+| 9 | 1:24.5–1:29.5 | Evidence drawer: Source, Query, Result boxes | "This is the exact record the agent got back: source, query, result." |
+| 10 | 1:30–1:34 | Degree heating weeks chart, big "0" | "Heat stress in the eighty-nine days before the dive: zero." |
+| 11 | 1:34.5–1:39 | "Every claim cited.", ringed citations | "Claims without a citation are rejected and repaired before you see them." |
+| 12 | 1:40–1:46.5 | "What to do first.": 01 Resurvey, 02 Report the shift | "Then, what to do first: resurvey, and report the shift to the sanctuary." |
+| 13 | 1:47–1:53.5 | Model 01, ReefStudent masks scanning over reef photos | "Everything under the hood is open-weight. ReefStudent is a small segmenter trained on Coralscapes." |
+| 14 | 1:54–1:59.5 | mIoU bars: 0.683 vs SAM 3's 0.300 | "On the Coralscapes test set it scores 0.68. SAM 3 scores 0.30." |
+| 15 | 2:00–2:05.5 | Per-frame race, "≈ 8× faster" | "It's about eight times faster. It segmented this site's survey history; live uploads run SAM 3." |
+| 16 | 2:06–2:12.5 | Muse Spark Open teacher line, 3,366, Glimmer-Reef, ≈ $8.59 of GPU | "Muse Spark Open labelled 3,366 frames to train Glimmer-Reef, for under nine dollars of GPU." |
+| 17 | 2:13–2:19 | Waffles: 70% vs 80% exact agreement, 354 held-out frames | "It matches its teacher on eighty percent of held-out frames, up from seventy for the base model." |
+| 18 | 2:20–2:24.5 | Seconds per frame, "1.9×", "Built with Muse Spark Open" | "And it runs nearly twice as fast. Built with Muse Spark Open." |
+| 19 | 2:26–2:32.5 | "A cited case in minutes. Not a field season." | "For a park manager, that's a cited case in minutes. Not a field season." |
+| 20 | 2:34–2:36.8 | ReefCase lockup, URL, team | "ReefCase. By Team Yours Truly." |
+
+Say "3,366" as "three thousand, three hundred sixty-six". Hawaiʻi: ha-VAI-ee. Kohala: ko-HAH-la.
+
+Levels: voice integrated about −16 LUFS, peaks no higher than −6 dBFS. The music bed in
+0:06–2:35 already sits at about −22 LUFS (−20 from 1:47), so it needs no extra ducking under the voice.
 
 ## Rules for the recording
 
