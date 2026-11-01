@@ -27,6 +27,16 @@ export const SEG_CLASS_ORDER: readonly SegClass[] = [
   "other",
 ];
 
+/** Sentence-case names for the six classes, shared by the stage list and the cover chart legend. */
+export const SEG_CLASS_LABEL: Record<SegClass, string> = {
+  live_coral: "Live coral",
+  bleached_coral: "Bleached coral",
+  algae: "Algae",
+  rubble: "Rubble",
+  sand: "Sand",
+  other: "Rock and unclassified",
+};
+
 /** Heat-stress levels 0–4: no stress, watch, warning, alert 1, alert 2 and above. */
 export const HEAT_PALETTE: readonly RGBA[] = [
   [154, 158, 150, 1],

@@ -17,7 +17,6 @@ import { Input } from "../components/arc/input/input";
 import { NumberField } from "../components/arc/number-field/number-field";
 import { SitePicker, clampDiveSite, formatLatitude, formatLongitude } from "../components/SitePicker";
 import { BUTTON_PRIMARY } from "../components/marks";
-import { useCrumb } from "../components/crumb";
 
 export const Route = createFileRoute("/upload")({
   component: UploadRoute,
@@ -135,7 +134,6 @@ function UploadBar({ progress }: { progress: UploadProgress }) {
 
 function UploadRoute() {
   const navigate = useNavigate();
-  useCrumb("UPLOAD");
 
   const [clip, setClip] = useState<File | null>(null);
   const [clipUrl, setClipUrl] = useState<string | null>(null);
@@ -260,7 +258,7 @@ function UploadRoute() {
   const durationText = formatDuration(duration);
 
   return (
-    <div className="min-h-[calc(100vh-91px)] bg-ground py-10 px-4 sm:px-6">
+    <div className="min-h-[calc(100vh-91px)] bg-bg py-10 px-4 sm:px-6">
       <form
         className="mx-auto max-w-[720px] divide-y divide-rule"
         onSubmit={handleSubmit}

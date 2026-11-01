@@ -68,7 +68,7 @@ export function SitePicker(props: {
         >
           <span
             aria-hidden="true"
-            className="block size-5 cursor-grab border-[3px] border-strobe bg-deep shadow-floating active:cursor-grabbing"
+            className="block size-5 cursor-grab border-[3px] border-key-red bg-deep shadow-floating active:cursor-grabbing"
           />
         </Marker>
       </Map>

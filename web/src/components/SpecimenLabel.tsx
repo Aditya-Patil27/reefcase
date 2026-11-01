@@ -64,7 +64,7 @@ export function SpecimenLabel({
 
   return (
     <div
-      className={`absolute left-3.5 bottom-3.5 z-10 w-[330px] max-w-[calc(100%-1.75rem)] bg-label-cream p-2.5 font-mono text-mono-sm text-label-ink select-text ${className}`}
+      className={`relative w-full bg-label-cream p-2.5 font-mono text-mono-sm text-label-ink select-text sm:absolute sm:bottom-3.5 sm:left-3.5 sm:z-10 sm:w-[330px] sm:max-w-[calc(100%-1.75rem)] ${className}`}
     >
       <b className="block text-body font-semibold tracking-wide">
         <span>{catPrefix}</span>

@@ -163,7 +163,7 @@ function SurveyRouteComponent() {
 
   return (
     <div className="flex flex-1 flex-col bg-bg text-ink">
-      <header className="border-b border-rule bg-ground px-4 py-3 sm:px-10 flex flex-wrap items-baseline justify-between gap-4">
+      <header className="border-b border-rule bg-bg px-4 py-3 sm:px-10 flex flex-wrap items-baseline justify-between gap-4 md:sr-only">
         <h1 className="font-sans text-title font-bold text-ink">
           {site?.name ?? "Survey"}
         </h1>
@@ -187,14 +187,12 @@ function SurveyRouteComponent() {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-12 px-4 py-6 sm:px-10 lg:grid-cols-[820px_1fr]">
+      <div className="grid grid-cols-1 gap-12 px-4 py-6 sm:px-10 lg:grid-cols-[minmax(0,820px)_minmax(0,1fr)]">
         {/* Left Column: Pipeline Steps, Stage, Specimen Tray */}
-        <section aria-labelledby="frames-heading" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 id="frames-heading" className="font-mono text-mono-eyebrow uppercase tracking-wider text-mute">
-              Frames
-            </h2>
-          </div>
+        <section aria-labelledby="frames-heading" className="min-w-0 space-y-4 lg:self-start lg:top-4 lg:[@media(min-height:820px)]:sticky lg:[@media(min-height:820px)]:max-h-[calc(100dvh-2rem)] lg:[@media(min-height:820px)]:overflow-y-auto lg:[@media(min-height:820px)]:pb-1">
+          <h2 id="frames-heading" className="sr-only">
+            Frames
+          </h2>
 
           {!historical ? (
             <PipelineSteps

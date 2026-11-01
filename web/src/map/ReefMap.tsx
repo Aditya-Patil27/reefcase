@@ -88,7 +88,7 @@ export function ReefMap({
     <div
       role="region"
       aria-label="Reef overview map"
-      className="relative h-full w-full overflow-hidden bg-ground"
+      className="relative h-full w-full overflow-hidden bg-bg"
     >
       <Map
         key={basemap.key}
@@ -142,7 +142,7 @@ export function ReefMap({
                 aria-label={site.name}
                 aria-pressed={isSelected}
                 style={{ width: size, height: size }}
-                className={`block bg-ink transition-all focus:outline-none ${
+                className={`block bg-ink transition-all focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
                   isSelected ? "outline-2 outline-key-red outline-offset-1 z-10" : ""
                 }`}
               />
@@ -177,7 +177,7 @@ export function ReefMap({
                   type="button"
                   aria-label="Close"
                   onClick={() => onSelectSite(null)}
-                  className="p-1 text-mute hover:text-ink focus:outline-none"
+                  className="p-1 text-mute hover:text-ink focus:outline-none focus-visible:outline-2 focus-visible:outline-ink"
                 >
                   <X size={16} aria-hidden="true" />
                 </button>

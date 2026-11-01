@@ -44,7 +44,7 @@ test("/surveys/$id renders live investigation view with frames, trace, and findi
   await expect(page.getByRole("button", { name: "Both", exact: true })).toBeVisible();
 
   // Frame tiles and thumbnails appear from mock event stream
-  await expect(page.getByText("Frame 01").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open Frame 01" })).toBeVisible();
 
   // Trace section
   await expect(page.getByRole("heading", { name: "Trace" }).first()).toBeVisible();

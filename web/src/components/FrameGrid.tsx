@@ -3,14 +3,14 @@ import type { FrameView } from "../live/reducer";
 import SegmentedControl from "./arc/segmented-control/segmented-control";
 import { Skeleton } from "./arc/skeleton/skeleton";
 import { CoverStrip } from "./CoverStrip";
-import { LIT_RING } from "./strobe";
+import { STAGE_SELECTED } from "./marks";
 
 export type ViewMode = "frame" | "mask" | "both";
 
 export interface FrameGridProps {
   frames: FrameView[];
   className?: string;
-  /** The frame opened under the strobe: shown in true colour, twice the size. */
+  /** The frame opened on the stage: shown in true colour, twice the size. */
   litId?: string;
   /** Makes each frame a button that opens it as evidence. */
   onOpenFrame?: (id: string) => void;
@@ -81,13 +81,13 @@ export function FrameGrid({
                 />
               ) : null}
               {lit ? (
-                <span className="absolute top-2 left-2 z-10 bg-strobe px-1.5 py-0.5 text-label font-bold text-fg">
+                <span className="absolute top-2 left-2 z-10 bg-key-red px-1.5 py-0.5 text-label font-bold text-bg">
                   {name}
                 </span>
               ) : null}
             </>
           );
-          const tile = `water-cast block aspect-[4/3] w-full ${lit ? LIT_RING : ""}`;
+          const tile = `water-cast block aspect-[4/3] w-full ${lit ? STAGE_SELECTED : ""}`;
 
           return (
             <figure

@@ -227,3 +227,23 @@ a {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
+
+/* Arc controls placed on the velvet stage take stage tones instead of the ground's. */
+.on-stage {
+  --border: var(--stage-rule);
+  --surface-muted: transparent;
+  --surface: var(--stage-rule);
+  --text-muted: var(--stage-mute);
+  --text-secondary: var(--stage-mute);
+  --foreground: var(--stage-fg-bright);
+  --border-subtle: var(--stage-rule);
+  --row-hover: var(--stage-rule);
+  --focus-outline: var(--stage-fg-bright);
+}
+
+/* Stage controls meet the 44px touch target on phones. */
+@media (max-width: 639.98px) {
+  .on-stage {
+    --control-height-sm: 2.75rem;
+  }
+}

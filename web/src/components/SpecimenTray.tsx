@@ -76,7 +76,7 @@ export function SpecimenTray({
                 data-lit={isSelected}
                 onClick={() => onSelectFrame(frame.id)}
                 onKeyDown={(e) => handleKeyDown(e, idx)}
-                className={`group relative aspect-video h-12 w-full overflow-hidden bg-stage-rule transition-all focus:outline-none ${
+                className={`group relative aspect-video h-12 w-full overflow-hidden bg-stage-rule transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${
                   isSelected
                     ? "outline-2 outline-key-red outline-offset-1 z-10"
                     : "hover:opacity-90"
@@ -98,7 +98,7 @@ export function SpecimenTray({
                   isSelected ? "font-semibold text-key-red" : "text-mute"
                 }`}
               >
-                <span>{label} · </span>
+                <span className="sr-only">{label}, live coral </span>
                 <span>{frame.cover ? `${livePercent}%` : "—"}</span>
               </span>
             </div>

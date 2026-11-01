@@ -43,10 +43,10 @@ function MapRoute() {
 
   return (
     // The shell's 56px bar and 35px footer sit outside the map's height.
-    <div className="relative flex h-[calc(100dvh-91px)] flex-col-reverse overflow-hidden bg-ground text-ink md:flex-row">
+    <div className="relative flex h-[calc(100dvh-96px)] flex-col-reverse overflow-hidden bg-bg text-ink md:flex-row">
       <aside
         aria-label="Sites and layers"
-        className="z-10 flex h-[40vh] w-full shrink-0 flex-col overflow-y-auto border-t border-rule bg-ground md:h-full md:w-80 md:border-t-0 md:border-r"
+        className="z-10 flex h-[40vh] w-full shrink-0 flex-col overflow-y-auto border-t border-rule bg-bg md:h-full md:w-80 md:border-t-0 md:border-r"
       >
         <div className="px-4 py-5 sm:px-5">
           <h2 id="sites-heading" className={SECTION_HEADING}>
@@ -84,7 +84,7 @@ function MapRoute() {
                   aria-current={isSelected ? "true" : undefined}
                   className={`-mx-2 cursor-pointer border-l-2 px-2 py-3 transition-colors ${
                     isSelected
-                      ? "border-key-red bg-ground"
+                      ? "border-key-red bg-bg"
                       : "border-transparent hover:bg-rule/30"
                   }`}
                 >

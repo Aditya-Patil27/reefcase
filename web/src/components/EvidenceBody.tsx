@@ -10,7 +10,7 @@ import { api, dataOrNull } from "../api/client";
 import type { components } from "../api/schema";
 import type { FrameView } from "../live/reducer";
 import { frameLabel, humanize } from "../format";
-import { REEF_PALETTE, SEG_CLASS_ORDER, toRgbaString } from "../styles/palette";
+import { REEF_PALETTE, SEG_CLASS_LABEL, SEG_CLASS_ORDER, toRgbaString } from "../styles/palette";
 
 type EvidenceRef = components["schemas"]["EvidenceRef"];
 type ToolResult = components["schemas"]["ToolResult"];
@@ -94,50 +94,68 @@ export function EvidenceBody({
     }
 
     const currentLivePercent = Math.round((frame.cover?.live_coral ?? 0) * 100);
-    const sortedFrames = [...frames].sort(
-      (a, b) => (b.cover?.live_coral ?? 0) - (a.cover?.live_coral ?? 0),
-    );
-    const rank = sortedFrames.findIndex((f) => f.id === frame.id) + 1;
+    // Rank among segmented frames only: an unsegmented frame is never "lowest of N".
+    const ranked = frames
+      .filter((f) => f.cover)
+      .sort((a, b) => (b.cover?.live_coral ?? 0) - (a.cover?.live_coral ?? 0));
+    const rank = ranked.findIndex((f) => f.id === frame.id) + 1;
     const rankText =
       rank === 1
-        ? `highest of ${frames.length}`
-        : rank === frames.length && frames.length > 1
-          ? `lowest of ${frames.length}`
-          : `#${rank} of ${frames.length}`;
+        ? `highest of ${ranked.length}`
+        : rank === ranked.length && ranked.length > 1
+          ? `lowest of ${ranked.length}`
+          : `#${rank} of ${ranked.length}`;
 
+    // The mean counts only segmented frames, so a frame still waiting for its cover never reads as 0%.
     const meanLive =
       surveyCover?.live_coral ??
-      (frames.length > 0
-        ? frames.reduce((acc, f) => acc + (f.cover?.live_coral ?? 0), 0) / frames.length
+      (ranked.length > 0
+        ? ranked.reduce((acc, f) => acc + (f.cover?.live_coral ?? 0), 0) / ranked.length
         : 0);
-    const meanPercent = (meanLive * 100).toFixed(1);
+    const meanPercent = Math.round(meanLive * 100);
 
     if (mode === "stage") {
       return (
         <div
-          className={`grid h-[590px] grid-cols-1 gap-5 bg-stage-bg p-5 text-stage-fg @container lg:grid-cols-[560px_1fr] ${className}`}
+          className={`grid grid-cols-1 items-start gap-5 bg-stage-bg p-4 text-stage-fg sm:p-5 lg:grid-cols-[minmax(0,1fr)_196px] ${className}`}
         >
-          {/* Frame viewer with specimen label */}
-          <div className="relative flex flex-col justify-between overflow-hidden bg-stage-rule">
-            <div className="relative size-full overflow-hidden">
-              {maskMode !== "mask" && (frame.imageUrl || frame.thumbUrl) ? (
-                <img
-                  src={frame.imageUrl || frame.thumbUrl}
-                  alt={`${frameAlt} stage`}
-                  className="size-full object-contain"
-                />
-              ) : null}
-              {maskMode !== "frame" && frame.maskUrl ? (
-                <img
-                  src={frame.maskUrl}
-                  alt={`${frameAlt} stage mask`}
-                  className={`absolute inset-0 size-full object-contain ${
-                    maskMode === "both" ? "opacity-55" : ""
-                  }`}
-                />
-              ) : null}
-
-              {/* Specimen Label on bottom-left corner */}
+          {/* The frame at its own aspect ratio, never cropped, with its specimen label */}
+          <figure className="min-w-0 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <figcaption className="font-mono text-mono-sm text-stage-mute">{frameAlt}</figcaption>
+              <SegmentedControl
+                value={maskMode}
+                onValueChange={(v) => setMaskMode(v as "frame" | "mask" | "both")}
+                label="Display mode"
+                className="on-stage"
+                options={[
+                  { value: "frame", label: "Frame" },
+                  { value: "mask", label: "Mask" },
+                  { value: "both", label: "Both" },
+                ]}
+              />
+            </div>
+            <div className="relative">
+              <div className="relative bg-stage-rule">
+                {frame.imageUrl || frame.thumbUrl ? (
+                  <img
+                    src={frame.imageUrl || frame.thumbUrl}
+                    alt={`${frameAlt} stage`}
+                    className={`block h-auto w-full ${maskMode === "mask" ? "invisible" : ""}`}
+                  />
+                ) : (
+                  <div className="aspect-video w-full" />
+                )}
+                {maskMode !== "frame" && frame.maskUrl ? (
+                  <img
+                    src={frame.maskUrl}
+                    alt={`${frameAlt} stage mask`}
+                    className={`absolute inset-0 size-full object-contain ${
+                      maskMode === "both" ? "opacity-55" : ""
+                    }`}
+                  />
+                ) : null}
+              </div>
               <SpecimenLabel
                 siteName={siteName}
                 diveDate={diveDate}
@@ -148,42 +166,28 @@ export function EvidenceBody({
                 segBackend={segBackend}
               />
             </div>
-
-            {/* SegmentedControl in top-right */}
-            <div className="absolute top-3 right-3 z-20">
-              <SegmentedControl
-                value={maskMode}
-                onValueChange={(v) => setMaskMode(v as "frame" | "mask" | "both")}
-                label="Display mode"
-                options={[
-                  { value: "frame", label: "Frame" },
-                  { value: "mask", label: "Mask" },
-                  { value: "both", label: "Both" },
-                ]}
-              />
-            </div>
-          </div>
+          </figure>
 
           {/* Side panel */}
-          <div className="flex flex-col justify-between overflow-y-auto space-y-6 text-stage-fg">
+          <div className="space-y-6 text-stage-fg lg:pt-11">
             <div>
-              <h4 className="font-mono text-mono-eyebrow uppercase tracking-wider text-stage-mute mb-2">
-                Live coral, this frame ({frameAlt})
+              <h4 className="mb-2 font-mono text-mono-eyebrow uppercase tracking-wider text-stage-mute">
+                Live coral, this frame
               </h4>
               <div className="font-sans text-figure-lg font-semibold tracking-tight text-stage-fg-bright">
                 {frame.cover ? `${currentLivePercent}%` : "—"}
-                <small className="block font-sans text-mono-sm font-normal text-stage-mute tracking-normal mt-1.5">
-                  {rankText} · survey mean {meanPercent}%
-                </small>
               </div>
+              <p className="mt-2 font-sans text-mono-sm text-stage-mute">
+                {frame.cover ? `${rankText} · survey mean ${meanPercent}%` : "Not segmented yet"}
+              </p>
             </div>
 
             {frame.cover ? (
               <div>
-                <h4 className="font-mono text-mono-eyebrow uppercase tracking-wider text-stage-mute mb-2">
+                <h4 className="mb-2 font-mono text-mono-eyebrow uppercase tracking-wider text-stage-mute">
                   Cover
                 </h4>
-                <div className="grid grid-cols-[12px_1fr_auto] items-center gap-x-2.5 gap-y-1.5 text-body">
+                <div className="grid grid-cols-[12px_1fr_auto] items-center gap-x-2.5 gap-y-1.5 text-ui">
                   {SEG_CLASS_ORDER.map((cls) => {
                     const frac = frame.cover ? frame.cover[cls] ?? 0 : 0;
                     const pct = Math.round(frac * 100);
@@ -192,11 +196,11 @@ export function EvidenceBody({
                       <span key={cls} className="contents">
                         <i
                           style={{ backgroundColor: color }}
-                          className="size-3 inline-block shrink-0"
+                          className="inline-block size-3 shrink-0"
                           aria-hidden="true"
                         />
-                        <span className="text-stage-fg capitalize">{cls.replace(/_/g, " ")}</span>
-                        <span className="font-mono text-mono-base text-stage-fg-bright tabular-nums">
+                        <span className="text-stage-fg">{SEG_CLASS_LABEL[cls]}</span>
+                        <span className="font-mono text-mono-base tabular-nums text-stage-fg-bright">
                           {pct}%
                         </span>
                       </span>
@@ -320,7 +324,7 @@ export function EvidenceBody({
     <div
       className={
         mode === "stage"
-          ? `h-[590px] overflow-y-auto bg-stage-bg p-6 text-stage-fg space-y-6 ${className}`
+          ? `min-h-[420px] space-y-6 bg-stage-bg p-4 text-stage-fg sm:p-6 ${className}`
           : `space-y-6 ${className}`
       }
     >
@@ -329,7 +333,7 @@ export function EvidenceBody({
           <button
             type="button"
             onClick={onBackToFrame}
-            className="inline-flex items-center gap-1.5 font-mono text-mono-sm text-stage-mute hover:text-stage-fg-bright cursor-pointer focus:outline-none focus:ring-1 focus:ring-stage-fg"
+            className="inline-flex min-h-11 items-center gap-1.5 font-mono text-mono-sm text-stage-mute hover:text-stage-fg-bright cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-stage-fg-bright"
           >
             <ArrowLeft size={14} aria-hidden="true" />
             <span>Back to frame</span>
@@ -419,14 +423,14 @@ export function EvidenceBody({
 
           <div className="space-y-2">
             <h3 className="font-sans text-ui font-semibold text-stage-fg-bright">Parameters</h3>
-            <div className="border-y border-stage-rule py-2">
+            <div className="on-stage border-y border-stage-rule py-2">
               <JsonViewer data={toolResult.params} />
             </div>
           </div>
 
           <div className="space-y-2">
             <h3 className="font-sans text-ui font-semibold text-stage-fg-bright">Result data</h3>
-            <div className="border-y border-stage-rule py-2">
+            <div className="on-stage border-y border-stage-rule py-2">
               <JsonViewer data={toolResult.data} />
             </div>
           </div>

@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import { Link } from "@tanstack/react-router";
 import type { components } from "../api/schema";
-import { TEXT_LINK } from "./strobe";
+import { TEXT_LINK } from "./marks";
 
 type Survey = components["schemas"]["Survey"];
 

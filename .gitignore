@@ -27,3 +27,6 @@ data/demo/history/
 data/demo/clip/
 data/demo/*.mp4
 .playwright-mcp/
+
+# Local full-length demo render, too large for git
+docs/media/demo-3min.mp4

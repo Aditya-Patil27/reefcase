@@ -13,7 +13,6 @@ import { SortableDataTable, type DataColumn } from "../components/arc/sortable-d
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, TEXT_LINK } from "../components/marks";
 import { causeLabel, formatSignedPp, splitFirstSentence, frameLabel } from "../format";
 import { toFrameView, type FrameView } from "../live/reducer";
-import { useCrumb } from "../components/crumb";
 
 type SiteDetail = components["schemas"]["SiteDetail"];
 type Survey = components["schemas"]["Survey"];
@@ -54,7 +53,6 @@ function SiteRoute() {
   });
 
   const site = siteQuery.data?.site;
-  useCrumb(site?.name ? site.name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8) : undefined);
 
   const surveys = siteQuery.data?.surveys ?? [];
 
@@ -101,7 +99,7 @@ function SiteRoute() {
     ? [...investigation.hypotheses].sort((a, b) => b.confidence - a.confidence)[0]
     : undefined;
 
-  // Until a reader opens one, the most bleached frame is the one under the strobe.
+  // Until a reader opens one, the most bleached frame is the one on the stage.
   const worst = frames.reduce<FrameView | undefined>(
     (best, f) =>
       f.cover && f.cover.bleached_coral > (best?.cover?.bleached_coral ?? -1) ? f : best,
@@ -177,7 +175,7 @@ function SiteRoute() {
               <p className="font-mono text-mono-sm text-mute">{formatCoordinates(site.location)}</p>
             ) : null}
             {site?.mpa_id ? (
-              <span className="inline-block border border-rule bg-ground px-2 py-0.5 font-mono text-mono-eyebrow uppercase tracking-wider text-ink">
+              <span className="inline-block border border-rule bg-bg px-2 py-0.5 font-mono text-mono-eyebrow uppercase tracking-wider text-ink">
                 MPA protected
               </span>
             ) : null}
@@ -243,14 +241,16 @@ function SiteRoute() {
                 Evidence: {frames.length} {frames.length === 1 ? "frame" : "frames"} from the {evidenceYear} dive
               </h2>
               <div className="space-y-3">
-                <div className="relative aspect-video max-h-[420px] w-full overflow-hidden bg-stage-bg text-stage-fg">
+                <div className="bg-stage-bg p-3 text-stage-fg sm:p-4">
                   {selectedFrame ? (
-                    <>
-                      <img
-                        src={selectedFrame.imageUrl ?? selectedFrame.thumbUrl}
-                        alt={`${frameLabel(frameIds, selectedFrame.id)} stage`}
-                        className="size-full object-contain"
-                      />
+                    <div className="relative">
+                      <div className="aspect-video max-h-[420px] w-full overflow-hidden">
+                        <img
+                          src={selectedFrame.imageUrl ?? selectedFrame.thumbUrl}
+                          alt={`${frameLabel(frameIds, selectedFrame.id)} stage`}
+                          className="size-full object-contain"
+                        />
+                      </div>
                       <SpecimenLabel
                         siteName={site?.name ?? "SITE"}
                         diveDate={evidenceSurvey?.dive_date ?? ""}
@@ -259,8 +259,10 @@ function SiteRoute() {
                         lat={site?.location?.lat}
                         lon={site?.location?.lon}
                       />
-                    </>
-                  ) : null}
+                    </div>
+                  ) : (
+                    <div className="aspect-video max-h-[420px] w-full" />
+                  )}
                 </div>
                 <SpecimenTray
                   frames={frames}
@@ -277,7 +279,7 @@ function SiteRoute() {
 
         <aside
           aria-label="Latest case file"
-          className="min-w-0 space-y-6 border-t border-rule bg-ground px-4 py-7 sm:px-7 lg:col-span-2 xl:col-span-1 xl:border-t-0 xl:border-l"
+          className="min-w-0 space-y-6 border-t border-rule bg-bg px-4 py-7 sm:px-7 lg:col-span-2 xl:col-span-1 xl:border-t-0 xl:border-l"
         >
           {siteQuery.isPending ? (
             <p className="font-mono text-mono-sm text-mute">Reading the case file…</p>
@@ -297,26 +299,20 @@ function SiteRoute() {
                 className={
                   verdictFirst.length > 120
                     ? "max-w-[60ch] font-sans text-title font-bold text-ink"
-                    : "font-sans text-verdict font-bold text-ink leading-tight"
+                    : "font-sans text-display font-bold text-ink"
                 }
               >
                 {verdictFirst}
               </h2>
               {topHypothesis ? (
-                <div className="space-y-2">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="font-sans text-hyp-2 font-semibold text-ink">{causeLabel(topHypothesis.cause)}</span>
-                    <span className="font-mono text-mono-base font-bold text-ink">
-                      {Math.round(topHypothesis.confidence * 100)}%
-                    </span>
-                  </div>
-                  <div className="h-1 w-full bg-rule">
-                    <div
-                      className="h-full bg-ink"
-                      style={{ width: `${Math.round(topHypothesis.confidence * 100)}%` }}
-                    />
-                  </div>
-                </div>
+                <p className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-4 border-t border-ink pt-3">
+                  <span className="font-sans text-hyp-1 font-semibold tracking-tight tabular-nums text-ink">
+                    {Math.round(topHypothesis.confidence * 100)}%
+                  </span>
+                  <span className="font-sans text-ui font-medium text-ink">
+                    {causeLabel(topHypothesis.cause)}
+                  </span>
+                </p>
               ) : null}
               <div>
                 <Link to="/surveys/$id" params={{ id: evidenceSurvey.id }} className={BUTTON_PRIMARY}>
@@ -339,7 +335,7 @@ function SiteRoute() {
       </div>
 
       {covered.length > 0 ? (
-        <div className="space-y-12 px-4 py-10 sm:px-7">
+        <div className="grid grid-cols-1 gap-12 px-4 py-10 sm:px-7 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
           <section aria-labelledby="cover-heading" className="space-y-4">
             <h2 id="cover-heading" className="font-mono text-mono-eyebrow uppercase tracking-wider text-mute">
               Cover over time

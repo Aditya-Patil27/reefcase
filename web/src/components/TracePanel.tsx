@@ -6,7 +6,7 @@ import type { components } from "../api/schema";
 import Alert from "./arc/alert/alert";
 import TextShimmer from "./arc/text-shimmer/text-shimmer";
 import { EvidenceChip, toolNamesByResultId } from "./CaseFile";
-import { RULE_CITED, RULE_PENDING } from "./strobe";
+import { RULE_CITED, RULE_PENDING } from "./marks";
 import { evidenceLabel, humanize } from "../format";
 
 type Finding = components["schemas"]["Finding"];
@@ -117,14 +117,14 @@ export function TracePanel({
                     onClick={() =>
                       resultId ? onSelectEvidence?.("tool_result", resultId) : toggleCall(call.callId)
                     }
-                    className="flex w-full items-center justify-between gap-2 py-0.5 text-left hover:bg-accent-subtle"
+                    className="flex w-full items-baseline justify-between gap-2 py-0.5 text-left hover:bg-accent-subtle"
                     aria-expanded={resultId ? undefined : isExpanded}
                     aria-haspopup={resultId ? "dialog" : undefined}
                   >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="w-6 shrink-0 text-label font-bold text-secondary">{idxStr}</span>
-                      <span className="shrink-0 text-ui font-bold text-fg">{humanize(call.tool)}</span>
-                      <span className="truncate text-label text-secondary">{summary}</span>
+                    <div className="grid min-w-0 grid-cols-[24px_auto_minmax(0,1fr)] items-baseline gap-2">
+                      <span className="text-label font-bold text-secondary">{idxStr}</span>
+                      <span className="text-ui font-bold text-fg">{humanize(call.tool)}</span>
+                      <span className="text-label text-secondary">{summary}</span>
                     </div>
 
                     <div className="shrink-0 pl-2">

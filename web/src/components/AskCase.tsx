@@ -1,10 +1,11 @@
 import { useState, type FormEvent, type ReactElement } from "react";
+import { Minus, Plus } from "lucide-react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
 import type { FrameView, ToolCallView } from "../live/reducer";
 import { EvidenceChip, toolNamesByResultId } from "./CaseFile";
 import TextShimmer from "./arc/text-shimmer/text-shimmer";
-import { BUTTON_PRIMARY, BUTTON_SECONDARY, SECTION_HEADING } from "./strobe";
+import { BUTTON_PRIMARY, BUTTON_SECONDARY, SECTION_HEADING } from "./marks";
 import { evidenceLabel } from "../format";
 
 type EvidenceRef = components["schemas"]["EvidenceRef"];
@@ -80,8 +81,8 @@ export function AskCase({
         <span className={`${SECTION_HEADING} transition-colors group-hover:text-deep`}>
           Ask this case
         </span>
-        <span className="text-ui font-bold text-secondary group-hover:text-fg">
-          {isOpen ? "−" : "+"}
+        <span aria-hidden="true" className="text-secondary group-hover:text-fg">
+          {isOpen ? <Minus size={16} strokeWidth={1.5} /> : <Plus size={16} strokeWidth={1.5} />}
         </span>
       </button>
 

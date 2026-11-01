@@ -12,7 +12,7 @@ import {
   modelName,
   splitFirstSentence,
 } from "../format";
-import { EYEBROW, SECTION_HEADING } from "./marks";
+import { EYEBROW, KEY, SECTION_HEADING } from "./marks";
 
 type Investigation = components["schemas"]["Investigation"];
 type ToolResult = components["schemas"]["ToolResult"];
@@ -50,7 +50,7 @@ export function EvidenceChip({
       type="button"
       aria-label={`Open evidence: ${label}`}
       onClick={() => onOpen(evidence)}
-      className="inline-flex cursor-pointer items-baseline font-mono font-semibold text-key-red hover:underline focus:outline-none focus:ring-2 focus:ring-ink"
+      className={KEY}
     >
       <span>{displayKey}</span>
     </button>
@@ -257,16 +257,10 @@ export function CaseFile({
                 id: toolResultId,
               };
 
-              let dataSummary = "";
-              if (call.tool === "heat_stress") {
-                const maxDhw = (call.params as { max_dhw?: number })?.max_dhw;
-                dataSummary = maxDhw !== undefined ? `DHW ${maxDhw}` : "";
-              }
-
               return (
                 <div
                   key={call.callId}
-                  className="grid grid-cols-[40px_1fr_auto] items-center gap-3 py-1.5"
+                  className="grid grid-cols-[40px_auto_minmax(0,1fr)] items-baseline gap-3 py-1.5"
                 >
                   <EvidenceChip
                     evidence={toolEvidence}
@@ -275,7 +269,7 @@ export function CaseFile({
                     onOpen={onOpenEvidence}
                   />
                   <span className="truncate text-ink">{call.tool}</span>
-                  <span className="text-mute">{dataSummary}</span>
+                  <span className="text-mute">{call.summary ?? ""}</span>
                 </div>
               );
             })}

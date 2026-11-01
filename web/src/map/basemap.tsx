@@ -1,7 +1,7 @@
 import { useRef, useState, type ReactElement } from "react";
 import type { ErrorEvent, StyleSpecification } from "react-map-gl/maplibre";
 import { config } from "../config";
-import { BUTTON_SECONDARY } from "../components/strobe";
+import { BUTTON_SECONDARY } from "../components/marks";
 import { SURFACE_HEX } from "../styles/palette";
 
 /** Plain paper with nothing on it: pins and overlays still draw when the basemap can't load. */
