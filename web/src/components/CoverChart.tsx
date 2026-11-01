@@ -45,29 +45,28 @@ export function CoverChart({ surveys, className }: CoverChartProps): ReactElemen
         ))}
       </div>
 
-      {/* Chart grid */}
+      {/* Chart grid. The plot band (top-8, h-44) is exactly where every bar sits: a 24px
+          readout plus an 8px gap above it, so the axis and gridlines line up with the bars. The
+          chart is only as wide as its bars (min 360px), so one dive is not one bar in a void. */}
       <div className="overflow-x-auto max-w-full pb-2">
-        <div className="relative min-w-[360px] flex items-end gap-6 sm:gap-12 pt-6 pb-2 min-h-[260px] border-b border-hairline">
-        {/* Y-axis ticks */}
-        <div className="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-label text-muted select-none pointer-events-none">
-          <span>100%</span>
-          <span>75%</span>
-          <span>50%</span>
-          <span>25%</span>
-          <span>0%</span>
-        </div>
-
-        {/* Horizontal gridlines */}
-        <div className="absolute left-10 right-0 top-0 bottom-8 flex flex-col justify-between pointer-events-none">
-          <div className="border-b border-dashed border-hairline w-full" />
-          <div className="border-b border-dashed border-hairline w-full" />
-          <div className="border-b border-dashed border-hairline w-full" />
-          <div className="border-b border-dashed border-hairline w-full" />
-          <div className="border-b border-hairline w-full" />
+        <div className="relative inline-block min-w-[360px] pr-6 align-top">
+        <div className="absolute left-0 right-0 top-8 h-44 pointer-events-none select-none">
+          {[100, 75, 50, 25, 0].map((tick) => (
+            <div
+              key={tick}
+              className="absolute left-0 right-0 flex h-0 items-center"
+              style={{ top: `${100 - tick}%` }}
+            >
+              <span className="w-10 text-label text-muted">{tick}%</span>
+              <div
+                className={`flex-1 border-b border-hairline ${tick === 0 ? "" : "border-dashed"}`}
+              />
+            </div>
+          ))}
         </div>
 
         {/* Stacked bars */}
-        <div className="ml-12 flex-1 flex items-end justify-around gap-4 z-10">
+        <div className="relative ml-12 flex items-start gap-6 sm:gap-8 z-10">
           {sorted.map((survey) => {
             const cover = survey.cover;
             if (!cover) return null;
@@ -77,14 +76,14 @@ export function CoverChart({ surveys, className }: CoverChartProps): ReactElemen
             return (
               <div
                 key={survey.id}
-                className="flex flex-col items-center gap-2 group w-20 max-w-[100px]"
+                className="flex flex-col items-center gap-2 group w-20"
               >
                 {/* Live coral readout on top */}
-                <span className="text-ui font-bold text-fg">
+                <span className="h-6 text-ui leading-6 font-bold text-fg">
                   {livePct}%
                 </span>
 
-                {/* Stacked bar (height 180px) */}
+                {/* Stacked bar: h-44 is the 0 to 100% plot band */}
                 <div
                   className="h-44 w-12 overflow-hidden flex flex-col-reverse bg-sunken"
                   aria-label={`Dive ${survey.dive_date}: ${livePct}% live coral`}
@@ -105,7 +104,7 @@ export function CoverChart({ surveys, className }: CoverChartProps): ReactElemen
                 </div>
 
                 {/* X-axis date */}
-                <div className="text-center space-y-1 pt-1">
+                <div className="text-center space-y-1 pt-2">
                   <span className="block text-label text-secondary whitespace-nowrap">
                     {survey.dive_date}
                   </span>
