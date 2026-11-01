@@ -27,12 +27,12 @@ claim linked to the frame or the dataset it came from.
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/media/site.gif" width="100%" alt="The reef map with HAW-41, then the site page: cover by dive since 2013 and the 24 segmented frames from the 2024 dive.">
+<img src="docs/media/site.gif" width="100%" alt="The reef map with HAW-41, then the site page: 5% live coral, down 35 points since 2019, cover over time since 2013, and two of the 24 frames from the 2024 dive opened with their segmentation masks.">
 <p><b>The site.</b> HAW-41's NOAA survey history since 2013, and the new dive split frame by
 frame into live coral, bleached coral, algae, rubble, sand and other.</p>
 </td>
 <td width="50%" valign="top">
-<img src="docs/media/casefile.gif" width="100%" alt="The case file: verdict, hypotheses with confidences, a cited frame opened in the evidence drawer, then the raw NOAA Coral Reef Watch tool result.">
+<img src="docs/media/casefile.gif" width="100%" alt="The case file: verdict, hypotheses each scored on its own, a cited frame opened on the evidence stage, then the raw NOAA Coral Reef Watch tool result.">
 <p><b>The case file.</b> A verdict and competing causes. Open any citation to see the frame, or
 the exact query and result the agent got back from NOAA Coral Reef Watch.</p>
 </td>

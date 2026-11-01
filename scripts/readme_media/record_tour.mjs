@@ -15,16 +15,29 @@ const SITE = "site_01M670B0P2BPNT53XTS43KRVEP", SRV = "srv_01M670XD9XBCSC7X9Z0DG
 const W = 1440, H = 900;
 fs.rmSync("frames", { recursive: true, force: true }); fs.mkdirSync("frames");
 
+// Images under a selector have all loaded. The survey page opens evidence on its stage
+// (#stage-region) at desktop width; the site page has its own stage image and opens a tray
+// frame in the evidence drawer.
+const loaded = (sel) => { const im = [...document.querySelectorAll(sel)]; return im.length > 0 && im.every((i) => i.complete && i.naturalWidth > 0); };
+const STAGE = "#stage-region img", SITE_STAGE = 'img[alt$=" stage"]', DRAWER = "[role=dialog] img";
+const TRAY = [5, 13];
+
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: W, height: H } });
 // Warm every page once so the recording never shows a spinner.
 const warm = await ctx.newPage();
-for (const u of ["/", `/sites/${SITE}`, `/surveys/${SRV}`]) await warm.goto(B + u, { waitUntil: "networkidle", timeout: 120000 });
-await warm.getByText("Heat stress", { exact: true }).first().click();
+for (const u of ["/", `/sites/${SITE}`]) await warm.goto(B + u, { waitUntil: "networkidle", timeout: 120000 });
+for (const i of TRAY) {
+  await warm.getByLabel("Frame specimen tray").getByRole("button").nth(i).click();
+  await warm.waitForFunction(loaded, DRAWER, { timeout: 120000 });
+  await warm.keyboard.press("Escape");
+}
+await warm.goto(B + `/surveys/${SRV}`, { waitUntil: "networkidle", timeout: 120000 });
+await warm.getByText("Ask this case").waitFor({ timeout: 120000 });
+await warm.getByRole("button", { name: "Open evidence: Heat stress" }).first().click();
 await warm.getByText("Source", { exact: true }).waitFor({ timeout: 120000 });
-await warm.keyboard.press("Escape");
-await warm.getByRole("button", { name: /Frame 06/ }).first().click();
-await warm.waitForFunction(() => { const im = [...document.querySelectorAll("[role=dialog] img")]; return im.length > 0 && im.every((i) => i.complete && i.naturalWidth > 0); }, null, { timeout: 120000 });
+await warm.getByRole("button", { name: "Open evidence: Frame 06" }).first().click();
+await warm.waitForFunction(loaded, STAGE, { timeout: 120000 });
 await warm.close();
 
 const page = await ctx.newPage();
@@ -94,45 +107,53 @@ cuts.push([Date.now() / 1000]);
 await page.mouse.down(); await page.mouse.up();
 await page.getByRole("link", { name: "Open site" }).click();
 await page.waitForURL(/\/sites\//); await page.waitForLoadState("networkidle");
-await page.getByText("Cover by dive").waitFor(); await page.waitForTimeout(600);
+await page.getByText("Cover over time").waitFor(); await page.waitForFunction(loaded, SITE_STAGE, { timeout: 120000 });
+await page.waitForTimeout(600);
 cuts.at(-1).push(Date.now() / 1000);
 await page.waitForTimeout(300);
 
-// 2. Site timeline
-await caption("02 · Site history", "NOAA surveys of HAW-41 since 2013, then the new dive");
-await hoverEl(page.getByText("2019", { exact: true }).first(), 900);
-await page.waitForTimeout(1300);
-const tiles = page.locator('section[aria-label="Evidence"] button');
+// 2. Site: headline figure, the frames on the stage, then cover over time
+await caption("02 · Site", "HAW-41: live coral now, and the change since the dive before");
+await hoverEl(page.getByLabel("Site key figures"), 900);
+await page.waitForTimeout(1500);
+const tiles = page.getByLabel("Frame specimen tray").getByRole("button");
 await caption("03 · Evidence", "Each frame segmented into live coral, bleached, algae, rubble, sand and other");
-for (const i of [5, 10, 14]) { await hoverEl(tiles.nth(i), 600); await page.waitForTimeout(700); }
-await moveTo(1220, 500, 700);
-await smoothScroll(2600, 1800);
-await page.waitForTimeout(500);
+for (const i of TRAY) {
+  await clickEl(tiles.nth(i), 700); await page.waitForFunction(loaded, DRAWER, { timeout: 60000 });
+  await page.waitForTimeout(2200); await page.keyboard.press("Escape"); await page.waitForTimeout(700);
+}
+await caption("04 · Site history", "NOAA surveys of HAW-41 since 2013, then the new dive");
+await moveTo(720, 600, 600);
+await smoothScroll(560, 1400);
+await hoverEl(page.getByText("2019-07-15", { exact: true }).first(), 800);
+await page.waitForTimeout(1500);
+await moveTo(720, 400, 500);
+await smoothScroll(-560, 1200);
+await hideCaption(); // the router keeps the page, so the caption would carry into the case file
+await page.waitForTimeout(300);
 await clickEl(page.getByRole("link", { name: "Open full case file" }), 900);
 await page.waitForTimeout(60);
 cuts.push([Date.now() / 1000]);
 await page.waitForURL(/\/surveys\//); await page.waitForLoadState("networkidle");
-await page.getByText("Case file ready").first().waitFor(); await page.waitForTimeout(500);
+await page.getByText("Ask this case").waitFor({ timeout: 120000 }); await page.waitForTimeout(500);
 cuts.at(-1).push(Date.now() / 1000);
 await page.waitForTimeout(400);
 
 // 3. Case file
-await caption("04 · Case file", "Muse Spark Open writes a verdict and competing hypotheses, with confidences");
+await caption("05 · Case file", "Muse Spark Open writes a verdict and competing causes, each scored on its own");
 await page.waitForTimeout(2200);
-await moveTo(400, 600, 600);
-await smoothScroll(520, 1600);
+await moveTo(1000, 600, 600);
+await smoothScroll(420, 1500);
 await page.waitForTimeout(1200);
-await caption("05 · Citations", "Every claim cites a frame or a tool result. Open one to check it");
-await clickEl(page.getByRole("button", { name: /Frame 06/ }).first(), 900);
-await page.waitForFunction(() => { const im = [...document.querySelectorAll("[role=dialog] img")]; return im.length > 0 && im.every((i) => i.complete && i.naturalWidth > 0); }, null, { timeout: 120000 });
+await caption("06 · Citations", "Every claim cites a frame or a tool result. Open one to check it");
+await clickEl(page.getByRole("button", { name: "Open evidence: Frame 06" }).first(), 900);
+await page.waitForFunction(loaded, STAGE, { timeout: 120000 });
 await page.waitForTimeout(2600);
-await page.keyboard.press("Escape"); await page.waitForTimeout(700);
-await clickEl(page.getByRole("button", { name: /Heat stress/ }).filter({ hasNotText: "2024" }).first(), 900);
+await clickEl(page.getByRole("button", { name: "Open evidence: Heat stress" }).first(), 900);
 await page.getByText("Source", { exact: true }).waitFor();
 await page.waitForTimeout(400);
-await caption("06 · Tool trace", "The raw NOAA Coral Reef Watch query and result behind the claim");
+await caption("07 · Tool trace", "The raw NOAA Coral Reef Watch query and result behind the claim");
 await page.waitForTimeout(2600);
-await page.keyboard.press("Escape"); await page.waitForTimeout(500);
 await hideCaption();
 await page.waitForTimeout(900);
 
@@ -152,5 +173,9 @@ for (let i = 0; i < kept.length; i++) {
 }
 lines.push(`file '${kept.at(-1)[0]}'`);
 console.log("cut", cuts.map(([a, b]) => (b - a).toFixed(1) + "s").join(", "));
+// Roughly where each page starts in tour-raw.mp4, for the GIF cuts (site page, then case file).
+// It runs about half a second early: check the frames there before cutting.
+const outAt = (t) => { let s = 0; for (let i = 0; i + 1 < kept.length && kept[i + 1][1] <= t; i++) s += Number(lines[2 + 2 * i].split(" ")[1]); return s; };
+console.log("page starts in output", cuts.map(([, b]) => outAt(b).toFixed(2) + "s").join(", "), "· end", outAt(Infinity).toFixed(2) + "s");
 fs.writeFileSync("frames.ffconcat", lines.join("\n"));
 await browser.close();
