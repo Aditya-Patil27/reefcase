@@ -269,7 +269,8 @@ export function CaseFile({
                     onOpen={onOpenEvidence}
                   />
                   <span className="truncate text-ink">{call.tool}</span>
-                  <span className="text-mute">{call.summary ?? ""}</span>
+                  {/* A replayed summary is the raw result JSON: no spaces to wrap at, and the chip opens it in full. */}
+                  <span className="line-clamp-3 wrap-anywhere text-mute">{call.summary ?? ""}</span>
                 </div>
               );
             })}

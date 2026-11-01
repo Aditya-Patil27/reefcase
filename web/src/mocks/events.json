@@ -540,7 +540,7 @@
     "ts": "2026-10-21T09:16:05Z",
     "call_id": "call_01JA7Z5H8J0M2P4R6T8V0X2Z4B",
     "tool_result_id": "tr_01JA7Z5K9K1N3Q5S7V9X1Z3B5D",
-    "summary": "Six surveys since 2019; live cover fell from 48% to 34% after the 2024 event."
+    "summary": "{\"surveys\":[{\"survey_id\":\"srv_01JA7Z3K9YQ2C8W4T6H0M5N8P0\",\"dive_date\":\"2019-08-19\",\"cover\":{\"live_coral\":0.4810292053222656,\"bleached_coral\":0.0004458309220679012,\"algae\":0.08518086902006172}},{\"survey_id\":\"srv_01JA7Z3K9YQ2C8W4T6H0M5N8P1\",\"dive_date\":\"2024-03-02\",\"cover\":{\"live_coral\":0.3398114013671875,\"bleached_coral\":0.0912209371527,\"algae\":0.1931178283691406}}]}"
   },
   {
     "type": "finding",
