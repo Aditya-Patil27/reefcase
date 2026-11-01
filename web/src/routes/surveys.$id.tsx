@@ -1,38 +1,29 @@
-import SegmentedControl from "../components/arc/segmented-control/segmented-control";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, dataOrNull } from "../api/client";
 import type { components } from "../api/schema";
 import { useEventStream } from "../live/useEventStream";
-import { FrameGrid } from "../components/FrameGrid";
 import { TracePanel } from "../components/TracePanel";
 import { CaseFile, useCitedToolResults } from "../components/CaseFile";
 import { AskCase } from "../components/AskCase";
-import { BUTTON_PRIMARY, CHIP, RULE_CITED } from "../components/strobe";
-import { toFrameView, type FrameView } from "../live/reducer";
-import { EvidenceDrawer, type EvidenceItem } from "../components/EvidenceDrawer";
-import { Stepper, type StepperStep } from "../components/arc/stepper/stepper";
-import { ResizablePanels, ResizablePanel } from "../components/arc/resizable-panels/resizable-panels";
-import TextShimmer from "../components/arc/text-shimmer/text-shimmer";
+import { EvidenceBody } from "../components/EvidenceBody";
+import { SpecimenTray } from "../components/SpecimenTray";
+import { PipelineSteps } from "../components/PipelineSteps";
+import { EvidenceDrawer } from "../components/EvidenceDrawer";
+import { useCrumb } from "../components/crumb";
+import { BUTTON_PRIMARY } from "../components/marks";
 import { formatCoordinates } from "../components/SitePicker";
+import { toFrameView, type FrameView } from "../live/reducer";
 
 type Investigation = components["schemas"]["Investigation"];
 type Survey = components["schemas"]["Survey"];
 type SiteDetail = components["schemas"]["SiteDetail"];
+type EvidenceRef = components["schemas"]["EvidenceRef"];
 
 export const Route = createFileRoute("/surveys/$id")({
   component: SurveyRouteComponent,
 });
-
-const PIPELINE_STAGES: StepperStep[] = [
-  { id: "upload", label: "Upload" },
-  { id: "frames", label: "Frames" },
-  { id: "segment", label: "Segment" },
-  { id: "assess", label: "Assess" },
-  { id: "investigate", label: "Investigate" },
-  { id: "report", label: "Report" },
-];
 
 function computeStageIndex(
   reportReady: boolean,
@@ -49,53 +40,16 @@ function computeStageIndex(
   return 0;
 }
 
-function useIsDesktop(breakpoint = 1280): boolean {
-  const [isDesktop, setIsDesktop] = useState(
-    typeof window !== "undefined" ? window.innerWidth >= breakpoint : true
-  );
-
-  useEffect(() => {
-    const handleResize = () => setIsDesktop(window.innerWidth >= breakpoint);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [breakpoint]);
-
-  return isDesktop;
-}
-
-/** Time since the run was queued, ticking while it runs and holding where it stopped. */
-function useElapsedTime(since: string | undefined, running: boolean): string | null {
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    if (!running) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [running]);
-
-  if (!since) return null;
-  const total = Math.max(0, Math.floor((now - Date.parse(since)) / 1000));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = String(total % 60).padStart(2, "0");
-  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${String(m).padStart(2, "0")}:${s}`;
-}
-
 function SurveyRouteComponent() {
   const params = Route.useParams();
   const id = params.id;
 
   const { state, status, reconnectSeq } = useEventStream(id);
-  const isDesktop = useIsDesktop(1280);
+  const { setCrumb } = useCrumb();
 
-  const [selectedEvidence, setSelectedEvidence] = useState<EvidenceItem | null>(null);
+  const [userEvidence, setUserEvidence] = useState<EvidenceRef | null>(null);
+  const [lastFrameId, setLastFrameId] = useState<string>("");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"report" | "frames">("report");
-
-  const handleOpenEvidence = (ev: EvidenceItem) => {
-    setSelectedEvidence(ev);
-    setDrawerOpen(true);
-  };
 
   const investigationQuery = useQuery({
     queryKey: ["investigation", id],
@@ -107,7 +61,6 @@ function SurveyRouteComponent() {
     },
     enabled: state.reportReady,
   });
-
   const investigation = investigationQuery.data;
 
   const surveyQuery = useQuery({
@@ -120,12 +73,6 @@ function SurveyRouteComponent() {
     },
   });
   const survey = surveyQuery.data;
-  // A run that had already finished when the page opened has no clock to show: the stream only replays it.
-  const runningAtOpen = survey?.status === "queued" || survey?.status === "running";
-  const elapsed = useElapsedTime(
-    runningAtOpen ? survey.created_at : undefined,
-    runningAtOpen && !state.reportReady && !state.failed && status !== "closed",
-  );
 
   const siteQuery = useQuery({
     queryKey: ["site", survey?.site_id],
@@ -139,7 +86,6 @@ function SurveyRouteComponent() {
   });
   const site = siteQuery.data?.site;
 
-  // An imported record was only ever segmented, so its frames come from the API, not the event stream.
   const historical = survey?.source === "historical";
   const framesQuery = useQuery({
     queryKey: ["frames", id],
@@ -166,190 +112,189 @@ function SurveyRouteComponent() {
     hasFrames,
   );
 
-  const activeStageLabel = PIPELINE_STAGES[currentStage]?.label ?? "Processing";
-  // A failed run stops at the stage that was in progress.
-  const stepperSteps = state.failed
-    ? PIPELINE_STAGES.map((stage, i) => (i === currentStage ? { ...stage, error: "Stopped here" } : stage))
-    : PIPELINE_STAGES;
   const { alert } = useCitedToolResults(investigation ?? undefined);
 
-  // The frame under the strobe: the one just opened as evidence, else the most bleached.
-  const openedFrameId = selectedEvidence?.kind === "frame" ? selectedEvidence.id : undefined;
-  const mostBleached = frames.reduce<FrameView | undefined>(
-    (worst, f) =>
-      f.cover && f.cover.bleached_coral > (worst?.cover?.bleached_coral ?? -1) ? f : worst,
-    undefined,
-  );
-  const litId = openedFrameId ?? mostBleached?.id;
+  const latestFrame = frames.length > 0 ? frames[frames.length - 1] : undefined;
+  const selectedEvidence = userEvidence ?? (latestFrame ? { kind: "frame" as const, id: latestFrame.id } : null);
+  const activeFrameId =
+    (selectedEvidence?.kind === "frame" ? selectedEvidence.id : null) ??
+    (lastFrameId || (latestFrame?.id ?? ""));
 
-  let framesDescription: string;
-  if (historical) {
-    framesDescription = framesQuery.isPending
-      ? "Loading the frames from this dive…"
-      : framesQuery.isError
-        ? "The frames for this dive did not load. Reload the page to try again."
-        : frames.length === 0
-          ? "This record came without frames."
-          : "Frames from the imported record, each with its segmentation mask. Open one to see it in true colour.";
-  } else {
-    framesDescription = hasFrames
-      ? "Frames arrive as the clip is sampled. Open one to see it in true colour with its SAM 3 mask."
-      : state.failed
-        ? "No frames were read before the run stopped."
-        : "Waiting for the first frame from the clip…";
+  // Update header crumb
+  useEffect(() => {
+    const parts = [
+      site?.name,
+      survey?.dive_date ? `Dive ${survey.dive_date}` : null,
+      frames.length > 0 ? `${frames.length} frames` : null,
+    ].filter(Boolean);
+    if (parts.length > 0) {
+      setCrumb(parts.join(" · "));
+    }
+    return () => setCrumb(null);
+  }, [site?.name, survey?.dive_date, frames.length, setCrumb]);
+
+  // Handle clicking citation keys or tool results
+  const handleOpenEvidence = (ev: EvidenceRef) => {
+    setUserEvidence(ev);
+    if (ev.kind === "frame") {
+      setLastFrameId(ev.id);
+    }
+    // Focus moves to stage heading
+    const stage = document.getElementById("stage-region");
+    stage?.focus();
+  };
+
+  // Collect cited frame IDs from investigation
+  const citedFrameIds = new Set<string>();
+  if (investigation) {
+    for (const f of investigation.findings) {
+      for (const e of f.evidence) {
+        if (e.kind === "frame") citedFrameIds.add(e.id);
+      }
+    }
+    for (const h of investigation.hypotheses) {
+      for (const e of [...h.supporting, ...h.contradicting]) {
+        if (e.kind === "frame") citedFrameIds.add(e.id);
+      }
+    }
   }
 
-  const frameGrid = (
-    <FrameGrid
-      frames={frames}
-      litId={litId}
-      onOpenFrame={(frameId) => handleOpenEvidence({ kind: "frame", id: frameId })}
-      description={framesDescription}
-    />
-  );
-
-  const work =
-    state.reportReady && investigation ? (
-      <div className="space-y-5">
-        <SegmentedControl
-          label="Show"
-          options={[
-            { value: "report", label: "Case file" },
-            { value: "frames", label: "Frames" },
-          ]}
-          value={viewMode}
-          onValueChange={(val: string) => setViewMode(val as "report" | "frames")}
-        />
-        {viewMode === "report" ? (
-          <>
-            <CaseFile
-              investigation={investigation}
-              onOpenEvidence={handleOpenEvidence}
-              frames={state.frames}
-              toolCalls={state.toolCalls}
-              alert={alert}
-            />
-            <AskCase
-              surveyId={id}
-              onOpenEvidence={handleOpenEvidence}
-              frames={state.frames}
-              toolCalls={state.toolCalls}
-            />
-          </>
-        ) : (
-          frameGrid
-        )}
-      </div>
-    ) : (
-      frameGrid
-    );
-
-  const trace = (
-    <TracePanel
-      toolCalls={state.toolCalls}
-      // Once the case file is ready it owns the findings; Trace keeps the tool calls.
-      findings={state.reportReady ? [] : state.findings}
-      stopped={Boolean(state.failed)}
-      status={status}
-      reconnectSeq={reconnectSeq}
-      frameIds={state.frames.map((f) => f.id)}
-      siteName={site?.name}
-      onSelectEvidence={(kind, evId) => handleOpenEvidence({ kind, id: evId })}
-    />
-  );
+  const activeStageLabel = ["Upload", "Frames", "Segment", "Assess", "Investigate", "Report"][currentStage] ?? "Processing";
 
   return (
-    <div className="flex flex-1 flex-col bg-bg text-fg">
-      <header className="border-b border-hairline bg-surface px-4 py-5 sm:px-7">
-        <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
-          <div className="min-w-0 space-y-1">
-            <h1 className="text-display font-extrabold text-fg">{site?.name ?? "Survey"}</h1>
-            <p className="flex flex-wrap items-center gap-x-2 text-label text-secondary tabular-nums">
-              {site ? <span>{formatCoordinates(site.location)}</span> : null}
-              {survey?.dive_date ? <span>Dive {survey.dive_date}</span> : null}
-            </p>
-          </div>
-
-          <div role="status" className="flex items-center gap-3 text-ui">
-            {historical ? (
-              <span className={CHIP}>Imported record</span>
-            ) : state.failed ? (
-              <span className="font-bold text-fg">Stopped at {activeStageLabel}</span>
-            ) : state.reportReady ? (
-              <span className={CHIP}>Case file ready</span>
-            ) : (
-              <>
-                <span className="font-bold text-fg">
-                  <TextShimmer active>{activeStageLabel}</TextShimmer>
-                </span>
-                <span className="text-label text-secondary sm:hidden">
-                  Stage {currentStage + 1} of {PIPELINE_STAGES.length}
-                </span>
-              </>
-            )}
-            {elapsed === null || state.failed || historical ? null : (
-              <time className="text-label font-bold text-secondary tabular-nums" aria-label="Elapsed time">
-                {elapsed}
-              </time>
-            )}
-          </div>
-        </div>
-
-        {historical ? (
-          <div className="mt-4 max-w-3xl">
-            <p className="text-ui font-bold text-fg">Imported survey · segmented only, no investigation</p>
-            <p className="mt-1 text-body text-secondary">
-              The frames were segmented when this record was imported. The agent never investigated the dive, so
-              it has no case file and no trace.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-4 hidden sm:block">
-            {/* A stopped stage is not a proven alert, so the stepper's error mark draws in deep, not red. */}
-            <Stepper
-              steps={stepperSteps}
-              // Past the last step once the case file is ready, so Report ticks like the rest.
-              current={state.reportReady ? PIPELINE_STAGES.length : currentStage}
-              completeLabel="Case file ready"
-              className="w-full max-w-3xl [--danger:var(--deep)]" />
-          </div>
-        )}
-
-        {state.failed ? (
-          <div role="alert" className={`mt-5 max-w-3xl ${RULE_CITED}`}>
-            <p className="text-ui font-bold text-fg">The run stopped: {state.failed}</p>
-            <p className="mt-1 text-body text-secondary">
-              Nothing after {activeStageLabel.toLowerCase()} ran, so this dive has no case file. Upload the clip
-              again to start a fresh run.
-            </p>
-            <Link to="/upload" className={`${BUTTON_PRIMARY} mt-4`}>
-              Upload the clip again
-            </Link>
-          </div>
+    <div className="flex flex-1 flex-col bg-bg text-ink">
+      <header className="border-b border-rule bg-ground px-4 py-3 sm:px-10 flex flex-wrap items-baseline justify-between gap-4">
+        <h1 className="font-sans text-title font-bold text-ink">
+          {site?.name ?? "Survey"}
+        </h1>
+        {site?.location ? (
+          <p className="font-mono text-mono-sm text-mute">
+            {formatCoordinates(site.location)}{survey?.dive_date ? ` · Dive ${survey.dive_date}` : ""}
+          </p>
         ) : null}
       </header>
 
+      {/* Historical banner if imported */}
       {historical ? (
-        <div className="px-4 py-6 sm:px-7">{frameGrid}</div>
-      ) : isDesktop ? (
-        <div className="flex-1">
-          <ResizablePanels label="Investigation panels" className="h-full min-h-[640px]">
-            <ResizablePanel id="frames-panel" label="Frames" defaultSize={62} minSize={380}>
-              <div className="h-full overflow-y-auto px-7 py-6">{work}</div>
-            </ResizablePanel>
-            <ResizablePanel id="trace-panel" label="Trace" defaultSize={38} minSize={380}>
-              <div className="h-full overflow-y-auto border-l border-hairline bg-surface px-6 py-6">
-                {trace}
-              </div>
-            </ResizablePanel>
-          </ResizablePanels>
+        <div className="border-b border-rule bg-bg px-4 py-4 sm:px-10">
+          <p className="font-sans text-ui font-semibold text-ink">
+            Imported survey · segmented only, no investigation
+          </p>
+          <p className="mt-1 font-sans text-body text-mute">
+            The frames were segmented when this record was imported. The agent never investigated the dive, so
+            it has no case file and no trace.
+          </p>
         </div>
-      ) : (
-        <div className="space-y-10 px-4 py-6 sm:px-7">
-          {work}
-          <div className="border-t border-hairline pt-6">{trace}</div>
-        </div>
-      )}
+      ) : null}
+
+      <div className="grid grid-cols-1 gap-12 px-4 py-6 sm:px-10 lg:grid-cols-[820px_1fr]">
+        {/* Left Column: Pipeline Steps, Stage, Specimen Tray */}
+        <section aria-labelledby="frames-heading" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 id="frames-heading" className="font-mono text-mono-eyebrow uppercase tracking-wider text-mute">
+              Frames
+            </h2>
+          </div>
+
+          {!historical ? (
+            <PipelineSteps
+              currentStage={currentStage}
+              reportReady={state.reportReady}
+              failed={state.failed}
+            />
+          ) : null}
+
+          {/* Velvet Stage */}
+          <div
+            id="stage-region"
+            tabIndex={-1}
+            aria-label="Evidence stage"
+            className="focus:outline-none"
+          >
+            <EvidenceBody
+              evidence={selectedEvidence}
+              frames={frames}
+              surveyCover={survey?.cover}
+              siteName={site?.name ?? "SITE"}
+              diveDate={survey?.dive_date ?? ""}
+              lat={site?.location?.lat}
+              lon={site?.location?.lon}
+              segBackend={historical ? "sam3" : undefined}
+              mode="stage"
+              onBackToFrame={() => {
+                if (activeFrameId) {
+                  setUserEvidence({ kind: "frame", id: activeFrameId });
+                }
+              }}
+            />
+          </div>
+
+          {/* Specimen Tray */}
+          <SpecimenTray
+            frames={frames}
+            selectedFrameId={activeFrameId}
+            citedFrameIds={citedFrameIds}
+            onSelectFrame={(frameId) => {
+              setUserEvidence({ kind: "frame", id: frameId });
+              setLastFrameId(frameId);
+            }}
+          />
+        </section>
+
+        {/* Right Column: Case File or Live Stream */}
+        <section className="space-y-6">
+          {state.reportReady && investigation ? (
+            <div className="space-y-8">
+              <CaseFile
+                investigation={investigation}
+                onOpenEvidence={handleOpenEvidence}
+                frames={frames}
+                toolCalls={state.toolCalls}
+                alert={alert}
+              />
+              <AskCase
+                surveyId={id}
+                onOpenEvidence={handleOpenEvidence}
+                frames={frames}
+                toolCalls={state.toolCalls}
+              />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {state.failed ? (
+                <div role="alert" className="border-l-2 border-key-red pl-3.5 space-y-2">
+                  <p className="font-sans text-ui font-semibold text-ink">
+                    Stopped at {activeStageLabel}
+                  </p>
+                  <p className="font-sans text-body text-ink">
+                    The run stopped: {state.failed}
+                  </p>
+                  <p className="font-sans text-body text-mute">
+                    Nothing after {activeStageLabel.toLowerCase()} ran, so this dive has no case file. Upload the clip
+                    again to start a fresh run.
+                  </p>
+                  <Link to="/upload" className={`${BUTTON_PRIMARY} mt-2`}>
+                    Upload the clip again
+                  </Link>
+                </div>
+              ) : null}
+
+              {!historical ? (
+                <TracePanel
+                  toolCalls={state.toolCalls}
+                  findings={state.findings}
+                  stopped={Boolean(state.failed)}
+                  status={status}
+                  reconnectSeq={reconnectSeq}
+                  frameIds={frames.map((f) => f.id)}
+                  siteName={site?.name}
+                  onSelectEvidence={(kind, evId) => handleOpenEvidence({ kind, id: evId })}
+                />
+              ) : null}
+            </div>
+          )}
+        </section>
+      </div>
 
       <EvidenceDrawer
         evidence={selectedEvidence}

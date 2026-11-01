@@ -1,6 +1,34 @@
 import type { components } from "./api/schema";
 
 type EvidenceRef = components["schemas"]["EvidenceRef"];
+type Hypothesis = components["schemas"]["Hypothesis"];
+
+/** RC-{SITE}-{YEAR}-F{nn}: site name non-alphanumeric stripped up to 6 chars, year, padded frame index */
+export function catalogueNumber(siteName: string, diveDate: string, frameIndex: number): string {
+  const cleanSite = siteName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 6) || "SITE";
+  const year = diveDate ? diveDate.slice(0, 4) : new Date().getFullYear().toString();
+  const framePad = String(frameIndex).padStart(2, "0");
+  return `RC-${cleanSite}-${year}-F${framePad}`;
+}
+
+/** Confidence below 0.15 and at least one contradicting ref */
+export function isRuledOut(hyp: Pick<Hypothesis, "confidence"> & { contradicting?: unknown[] }): boolean {
+  return hyp.confidence < 0.15 && (hyp.contradicting?.length ?? 0) > 0;
+}
+
+/** Short citation key: F09, T01 */
+export function citationKey(
+  ev: EvidenceRef,
+  frameIds: string[],
+  toolResultIds: string[] = [],
+): string {
+  if (ev.kind === "frame") {
+    const idx = frameIds.indexOf(ev.id);
+    return idx === -1 ? "F--" : `F${String(idx + 1).padStart(2, "0")}`;
+  }
+  const tIdx = toolResultIds.indexOf(ev.id);
+  return tIdx === -1 ? "T--" : `T${String(tIdx + 1).padStart(2, "0")}`;
+}
 
 /** Percentage-point change with a true minus sign: "+5.2 pp", "−17.0 pp". */
 export function formatSignedPp(pp: number): string {

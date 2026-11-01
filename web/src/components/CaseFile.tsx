@@ -1,10 +1,18 @@
-﻿import { useQueries } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import type { ReactElement } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
 import type { FrameView, ToolCallView } from "../live/reducer";
-import { causeLabel, evidenceLabel, frameLabel, modelName, splitFirstSentence } from "../format";
-import { CHIP, CHIP_ALERT, LIT_RING, RULE_CITED, RULE_PENDING } from "./strobe";
+import {
+  causeLabel,
+  citationKey,
+  evidenceLabel,
+  humanize,
+  isRuledOut,
+  modelName,
+  splitFirstSentence,
+} from "../format";
+import { EYEBROW, SECTION_HEADING } from "./marks";
 
 type Investigation = components["schemas"]["Investigation"];
 type ToolResult = components["schemas"]["ToolResult"];
@@ -16,31 +24,35 @@ export interface CaseFileProps {
   onOpenEvidence: (evidence: EvidenceRef) => void;
   frames?: FrameView[];
   toolCalls?: ToolCallView[];
-  /** A proven alert to show under the verdict, the only red on the page. */
+  /** A proven alert to show under the verdict. */
   alert?: string | null;
-  /** Shows the most bleached frame beside the verdict; off where frames already sit nearby. */
+  /** Legacy prop preserved for compatibility */
   showLeadFrame?: boolean;
 }
 
 export interface EvidenceChipProps {
   evidence: EvidenceRef;
   label: string;
+  keyLabel?: string;
   onOpen: (evidence: EvidenceRef) => void;
 }
 
-/** The one evidence chip used by the case file and the trace. */
-export function EvidenceChip({ evidence, label, onOpen }: EvidenceChipProps): ReactElement {
+/** The red mono citation button used by the case file and the trace. */
+export function EvidenceChip({
+  evidence,
+  label,
+  keyLabel,
+  onOpen,
+}: EvidenceChipProps): ReactElement {
+  const displayKey = keyLabel ?? label;
   return (
     <button
       type="button"
       aria-label={`Open evidence: ${label}`}
       onClick={() => onOpen(evidence)}
-      className={`${CHIP} transition-colors hover:bg-strobe`}
+      className="inline-flex cursor-pointer items-baseline font-mono font-semibold text-key-red hover:underline focus:outline-none focus:ring-2 focus:ring-ink"
     >
-      {evidence.kind === "frame" ? (
-        <span aria-hidden="true" className="size-2 bg-cast" />
-      ) : null}
-      <span>{label}</span>
+      <span>{displayKey}</span>
     </button>
   );
 }
@@ -55,11 +67,6 @@ export function toolNamesByResultId(toolCalls: ToolCallView[]): Record<string, s
 
 type HeatPoint = { alert_level?: number; dhw?: number };
 
-/**
- * The tool results an investigation cites, fetched once each, for a case file shown outside its
- * live run: `toolCalls` names the chips, and `alert` is the Coral Reef Watch alert from the cited
- * heat_stress result, null until that shows alert level 1 or above.
- */
 export function useCitedToolResults(investigation: Investigation | undefined): {
   toolCalls: ToolCallView[];
   alert: string | null;
@@ -67,7 +74,10 @@ export function useCitedToolResults(investigation: Investigation | undefined): {
   const ids = new Set<string>();
   const refs = [
     ...(investigation?.findings ?? []).flatMap((finding) => finding.evidence),
-    ...(investigation?.hypotheses ?? []).flatMap((hyp) => [...hyp.supporting, ...hyp.contradicting]),
+    ...(investigation?.hypotheses ?? []).flatMap((hyp) => [
+      ...hyp.supporting,
+      ...hyp.contradicting,
+    ]),
   ];
   for (const ev of refs) {
     if (ev.kind === "tool_result" && ev.id) ids.add(ev.id);
@@ -108,145 +118,186 @@ export function useCitedToolResults(investigation: Investigation | undefined): {
   return { toolCalls, alert };
 }
 
-const HEADING = "text-ui font-bold text-fg";
-
 export function CaseFile({
   investigation,
   onOpenEvidence,
   frames = [],
   toolCalls = [],
   alert = null,
-  showLeadFrame = true,
 }: CaseFileProps): ReactElement {
   const [headline, verdictRest] = splitFirstSentence(investigation.verdict);
   const frameIds = frames.map((f) => f.id);
+  const toolResultIds = toolCalls.map((t) => t.toolResultId ?? t.callId);
   const toolByResultId = toolNamesByResultId(toolCalls);
-  const label = (ev: EvidenceRef) => evidenceLabel(ev, frameIds, toolByResultId);
-  const chips = (refs: EvidenceRef[], prefix: string) =>
+
+  const getLabel = (ev: EvidenceRef) => evidenceLabel(ev, frameIds, toolByResultId);
+  const getKey = (ev: EvidenceRef) => citationKey(ev, frameIds, toolResultIds);
+
+  const renderChips = (refs: EvidenceRef[]) =>
     refs.map((ev) => (
       <EvidenceChip
-        key={`${prefix}-${ev.kind}-${ev.id}`}
+        key={`chip-${ev.kind}-${ev.id}`}
         evidence={ev}
-        label={label(ev)}
+        label={getLabel(ev)}
+        keyLabel={getKey(ev)}
         onOpen={onOpenEvidence}
       />
     ));
 
-  // The frame that shows the verdict most plainly: the most bleached one.
-  const worstFrame = frames.reduce<FrameView | undefined>(
-    (worst, f) =>
-      f.cover && f.cover.bleached_coral > (worst?.cover?.bleached_coral ?? -1) ? f : worst,
-    undefined,
-  );
+  // Partition hypotheses into active and ruled out
+  const activeHypotheses = investigation.hypotheses.filter((h) => !isRuledOut(h));
+  const ruledOutHypotheses = investigation.hypotheses.filter((h) => isRuledOut(h));
 
   return (
-    <article aria-label="Case file" className="@container space-y-8 text-fg">
-      <section aria-label="Verdict" className="grid gap-5 @2xl:grid-cols-[1fr_minmax(0,18rem)]">
-        <div className="space-y-3">
-          {/* The first sentence is the headline; a long one drops to title size. The top
-              hypothesis's rationale is not repeated here: it sits under Hypotheses. */}
-          <h2
-            className={
-              headline.length > 120
-                ? "max-w-[60ch] text-title font-bold text-fg"
-                : "text-display font-bold text-fg"
-            }
-          >
-            {headline}
-          </h2>
-          {verdictRest ? <p className="text-body text-secondary">{verdictRest}</p> : null}
-          {alert ? (
-            <p className="flex flex-wrap gap-2">
-              <span className={CHIP_ALERT}>{alert}</span>
-            </p>
-          ) : null}
-          <p className="text-label text-muted">Written by {modelName(investigation.model)}</p>
-        </div>
-
-        {showLeadFrame && worstFrame?.thumbUrl && worstFrame.cover ? (
-          <figure className="space-y-1.5">
-            <button
-              type="button"
-              aria-label={`Open evidence: ${frameLabel(frameIds, worstFrame.id)}`}
-              onClick={() => onOpenEvidence({ kind: "frame", id: worstFrame.id })}
-              data-lit="true"
-              className={`water-cast block aspect-[4/3] w-full cursor-zoom-in ${LIT_RING}`}
-            >
-              <img
-                src={worstFrame.imageUrl ?? worstFrame.thumbUrl}
-                alt=""
-                className="size-full object-cover"
-              />
-              {worstFrame.maskUrl ? (
-                <img
-                  src={worstFrame.maskUrl}
-                  alt=""
-                  className="absolute inset-0 size-full object-cover opacity-55"
-                />
-              ) : null}
-            </button>
-            <figcaption className="flex justify-between text-label">
-              <span className="font-bold text-fg">{frameLabel(frameIds, worstFrame.id)}</span>
-              <span className="font-semibold text-fg">
-                {Math.round(worstFrame.cover.live_coral * 100)}% live coral
-              </span>
-            </figcaption>
-          </figure>
+    <article aria-label="Case file" className="space-y-6 text-ink">
+      {/* Proof Header */}
+      <section aria-label="Verdict" className="space-y-3">
+        <div className={EYEBROW}>CASE FILE · REPORT READY</div>
+        <h2 className="font-sans text-verdict font-semibold tracking-tight text-ink">
+          {headline}
+        </h2>
+        {verdictRest ? (
+          <p className="font-sans text-body text-ink/90 leading-relaxed">{verdictRest}</p>
         ) : null}
+        {alert ? (
+          <p className="font-mono text-mono-base font-semibold text-key-red">{alert}</p>
+        ) : null}
+        <p className="font-mono text-mono-sm text-mute">
+          Written by {modelName(investigation.model)}
+        </p>
       </section>
 
-      <section aria-labelledby="hypotheses-heading" className="space-y-3">
+      {/* Hypotheses on fixed size ramp */}
+      <section aria-labelledby="hypotheses-heading" className="space-y-3 border-t border-ink pt-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 id="hypotheses-heading" className={HEADING}>
+          <h3 id="hypotheses-heading" className={SECTION_HEADING}>
             Hypotheses
           </h3>
-          <p className="text-label text-muted">Each cause is scored on its own</p>
+          <p className="font-mono text-mono-sm text-mute">Each cause is scored on its own</p>
         </div>
-        <ul className="space-y-5">
-          {investigation.hypotheses.map((hyp) => {
+
+        <div className="divide-y divide-rule border-b border-rule">
+          {activeHypotheses.map((hyp, idx) => {
             const percent = Math.round(hyp.confidence * 100);
+            const sizeClass =
+              idx === 0
+                ? "text-hyp-1"
+                : idx === 1
+                  ? "text-hyp-2"
+                  : "text-hyp-3";
+
             return (
-              <li key={hyp.cause} className="space-y-2">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-ui font-bold text-fg">{causeLabel(hyp.cause)}</span>
-                  <span className="text-ui font-bold text-fg">{percent}%</span>
-                </div>
-                <div className="h-2 w-full bg-sunken">
-                  <div className="h-full bg-deep" style={{ width: `${percent}%` }} />
-                </div>
-                <p className="text-body text-secondary">{hyp.rationale}</p>
-                {hyp.supporting.length > 0 ? (
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-label font-semibold text-secondary">Supported by</span>
-                    {chips(hyp.supporting, "sup")}
+              <div
+                key={hyp.cause}
+                className="grid grid-cols-[80px_1fr] items-baseline gap-4 py-3 sm:grid-cols-[96px_1fr]"
+              >
+                <span
+                  className={`font-sans font-semibold tracking-tight text-ink tabular-nums ${sizeClass}`}
+                >
+                  {percent}%
+                </span>
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <span className="font-sans text-body font-medium text-ink">
+                      {causeLabel(hyp.cause)}
+                    </span>
+                    {hyp.supporting.length > 0 ? (
+                      <span className="inline-flex gap-1.5">{renderChips(hyp.supporting)}</span>
+                    ) : null}
                   </div>
-                ) : null}
-                {hyp.contradicting.length > 0 ? (
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-label font-semibold text-secondary">Weighed against</span>
-                    {chips(hyp.contradicting, "con")}
-                  </div>
-                ) : null}
-              </li>
+                  <p className="font-mono text-mono-sm text-mute">{hyp.rationale}</p>
+                  {hyp.contradicting.length > 0 ? (
+                    <div className="flex flex-wrap items-center gap-1.5 text-mono-sm font-mono text-mute">
+                      <span>Weighed against</span>
+                      {renderChips(hyp.contradicting)}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             );
           })}
-        </ul>
+
+          {ruledOutHypotheses.map((hyp) => (
+            <div
+              key={hyp.cause}
+              className="grid grid-cols-[80px_1fr] items-baseline gap-4 py-3 sm:grid-cols-[96px_1fr]"
+            >
+              <span className="font-mono text-mono-base font-medium text-mute">ruled out</span>
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <s className="font-sans text-body text-mute decoration-rule">
+                    {causeLabel(hyp.cause)}
+                  </s>
+                  {hyp.supporting.length > 0 ? (
+                    <span className="inline-flex gap-1.5">{renderChips(hyp.supporting)}</span>
+                  ) : null}
+                </div>
+                <p className="font-mono text-mono-sm text-mute">{hyp.rationale}</p>
+                {hyp.contradicting.length > 0 ? (
+                  <div className="flex flex-wrap items-center gap-1.5 text-mono-sm font-mono text-mute">
+                    <span>Weighed against</span>
+                    {renderChips(hyp.contradicting)}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
+      {/* Tool Trace (T01-T05) */}
+      {toolCalls.length > 0 ? (
+        <section aria-label="Tool trace" className="space-y-2 font-mono text-mono-base">
+          <div className="divide-y divide-rule border-y border-rule">
+            {toolCalls.map((call, idx) => {
+              const toolResultId = call.toolResultId ?? call.callId;
+              const tKey = `T${String(idx + 1).padStart(2, "0")}`;
+              const toolEvidence: EvidenceRef = {
+                kind: "tool_result",
+                id: toolResultId,
+              };
+
+              let dataSummary = "";
+              if (call.tool === "heat_stress") {
+                const maxDhw = (call.params as { max_dhw?: number })?.max_dhw;
+                dataSummary = maxDhw !== undefined ? `DHW ${maxDhw}` : "";
+              }
+
+              return (
+                <div
+                  key={call.callId}
+                  className="grid grid-cols-[40px_1fr_auto] items-center gap-3 py-1.5"
+                >
+                  <EvidenceChip
+                    evidence={toolEvidence}
+                    label={humanize(call.tool)}
+                    keyLabel={tKey}
+                    onOpen={onOpenEvidence}
+                  />
+                  <span className="truncate text-ink">{call.tool}</span>
+                  <span className="text-mute">{dataSummary}</span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      {/* Findings */}
       <section aria-labelledby="findings-heading" className="space-y-3">
-        <h3 id="findings-heading" className={HEADING}>
+        <h3 id="findings-heading" className={SECTION_HEADING}>
           Findings
         </h3>
-        <ol className="space-y-4">
+        <ol className="divide-y divide-rule border-y border-rule">
           {investigation.findings.map((finding) => {
             const cited = finding.evidence.length > 0;
             return (
-              <li key={finding.statement} className={`space-y-2 ${cited ? RULE_CITED : RULE_PENDING}`}>
-                <p className="text-body">{finding.statement}</p>
+              <li key={finding.statement} className="py-2.5 space-y-1.5">
+                <p className="font-sans text-body text-ink">{finding.statement}</p>
                 {cited ? (
-                  <div className="flex flex-wrap gap-1.5">{chips(finding.evidence, "ev")}</div>
+                  <div className="flex flex-wrap gap-2">{renderChips(finding.evidence)}</div>
                 ) : (
-                  <p className="text-label">No evidence cited yet</p>
+                  <p className="font-mono text-mono-sm text-mute">No evidence cited yet</p>
                 )}
               </li>
             );
@@ -254,15 +305,18 @@ export function CaseFile({
         </ol>
       </section>
 
+      {/* Actions */}
       <section aria-labelledby="actions-heading" className="space-y-3">
-        <h3 id="actions-heading" className={HEADING}>
+        <h3 id="actions-heading" className={SECTION_HEADING}>
           Actions
         </h3>
-        <ol className="divide-y divide-hairline border-y border-hairline">
+        <ol className="divide-y divide-rule border-y border-rule">
           {investigation.actions.map((act, idx) => (
-            <li key={act} className="flex items-start gap-3 py-3">
-              <span className="w-5 shrink-0 text-ui font-bold text-fg">{idx + 1}</span>
-              <span className="text-body text-fg">{act}</span>
+            <li key={act} className="flex items-start gap-3 py-2.5">
+              <span className="w-5 shrink-0 font-mono text-mono-base font-semibold text-ink">
+                {idx + 1}
+              </span>
+              <span className="font-sans text-body text-ink">{act}</span>
             </li>
           ))}
         </ol>

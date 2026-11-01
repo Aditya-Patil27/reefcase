@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
+import { useCrumb } from "./crumb";
 
 type Health = components["schemas"]["Health"];
 
@@ -70,15 +71,15 @@ function HealthReadout() {
   });
 
   const status = health.isPending ? "pending" : health.isError ? "error" : health.data.status;
-  // A down or degraded API is not a proven alert: the dot empties instead of turning red.
+  // 6px square dot per Specimen Proof contract
   const dot =
     status === "ok"
-      ? "bg-strobe"
+      ? "bg-ink"
       : status === "pending"
-        ? "bg-deep-ink"
+        ? "bg-mute"
         : status === "degraded"
-          ? "border-[1.5px] border-strobe"
-          : "border-[1.5px] border-deep-ink";
+          ? "border border-ink"
+          : "border border-mute";
   const readout = health.isPending
     ? "checking models"
     : health.isError
@@ -86,8 +87,8 @@ function HealthReadout() {
       : health.data.detail;
 
   return (
-    <p role="status" className="flex min-w-0 items-center gap-2 text-label text-deep-ink">
-      <span aria-hidden="true" className={`size-2 shrink-0 ${dot}`} />
+    <p role="status" className="flex min-w-0 items-center gap-2 font-mono text-mono-sm text-mute">
+      <span aria-hidden="true" className={`size-1.5 shrink-0 ${dot}`} />
       <span className="truncate">{readout}</span>
     </p>
   );
@@ -97,7 +98,6 @@ function DataCredits() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
-  // Escape and a click outside close it, like any other popover.
   useEffect(() => {
     if (!open) return;
     function onKey(event: KeyboardEvent) {
@@ -120,7 +120,7 @@ function DataCredits() {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className="py-1 text-label font-semibold text-secondary underline decoration-border hover:text-fg hover:decoration-fg"
+        className="py-1 font-mono text-mono-sm text-mute underline decoration-rule hover:text-ink hover:decoration-ink focus:outline-none focus:ring-1 focus:ring-ink"
       >
         Data credits
       </button>
@@ -128,14 +128,14 @@ function DataCredits() {
         <div
           role="dialog"
           aria-label="Data credits"
-          className="absolute bottom-full left-0 z-20 mb-2 w-80 max-w-[calc(100vw-2rem)] border border-border bg-raised p-4 text-label text-secondary shadow-floating"
+          className="absolute bottom-full left-0 z-30 mb-2 w-80 max-w-[calc(100vw-2rem)] border border-rule bg-bg p-4 font-mono text-mono-sm text-mute shadow-none"
         >
           <ul className="grid gap-3">
             {CREDITS.map((credit) => (
               <li key={credit.source}>
-                <span className="font-semibold text-fg">{credit.source}</span>{" "}
-                <span className="text-muted">· {credit.licence}</span>
-                <span className="block text-muted">{credit.obligation}</span>
+                <span className="font-semibold text-ink">{credit.source}</span>{" "}
+                <span className="text-mute">· {credit.licence}</span>
+                <span className="block text-mute">{credit.obligation}</span>
               </li>
             ))}
           </ul>
@@ -145,21 +145,25 @@ function DataCredits() {
   );
 }
 
-/**
- * The active link carries a 2px strobe underline, set from the `data-status` attribute the router
- * adds, so the inactive transparent border can never win the cascade.
- */
 const navLinkClass =
-  "flex h-14 items-center border-b-2 border-b-transparent text-ui text-deep-ink hover:text-on-accent data-[status=active]:border-b-strobe data-[status=active]:font-semibold data-[status=active]:text-on-accent";
+  "flex h-14 items-center border-b border-transparent text-mute hover:text-ink data-[status=active]:border-ink data-[status=active]:font-medium data-[status=active]:text-ink transition-colors";
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const { crumb } = useCrumb();
+
   return (
-    <div className="flex min-h-screen flex-col bg-bg text-fg">
-      <header className="flex h-14 shrink-0 items-center gap-6 bg-deep px-4 text-on-accent sm:gap-10 sm:px-7">
-        <Link to="/" className="text-title font-extrabold tracking-tight text-on-accent">
+    <div className="flex min-h-screen flex-col bg-bg text-ink">
+      <header className="flex h-14 shrink-0 items-center gap-6 border-b border-rule bg-bg px-4 sm:px-10 text-ink">
+        <Link to="/" className="font-sans text-title font-bold tracking-tight text-ink no-underline">
           ReefCase
         </Link>
-        <nav aria-label="Primary" className="flex items-center gap-5 sm:gap-7">
+        {crumb ? (
+          <span className="hidden md:inline font-mono text-mono-sm text-mute truncate max-w-md">
+            {crumb}
+          </span>
+        ) : null}
+
+        <nav aria-label="Primary" className="ml-auto flex items-center gap-6 sm:gap-8 font-sans text-ui text-mute">
           <Link to="/" activeOptions={{ exact: true }} className={navLinkClass}>
             Map
           </Link>
@@ -168,14 +172,19 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="hidden sm:inline">Upload a dive</span>
           </Link>
         </nav>
-        <div className="ml-auto min-w-0">
+
+        <div className="min-w-0 pl-2">
           <HealthReadout />
         </div>
       </header>
+
       <main className="flex min-h-0 flex-1 flex-col">{children}</main>
-      <footer className="flex shrink-0 items-center justify-between gap-4 border-t border-hairline px-4 py-2 text-label text-muted sm:px-7">
+
+      <footer className="flex h-10 shrink-0 items-center justify-between gap-4 border-t border-rule bg-bg px-4 sm:px-10 font-mono text-mono-sm text-mute">
         <DataCredits />
-        <p className="min-w-0 truncate">Open-weight models · SAM 3 · Muse Spark Open</p>
+        <p className="min-w-0 truncate font-mono text-mono-sm text-mute">
+          Open-weight models · SAM 3 · Muse Spark Open
+        </p>
       </footer>
     </div>
   );

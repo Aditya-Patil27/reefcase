@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Specimen Proof</title>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f7f5;--ink:#0d0e0d;--mute:#5c5e5a;--rule:#deded9;--stage:#121413;--red:#b3261e;--label:#f3efe2}
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1440px;height:900px;overflow:hidden;background:var(--bg);color:var(--ink);font:400 15px/1.5 "Hanken Grotesk",sans-serif}
+.mono{font-family:"IBM Plex Mono",monospace}
+header{height:56px;display:flex;align-items:center;padding:0 40px;gap:28px;border-bottom:1px solid var(--rule)}
+header b{font-size:17px;font-weight:700;letter-spacing:-.01em}
+header .crumb{font:400 13px "IBM Plex Mono",monospace;color:var(--mute)}
+header nav{margin-left:auto;display:flex;gap:26px;font-size:14px;color:var(--mute)}
+header nav .on{color:var(--ink);box-shadow:inset 0 -1px var(--ink)}
+main{display:grid;grid-template-columns:820px 1fr;gap:48px;padding:24px 40px 0}
+.steps{display:grid;grid-template-columns:repeat(6,1fr);font:500 12px "IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.04em;margin-bottom:14px}
+.steps span{padding-bottom:7px;border-bottom:1px solid var(--rule);color:var(--mute)}
+.steps span.done{color:var(--ink);border-color:var(--ink)}
+.steps span.on{color:var(--red);border-bottom:2px solid var(--red)}
+.stage{background:var(--stage);padding:20px;display:grid;grid-template-columns:560px 1fr;gap:22px;height:590px}
+.frame{position:relative;background:
+ radial-gradient(70px 50px at 22% 30%,#cfcab0 0,#cfcab0 60%,transparent 62%),
+ radial-gradient(150px 90px at 40% 74%,#556b3c 0,#556b3c 60%,transparent 63%),
+ radial-gradient(120px 80px at 80% 26%,#6a7a45 0,#6a7a45 60%,transparent 63%),
+ radial-gradient(56px 42px at 54% 40%,#56b884 0,#56b884 60%,transparent 63%),
+ linear-gradient(170deg,#3f6b6e,#2a4d4f 55%,#5b6a4f)}
+.label{position:absolute;left:14px;bottom:14px;background:var(--label);color:#191915;padding:9px 12px;font:400 12px/1.45 "IBM Plex Mono",monospace;width:330px}
+.label b{display:block;font-size:16px;font-weight:600;letter-spacing:.01em}
+.label b em{font-style:normal;color:var(--red)}
+.side{color:#d6d8d2;display:flex;flex-direction:column;justify-content:space-between}
+.side h4{font:500 11px "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:#9a9e96;margin-bottom:8px}
+.big{font-size:60px;font-weight:600;line-height:1;letter-spacing:-.04em;color:#fff}
+.big small{display:block;font-size:13px;font-weight:400;letter-spacing:0;color:#9a9e96;margin-top:8px}
+.ref{display:grid;grid-template-columns:12px 1fr auto;gap:7px 10px;align-items:center;font-size:14px}
+.ref i{width:12px;height:12px}
+.ref .v{font-family:"IBM Plex Mono",monospace;color:#fff}
+.tray{display:grid;grid-template-columns:repeat(24,1fr);gap:4px;margin-top:12px}
+.tray div{height:56px;background:linear-gradient(170deg,#3f6b6e,#2b4c4e 60%,#58674c)}
+.tray div.on{outline:2px solid var(--red);outline-offset:2px}
+.nums{display:grid;grid-template-columns:repeat(24,1fr);gap:4px;margin-top:6px;font:400 11px "IBM Plex Mono",monospace;color:var(--mute);text-align:center}
+.nums .on{color:var(--red);font-weight:600}
+.case{padding-top:2px}
+.eyebrow{font:500 12px "IBM Plex Mono",monospace;color:var(--mute);letter-spacing:.04em;margin-bottom:12px}
+h1{font-size:36px;line-height:1.08;font-weight:600;letter-spacing:-.03em;margin-bottom:14px}
+h1 em{font-style:normal;color:var(--red)}
+.lede{font-size:15px;color:#2b2c2a;margin-bottom:20px}
+.k{font:600 .78em "IBM Plex Mono",monospace;color:var(--red)}
+.hyp{border-top:1px solid var(--ink)}
+.hyp div{display:grid;grid-template-columns:96px 1fr;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--rule)}
+.hyp .n{font-size:30px;font-weight:600;letter-spacing:-.03em}
+.hyp .t{font-size:15px}
+.hyp .t span{display:block;font:400 12px "IBM Plex Mono",monospace;color:var(--mute)}
+.hyp .x .n,.hyp .x .t{color:var(--mute)}
+.hyp .x .n{font-size:15px;font-weight:500;letter-spacing:0}
+.hyp .t .k{display:inline;font:600 12px "IBM Plex Mono",monospace;color:var(--red)}
+.hyp .x s{text-decoration-color:#8d8f89}
+.trace{margin-top:18px;font:400 13px "IBM Plex Mono",monospace}
+.trace div{display:grid;grid-template-columns:40px 1fr auto;padding:5px 0;border-bottom:1px solid var(--rule)}
+.trace div span:last-child{color:var(--mute)}
+footer{position:absolute;left:40px;right:40px;bottom:0;height:40px;border-top:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--mute)}
+</style></head><body>
+<header><b>ReefCase</b><span class="crumb">HAW-41 · Maui · 6 Jul 2024 · 24 frames</span>
+<nav><span>Map</span><span>Upload</span><span class="on">Surveys</span></nav></header>
+<main>
+<section>
+ <div class="steps"><span class="done">01 Upload</span><span class="done">02 Frames</span><span class="done">03 Segment</span><span class="done">04 Assess</span><span class="done">05 Investigate</span><span class="on">06 Report</span></div>
+ <div class="stage">
+  <div class="frame"><div class="label"><b>RC-HAW41-2024-<em>F16</em></b>20.79°N 156.47°W · 6 Jul 2024<br>Pocillopora-like, pale, severity 2<br>det. SAM 3 / Muse Spark Open</div></div>
+  <div class="side">
+   <div><h4>Live coral, this frame</h4><div class="big">22%<small>highest of 24 · survey mean 5.3%</small></div></div>
+   <div><h4>Cover</h4><div class="ref">
+    <i style="background:#56b884"></i>Live coral<span class="v">22%</span><i style="background:#efeee6"></i>Bleached coral<span class="v">9%</span><i style="background:#7c8a52"></i>Algae<span class="v">41%</span><i style="background:#9b8e74"></i>Rubble<span class="v">6%</span><i style="background:#d6d2c0"></i>Sand<span class="v">17%</span><i style="background:#6b716e"></i>Other<span class="v">5%</span></div></div>
+  </div>
+ </div>
+ <div class="tray"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div class="on"></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+ <div class="nums"><span>2</span><span>3</span><span>5</span><span>0</span><span>0</span><span>7</span><span>0</span><span>2</span><span>21</span><span>12</span><span>9</span><span>8</span><span>1</span><span>9</span><span>13</span><span class="on">22</span><span>5</span><span>2</span><span>4</span><span>2</span><span>0</span><span>0</span><span>0</span><span>0</span></div>
+</section>
+<section class="case">
+ <div class="eyebrow">CASE FILE · REPORT READY</div>
+ <h1>Live coral fell from 40% to <em>5%</em> since 2019. No heat stress explains it.</h1>
+ <p class="lede">Algae and sediment now dominate <span class="k">F09 F16</span>, with sparse pale survivors. Chronic local stressors, runoff and algal overgrowth, fit best.</p>
+ <div class="hyp">
+  <div><span class="n" style="font-size:46px">70%</span><span class="t">Cause outside our data<span>runoff, overgrowth · no direct measure</span></span></div>
+  <div><span class="n" style="font-size:20px">open</span><span class="t">Herbivore loss from fishing <span class="k">T02 T04</span><span>park not no-take · 0 fishing h · 1 SAR</span></span></div>
+  <div class="x"><span class="n">ruled out</span><span class="t"><s>Thermal bleaching</s><span>DHW 0, alert level 0 · T01</span></span></div>
+  <div class="x"><span class="n">ruled out</span><span class="t"><s>Disease · physical damage</s><span>none in 24 frames</span></span></div>
+ </div>
+ <div class="trace">
+  <div><span class="k">T01</span><span>heat_stress</span><span>DHW 0</span></div>
+  <div><span class="k">T02</span><span>vessel_activity 10 km</span><span>0 h · 1 SAR</span></div>
+  <div><span class="k">T03</span><span>reef_map HAW-41</span><span>0 km² ≤1 km</span></div>
+  <div><span class="k">T04</span><span>mpa_boundary</span><span>Humpback Whale NMS</span></div>
+  <div><span class="k">T05</span><span>site_history</span><span>4.9 → 8.5 → 40.2%</span></div>
+ </div>
+</section>
+</main>
+<footer><span>Built with Muse Spark Open · written by muse-spark-open-1026</span><span>NOAA CRW · Global Fishing Watch · WDPA</span></footer>
+</body></html>

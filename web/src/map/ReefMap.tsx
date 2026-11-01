@@ -14,7 +14,7 @@ import type { components } from "../api/schema";
 import { formatCoordinates } from "../components/SitePicker";
 import { BasemapNotice, useBasemap } from "./basemap";
 import { CoverStrip } from "../components/CoverStrip";
-import { BUTTON_PRIMARY, LIT_RING } from "../components/strobe";
+import { BUTTON_PRIMARY } from "../components/marks";
 import {
   mpaFillLayer,
   mpaLineLayer,
@@ -88,7 +88,7 @@ export function ReefMap({
     <div
       role="region"
       aria-label="Reef overview map"
-      className="relative h-full w-full overflow-hidden bg-bg"
+      className="relative h-full w-full overflow-hidden bg-ground"
     >
       <Map
         key={basemap.key}
@@ -137,21 +137,20 @@ export function ReefMap({
                 onSelectSite(site);
               }}
             >
-              {/* Tailwind needs the hover and focus variants of LIT_RING spelled out to generate them. */}
               <button
                 type="button"
                 aria-label={site.name}
                 aria-pressed={isSelected}
                 style={{ width: size, height: size }}
-                className={`block border-2 border-raised bg-deep transition-shadow hover:shadow-[0_0_0_3px_var(--strobe),0_0_0_4px_var(--deep)] focus-visible:shadow-[0_0_0_3px_var(--strobe),0_0_0_4px_var(--deep)] focus-visible:outline-none ${
-                  isSelected ? LIT_RING : ""
+                className={`block bg-ink transition-all focus:outline-none ${
+                  isSelected ? "outline-2 outline-key-red outline-offset-1 z-10" : ""
                 }`}
               />
             </Marker>
           );
         })}
 
-        {/* Site popover */}
+        {/* Site popover: cream specimen label */}
         {selectedSite ? (
           <Popup
             longitude={selectedSite.location.lon}
@@ -165,12 +164,12 @@ export function ReefMap({
             <div
               role="dialog"
               aria-label={selectedSite.name}
-              className="w-[280px] border border-border bg-raised p-4 text-fg shadow-floating"
+              className="w-[280px] border border-rule bg-label-cream p-4 text-ink"
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h3 className="text-title font-bold text-fg">{selectedSite.name}</h3>
-                  <p className="text-label text-secondary">
+                  <h3 className="font-sans text-ui font-bold text-ink">{selectedSite.name}</h3>
+                  <p className="font-mono text-mono-sm text-mute">
                     {formatCoordinates(selectedSite.location)}
                   </p>
                 </div>
@@ -178,7 +177,7 @@ export function ReefMap({
                   type="button"
                   aria-label="Close"
                   onClick={() => onSelectSite(null)}
-                  className="p-1 text-secondary hover:bg-accent-subtle hover:text-fg"
+                  className="p-1 text-mute hover:text-ink focus:outline-none"
                 >
                   <X size={16} aria-hidden="true" />
                 </button>
@@ -186,15 +185,15 @@ export function ReefMap({
 
               <p className="mt-3 flex items-baseline justify-between gap-2">
                 <span className="flex items-baseline gap-1.5">
-                  <span className="text-figure font-bold text-fg">
+                  <span className="font-mono text-figure-lg font-bold text-ink">
                     {Math.round(selectedSite.latest_cover.live_coral * 100)}%
                   </span>
-                  <span className="text-ui font-semibold text-fg">live coral</span>
+                  <span className="font-sans text-ui text-mute">live coral</span>
                 </span>
-                <span className="text-label text-secondary">{selectedSite.latest_dive_date}</span>
+                <span className="font-mono text-mono-sm text-mute">{selectedSite.latest_dive_date}</span>
               </p>
 
-              <CoverStrip cover={selectedSite.latest_cover} className="mt-2 h-2.5 w-full" />
+              <CoverStrip cover={selectedSite.latest_cover} className="mt-2 h-2 w-full" />
 
               <Link
                 to="/sites/$id"

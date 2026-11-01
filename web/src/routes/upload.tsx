@@ -16,7 +16,8 @@ import { FileDropzone } from "../components/arc/file-dropzone/file-dropzone";
 import { Input } from "../components/arc/input/input";
 import { NumberField } from "../components/arc/number-field/number-field";
 import { SitePicker, clampDiveSite, formatLatitude, formatLongitude } from "../components/SitePicker";
-import { BUTTON_PRIMARY, RULE_CITED } from "../components/strobe";
+import { BUTTON_PRIMARY } from "../components/marks";
+import { useCrumb } from "../components/crumb";
 
 export const Route = createFileRoute("/upload")({
   component: UploadRoute,
@@ -90,11 +91,11 @@ function Field(props: { name: FieldName; label: string; error?: string; children
       aria-label={label}
       aria-invalid={error ? true : undefined}
       aria-describedby={error ? errorId : undefined}
-      className={`grid min-w-0 gap-1 outline-none ${error ? RULE_CITED : ""}`}
+      className={`grid min-w-0 gap-1.5 outline-none ${error ? "border-l-2 border-key-red pl-3" : ""}`}
     >
       {children}
       {error ? (
-        <p id={errorId} className="text-body font-bold text-fg">
+        <p id={errorId} className="font-mono text-mono-sm font-semibold text-key-red">
           {error}
         </p>
       ) : null}
@@ -102,7 +103,7 @@ function Field(props: { name: FieldName; label: string; error?: string; children
   );
 }
 
-/** An 8px deep-water bar and its readout. Arc's progress draws its own track, which this route may not restyle. */
+/** Progress bar and its readout in mono. */
 function UploadBar({ progress }: { progress: UploadProgress }) {
   const percent =
     progress.total > 0 ? Math.min(100, Math.round((progress.loaded / progress.total) * 100)) : 0;
@@ -117,15 +118,15 @@ function UploadBar({ progress }: { progress: UploadProgress }) {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}
-        className="h-2 w-full overflow-hidden bg-sunken"
+        className="h-2 w-full overflow-hidden bg-rule"
       >
         <span
           aria-hidden="true"
-          className="block h-full origin-left bg-deep motion-safe:transition-transform motion-safe:duration-200"
+          className="block h-full origin-left bg-ink motion-safe:transition-transform motion-safe:duration-200"
           style={{ transform: `scaleX(${percent / 100})` }}
         />
       </div>
-      <p className="text-label font-semibold text-fg">
+      <p className="font-mono text-mono-sm font-semibold text-ink">
         {`Uploading ${percent}% · ${loaded} / ${formatBytes(progress.total)}`}
       </p>
     </div>
@@ -134,6 +135,8 @@ function UploadBar({ progress }: { progress: UploadProgress }) {
 
 function UploadRoute() {
   const navigate = useNavigate();
+  useCrumb("UPLOAD");
+
   const [clip, setClip] = useState<File | null>(null);
   const [clipUrl, setClipUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState(Number.NaN);
@@ -257,139 +260,156 @@ function UploadRoute() {
   const durationText = formatDuration(duration);
 
   return (
-    // No proven alert lives on this form, so Arc's error red draws in ink here.
-    <form
-      className="grid w-full max-w-6xl gap-x-10 gap-y-8 px-4 py-7 [--danger:var(--foreground)] sm:px-7 lg:grid-cols-2"
-      onSubmit={handleSubmit}
-      noValidate
-    >
-      <section aria-labelledby="clip-heading" className="grid min-w-0 content-start gap-4">
-        <div className="grid gap-1">
-          <h1 id="clip-heading" className="text-display font-bold text-fg">
-            Clip
-          </h1>
-          <p className="text-body text-secondary">
+    <div className="min-h-[calc(100vh-91px)] bg-ground py-10 px-4 sm:px-6">
+      <form
+        className="mx-auto max-w-[720px] divide-y divide-rule"
+        onSubmit={handleSubmit}
+        noValidate
+      >
+        {/* Section 01: Clip */}
+        <section aria-labelledby="clip-heading" className="pb-8 space-y-4">
+          <div className="flex items-baseline gap-3">
+            <span className="font-mono text-mono-eyebrow uppercase tracking-wider text-mute">01</span>
+            <h1 id="clip-heading" className="font-sans text-title font-bold text-ink">
+              Clip
+            </h1>
+          </div>
+          <p className="font-sans text-body text-mute">
             One diver clip from one dive. SAM 3 reads its frames; the agent writes the case file.
           </p>
-        </div>
-        <Field name="video" label="Dive clip" error={errors.video}>
-          <FileDropzone
-            accept="video/*"
-            multiple={false}
-            maxFiles={1}
-            label="Choose a dive clip"
-            description="Drop a clip here or choose one from your device"
-            note="One clip per survey"
-            onFilesChange={(files) => {
-              chooseClip(files);
-            }}
-          />
-          {/* The dropzone's file card already names the clip and its size. */}
-          {clip ? <p className="text-label text-secondary">{`Length ${durationText}`}</p> : null}
-          {clipUrl ? (
-            <video
-              className="hidden"
-              src={clipUrl}
-              preload="metadata"
-              aria-hidden="true"
-              onLoadedMetadata={(event) => {
-                const { duration: seconds } = event.currentTarget;
-                setDuration(Number.isFinite(seconds) ? seconds : Number.NaN);
-              }}
-            />
-          ) : null}
-        </Field>
-      </section>
+          <Field name="video" label="Dive clip" error={errors.video}>
+            <div className="[&_[data-slot=dropzone]]:border [&_[data-slot=dropzone]]:border-dashed [&_[data-slot=dropzone]]:border-ink [&_[data-slot=dropzone]]:bg-transparent [&_[data-slot=dropzone]]:rounded-none">
+              <FileDropzone
+                accept="video/*"
+                multiple={false}
+                maxFiles={1}
+                label="Choose a dive clip"
+                description="Drop a clip here or choose one from your device"
+                note="One clip per survey"
+                onFilesChange={(files) => {
+                  chooseClip(files);
+                }}
+              />
+            </div>
+            {clip ? <p className="font-mono text-mono-sm text-mute">{`Length ${durationText}`}</p> : null}
+            {clipUrl ? (
+              <video
+                className="hidden"
+                src={clipUrl}
+                preload="metadata"
+                aria-hidden="true"
+                onLoadedMetadata={(event) => {
+                  const { duration: seconds } = event.currentTarget;
+                  setDuration(Number.isFinite(seconds) ? seconds : Number.NaN);
+                }}
+              />
+            ) : null}
+          </Field>
+        </section>
 
-      <section aria-labelledby="site-heading" className="grid min-w-0 content-start gap-4">
-        <div className="grid gap-1">
-          <h2 id="site-heading" className="text-display font-bold text-fg">
-            Site
-          </h2>
-          <p className="text-body text-secondary">
+        {/* Section 02: Site */}
+        <section aria-labelledby="site-heading" className="py-8 space-y-4">
+          <div className="flex items-baseline gap-3">
+            <span className="font-mono text-mono-eyebrow uppercase tracking-wider text-mute">02</span>
+            <h2 id="site-heading" className="font-sans text-title font-bold text-ink">
+              Site
+            </h2>
+          </div>
+          <p className="font-sans text-body text-mute">
             Drop the pin where you dived. A pin within 500 m of a known site joins its record.
           </p>
-        </div>
-        {/* Keyed on the start site: the map's camera opens on the pin only when it mounts. */}
-        <SitePicker key={mapKey} value={site} onChange={movePin} />
-        <div className="grid grid-cols-2 gap-3">
-          <Field name="lat" label="Latitude" error={errors.lat}>
-            <NumberField
-              id="upload-lat-input"
-              label="Latitude"
-              value={site.lat}
-              min={-90}
-              max={90}
-              step={0.0001}
-              largeStep={1}
-              formatOptions={{ minimumFractionDigits: 4, maximumFractionDigits: 4, useGrouping: false }}
-              onValueChange={(lat) => {
-                pinPlaced.current = true;
-                setSite((current) => ({ ...current, lat }));
-                clearError("lat");
-              }}
-            />
-            <p className="text-label text-secondary">{formatLatitude(site.lat)}</p>
-          </Field>
-          <Field name="lon" label="Longitude" error={errors.lon}>
-            <NumberField
-              id="upload-lon-input"
-              label="Longitude"
-              value={site.lon}
-              min={-180}
-              max={180}
-              step={0.0001}
-              largeStep={1}
-              formatOptions={{ minimumFractionDigits: 4, maximumFractionDigits: 4, useGrouping: false }}
-              onValueChange={(lon) => {
-                pinPlaced.current = true;
-                setSite((current) => ({ ...current, lon }));
-                clearError("lon");
-              }}
-            />
-            <p className="text-label text-secondary">{formatLongitude(site.lon)}</p>
-          </Field>
-        </div>
-        <Input
-          id="upload-site_name-input"
-          label="Site name"
-          description="Optional"
-          placeholder="Lizard Island"
-          value={siteName}
-          error={errors.site_name}
-          onChange={(event) => {
-            setSiteName(event.target.value);
-            clearError("site_name");
-          }}
-        />
-        <Field name="dive_date" label="Dive date" error={errors.dive_date}>
-          <DatePicker
-            id="upload-dive_date-input"
-            label="Dive date"
-            value={diveDate}
-            showToday
-            onChange={(date) => {
-              setDiveDate(date);
-              clearError("dive_date");
+          {/* Keyed on the start site: the map's camera opens on the pin only when it mounts. */}
+          <SitePicker key={mapKey} value={site} onChange={movePin} />
+          <div className="grid grid-cols-2 gap-3">
+            <Field name="lat" label="Latitude" error={errors.lat}>
+              <NumberField
+                id="upload-lat-input"
+                label="Latitude"
+                value={site.lat}
+                min={-90}
+                max={90}
+                step={0.0001}
+                largeStep={1}
+                formatOptions={{ minimumFractionDigits: 4, maximumFractionDigits: 4, useGrouping: false }}
+                onValueChange={(lat) => {
+                  pinPlaced.current = true;
+                  setSite((current) => ({ ...current, lat }));
+                  clearError("lat");
+                }}
+              />
+              <p className="font-mono text-mono-sm text-mute">{formatLatitude(site.lat)}</p>
+            </Field>
+            <Field name="lon" label="Longitude" error={errors.lon}>
+              <NumberField
+                id="upload-lon-input"
+                label="Longitude"
+                value={site.lon}
+                min={-180}
+                max={180}
+                step={0.0001}
+                largeStep={1}
+                formatOptions={{ minimumFractionDigits: 4, maximumFractionDigits: 4, useGrouping: false }}
+                onValueChange={(lon) => {
+                  pinPlaced.current = true;
+                  setSite((current) => ({ ...current, lon }));
+                  clearError("lon");
+                }}
+              />
+              <p className="font-mono text-mono-sm text-mute">{formatLongitude(site.lon)}</p>
+            </Field>
+          </div>
+          <Input
+            id="upload-site_name-input"
+            label="Site name"
+            description="Optional"
+            placeholder="Lizard Island"
+            value={siteName}
+            error={errors.site_name}
+            onChange={(event) => {
+              setSiteName(event.target.value);
+              clearError("site_name");
             }}
           />
-        </Field>
-      </section>
+        </section>
 
-      <div className="grid min-w-0 gap-2 lg:col-span-2">
-        {formError ? (
-          <p role="alert" className="text-body font-bold text-fg">
-            {formError}
-          </p>
-        ) : null}
-        {inFlight && progress ? (
-          <UploadBar progress={progress} />
-        ) : (
-          <button type="submit" disabled={inFlight} className={`${BUTTON_PRIMARY} w-full`}>
-            Start investigation
-          </button>
-        )}
-      </div>
-    </form>
+        {/* Section 03: Dive */}
+        <section aria-labelledby="dive-heading" className="py-8 space-y-4">
+          <div className="flex items-baseline gap-3">
+            <span className="font-mono text-mono-eyebrow uppercase tracking-wider text-mute">03</span>
+            <h2 id="dive-heading" className="font-sans text-title font-bold text-ink">
+              Dive
+            </h2>
+          </div>
+          <Field name="dive_date" label="Dive date" error={errors.dive_date}>
+            <DatePicker
+              id="upload-dive_date-input"
+              label="Dive date"
+              value={diveDate}
+              showToday
+              onChange={(date) => {
+                setDiveDate(date);
+                clearError("dive_date");
+              }}
+            />
+          </Field>
+        </section>
+
+        {/* Form actions */}
+        <div className="pt-8 space-y-3">
+          {formError ? (
+            <p role="alert" className="font-sans text-body font-bold text-ink">
+              {formError}
+            </p>
+          ) : null}
+          {inFlight && progress ? (
+            <UploadBar progress={progress} />
+          ) : (
+            <button type="submit" disabled={inFlight} className={`${BUTTON_PRIMARY} w-full py-3 text-ui`}>
+              Start investigation
+            </button>
+          )}
+        </div>
+      </form>
+    </div>
   );
 }

@@ -7,7 +7,7 @@ import { humanize } from "../format";
 import { ReefMap, type LayerVisibility } from "../map/ReefMap";
 import { CoverStrip } from "../components/CoverStrip";
 import { Switch } from "../components/arc/switch/switch";
-import { SECTION_HEADING } from "../components/strobe";
+import { SECTION_HEADING } from "../components/marks";
 
 type SiteSummary = components["schemas"]["SiteSummary"];
 
@@ -43,28 +43,28 @@ function MapRoute() {
 
   return (
     // The shell's 56px bar and 35px footer sit outside the map's height.
-    <div className="relative flex h-[calc(100dvh-91px)] flex-col-reverse overflow-hidden bg-bg text-fg md:flex-row">
+    <div className="relative flex h-[calc(100dvh-91px)] flex-col-reverse overflow-hidden bg-ground text-ink md:flex-row">
       <aside
         aria-label="Sites and layers"
-        className="z-10 flex h-[40vh] w-full shrink-0 flex-col overflow-y-auto border-t border-border bg-surface md:h-full md:w-80 md:border-t-0 md:border-r"
+        className="z-10 flex h-[40vh] w-full shrink-0 flex-col overflow-y-auto border-t border-rule bg-ground md:h-full md:w-80 md:border-t-0 md:border-r"
       >
         <div className="px-4 py-5 sm:px-5">
-          <h2 id="sites-heading" className="text-title font-bold text-fg">
+          <h2 id="sites-heading" className={SECTION_HEADING}>
             Sites
           </h2>
           {sitesQuery.isPending ? (
-            <p className="mt-3 text-body text-secondary">Loading sites…</p>
+            <p className="mt-3 font-mono text-mono-sm text-mute">Loading sites…</p>
           ) : sitesQuery.isError ? (
-            <p role="alert" className="mt-3 text-body text-fg">
+            <p role="alert" className="mt-3 font-sans text-body text-ink">
               Sites did not load. Check the API and reload the page.
             </p>
           ) : sites.length === 0 ? (
-            <p className="mt-3 text-body text-secondary">
+            <p className="mt-3 font-sans text-body text-mute">
               No sites yet. Upload a dive to put the first one on the map.
             </p>
           ) : null}
 
-          <div role="list" aria-labelledby="sites-heading" className="mt-3 divide-y divide-hairline border-y border-hairline">
+          <div role="list" aria-labelledby="sites-heading" className="mt-3 divide-y divide-rule border-y border-rule">
             {sites.map((site) => {
               const isSelected = selectedSite?.id === site.id;
               const livePercent = Math.round(site.latest_cover.live_coral * 100);
@@ -82,18 +82,18 @@ function MapRoute() {
                   }}
                   tabIndex={0}
                   aria-current={isSelected ? "true" : undefined}
-                  className={`-mx-2 cursor-pointer border-l-[3px] px-2 py-3 transition-colors ${
+                  className={`-mx-2 cursor-pointer border-l-2 px-2 py-3 transition-colors ${
                     isSelected
-                      ? "border-deep bg-raised"
-                      : "border-transparent hover:bg-raised"
+                      ? "border-key-red bg-ground"
+                      : "border-transparent hover:bg-rule/30"
                   }`}
                 >
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="min-w-0 truncate text-ui font-bold text-fg">{site.name}</span>
-                    <span className="shrink-0 text-ui font-bold whitespace-nowrap text-fg">{livePercent}% live</span>
+                    <span className="min-w-0 truncate font-sans text-ui font-semibold text-ink">{site.name}</span>
+                    <span className="shrink-0 font-mono text-mono-base font-semibold text-ink whitespace-nowrap">{livePercent}% live</span>
                   </div>
 
-                  <p className="mt-0.5 text-label text-secondary">
+                  <p className="mt-0.5 font-mono text-mono-sm text-mute">
                     {humanize(site.trend)} · latest dive {site.latest_dive_date}
                   </p>
 
@@ -112,7 +112,7 @@ function MapRoute() {
 
             <div className="mt-3 space-y-3">
               <div className="flex items-center justify-between">
-                <label htmlFor="mpa-switch" className="cursor-pointer text-ui text-secondary hover:text-fg">
+                <label htmlFor="mpa-switch" className="cursor-pointer font-sans text-ui text-mute hover:text-ink">
                   MPA boundaries
                 </label>
                 <Switch
@@ -126,7 +126,7 @@ function MapRoute() {
               </div>
 
               <div className="flex items-center justify-between">
-                <label htmlFor="reef-switch" className="cursor-pointer text-ui text-secondary hover:text-fg">
+                <label htmlFor="reef-switch" className="cursor-pointer font-sans text-ui text-mute hover:text-ink">
                   Reef extent
                 </label>
                 <Switch
@@ -140,7 +140,7 @@ function MapRoute() {
               </div>
 
               <div className="flex items-center justify-between">
-                <label htmlFor="vessel-switch" className="cursor-pointer text-ui text-secondary hover:text-fg">
+                <label htmlFor="vessel-switch" className="cursor-pointer font-sans text-ui text-mute hover:text-ink">
                   Vessel activity
                 </label>
                 <Switch

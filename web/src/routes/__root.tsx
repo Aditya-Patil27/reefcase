@@ -1,5 +1,6 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { AppShell } from "../components/AppShell";
+import { CrumbProvider } from "../components/crumb";
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -7,8 +8,10 @@ export const Route = createRootRoute({
 
 function RootLayout() {
   return (
-    <AppShell>
-      <Outlet />
-    </AppShell>
+    <CrumbProvider>
+      <AppShell>
+        <Outlet />
+      </AppShell>
+    </CrumbProvider>
   );
 }

@@ -1,6 +1,6 @@
 /**
  * The data colours of theme.css as RGBA arrays, for MapLibre paint and SVG.
- * Raw colour values live only here and in theme.css (DESIGN.md).
+ * Raw colour values live only here and in theme.css (Specimen Proof).
  */
 import type { components } from "../api/schema";
 
@@ -9,12 +9,12 @@ export type RGBA = readonly [number, number, number, number];
 
 /** One per SegClass, in architecture §4.2 declaration order; matches --reef-* in theme.css. */
 export const REEF_PALETTE: Record<SegClass, RGBA> = {
-  live_coral: [15, 122, 108, 1],
-  bleached_coral: [244, 238, 223, 1],
-  algae: [125, 139, 58, 1],
-  rubble: [138, 123, 110, 1],
-  sand: [199, 185, 142, 1],
-  other: [169, 196, 192, 1],
+  live_coral: [86, 184, 132, 1],
+  bleached_coral: [239, 238, 230, 1],
+  algae: [124, 138, 82, 1],
+  rubble: [155, 142, 116, 1],
+  sand: [214, 210, 192, 1],
+  other: [107, 113, 110, 1],
 };
 
 /** The six SegClass values in architecture §4.2 order. */
@@ -29,11 +29,11 @@ export const SEG_CLASS_ORDER: readonly SegClass[] = [
 
 /** Heat-stress levels 0–4: no stress, watch, warning, alert 1, alert 2 and above. */
 export const HEAT_PALETTE: readonly RGBA[] = [
-  [157, 184, 180, 1],
+  [154, 158, 150, 1],
   [227, 193, 92, 1],
   [221, 143, 54, 1],
   [204, 90, 42, 1],
-  [179, 50, 31, 1],
+  [179, 38, 30, 1],
 ];
 
 /** Vessel detections. */
@@ -47,19 +47,17 @@ export function toRgbaString(
   return `rgba(${r}, ${g}, ${b}, ${overrideAlpha ?? a})`;
 }
 
-/** The deep-water shell colour, --deep in theme.css. */
-export const DEEP_HEX = "#0b3d4a";
-/** The light an opened frame sits under, --strobe in theme.css. */
-export const STROBE_HEX = "#fff6e3";
-/** Ink, --foreground in theme.css. */
-export const INK_HEX = "#062a33";
-/** Case paper, --surface in theme.css: the plain ground a map falls back to without its basemap. */
-export const SURFACE_HEX = "#f6faf8";
-/** Rules on the ground, --border in theme.css. */
-export const RULE_HEX = "#b3ccc8";
+export const INK_HEX = "#0d0e0d";
+export const BG_HEX = "#f7f7f5";
+export const SURFACE_HEX = "#f7f7f5";
+export const RULE_HEX = "#deded9";
+export const STAGE_HEX = "#121413";
+export const KEY_RED_HEX = "#b3261e";
+export const LABEL_CREAM_HEX = "#f3efe2";
+export const MUTE_HEX = "#5c5e5a";
 
-export const BORDER_STRONG_HEX = DEEP_HEX;
-export const STROKE_DARK_HEX = STROBE_HEX;
-export const MPA_FILL_COLOR = DEEP_HEX;
+export const BORDER_STRONG_HEX = INK_HEX;
+export const STROKE_DARK_HEX = INK_HEX;
+export const MPA_FILL_COLOR = INK_HEX;
 export const REEF_FILL_COLOR = toRgbaString(REEF_PALETTE.live_coral, 1);
 export const VESSEL_CIRCLE_COLOR = toRgbaString(VESSEL_COLOR);

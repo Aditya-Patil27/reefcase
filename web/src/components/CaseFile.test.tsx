@@ -1,4 +1,4 @@
-﻿import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { CaseFile } from "./CaseFile";
 import type { components } from "../api/schema";
@@ -145,5 +145,35 @@ describe("CaseFile", () => {
 
     expect(screen.getByText("No evidence cited yet")).toBeInTheDocument();
     expect(screen.getByText("Bleaching alert level 1 · peak 6.8 °C-weeks")).toBeInTheDocument();
+  });
+  it("renders ruled-out hypotheses struck through with their note unstruck", () => {
+    render(
+      <CaseFile
+        investigation={{
+          ...mockInvestigation,
+          hypotheses: [
+            {
+              cause: "heat_stress",
+              confidence: 0.62,
+              supporting: [],
+              contradicting: [],
+              rationale: "DHW sat above 4 C-weeks for five weeks.",
+            },
+            {
+              cause: "disease",
+              confidence: 0.04,
+              supporting: [],
+              contradicting: [{ kind: "frame", id: "frm_06" }],
+              rationale: "No lesions observed in transect.",
+            },
+          ],
+        }}
+        onOpenEvidence={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("ruled out")).toBeInTheDocument();
+    expect(screen.getByText("Disease").tagName).toBe("S");
+    expect(screen.getByText("No lesions observed in transect.")).toBeInTheDocument();
   });
 });

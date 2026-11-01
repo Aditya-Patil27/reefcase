@@ -1,81 +1,97 @@
 @import "tailwindcss";
-@import "@fontsource-variable/public-sans";
+@import "@fontsource-variable/hanken-grotesk";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
 @import "../components/arc/foundation.css";
 
 /*
- * Strobe (DESIGN.md). The app sits in blue-green water; only evidence a reader opens is lit in
- * true colour. Light world only: Arc's light defaults, retinted. Raw colours live here and in
- * palette.ts, nowhere else.
+ * Specimen Proof (Story 8.8).
+ * Each frame is a catalogued specimen and the verdict is a proof set beside its evidence.
+ * Near-white ground (#f7f7f5), 1px rules (#deded9), no cards, no radius, no shadows.
+ * One velvet-black stage (#121413). Label red (#b3261e) for citation keys and selected frame.
  */
 :root {
   color-scheme: light;
 
-  /* The water column */
-  --background: #e8f1ee;      /* ground */
-  --surface: #f6faf8;         /* case paper */
-  --surface-raised: #fbfdfc;  /* popovers and drawers */
-  --surface-muted: #d3e5e1;   /* first depth band */
-  --deep: #0b3d4a;            /* shell, primary action */
-  --deep-ink: #9cc3c0;        /* secondary text on the shell, 6.3:1 */
-  --strobe: #fff6e3;          /* the light a frame is opened under */
-  --cast: #4f8582;            /* the water's cast over unopened evidence */
+  /* Surfaces & Ink */
+  --background: #f7f7f5;
+  --surface: #f7f7f5;
+  --surface-raised: #f7f7f5;
+  --surface-muted: #eeeee9;
 
-  --foreground: #062a33;
-  --text-secondary: #2f5a5e;  /* 7.0:1 on ground */
-  --text-muted: #3e6a6e;      /* 5.2:1 on ground, 4.6:1 on the first band */
-  --border-subtle: #cfe0dc;
-  --border: #b3ccc8;
-  --border-strong: #0b3d4a;
+  --foreground: #0d0e0d;      /* ink */
+  --ink: #0d0e0d;
+  --mute: #5c5e5a;            /* 5.4:1 contrast on ground */
+  --text-secondary: #5c5e5a;
+  --text-muted: #5c5e5a;
 
-  --accent: #0b3d4a;
-  --accent-strong: #062a33;
-  --accent-subtle: #0b3d4a14;
+  --rule: #deded9;            /* 1px rules */
+  --border-subtle: #deded9;
+  --border: #deded9;
+  --border-strong: #0d0e0d;
+
+  /* Velvet-black stage */
+  --stage: #121413;
+  --stage-bg: #121413;
+  --stage-fg: #d6d8d2;
+  --stage-fg-bright: #ffffff;
+  --stage-mute: #9a9e96;      /* 5.4:1 contrast on stage */
+  --stage-rule: #2a2e2b;
+
+  /* Specimen label */
+  --label-cream: #f3efe2;
+  --label-ink: #191915;
+
+  /* Red accent for keys and selected frame */
+  --key-red: #b3261e;
+  --danger: #b3261e;
+
+  --accent: #0d0e0d;
+  --accent-strong: #000000;
+  --accent-subtle: #0d0e0d0d;
   --accent-foreground: #ffffff;
-  --control-on: #0b3d4a;
-  --control-fill: #0b3d4a;
+
+  --control-on: #0d0e0d;
+  --control-fill: #0d0e0d;
   --control-glyph: #ffffff;
   --control-thumb-on: #ffffff;
-  --control-track: #c3d8d4;
-  --control-track-hover: #b3ccc8;
+  --control-track: #deded9;
+  --control-track-hover: #5c5e5a;
 
-  --success: #0f7a6c;
-  --warning: #8a5a00;
-  --danger: #b3321f;          /* proven alerts only; 6.2:1 under white text */
+  --success: #56b884;
+  --warning: #dd8f36;
 
-  --focus-outline: #0b3d4a;
+  --focus-outline: #0d0e0d;
   --focus-outline-width: 2px;
   --focus-outline-offset: 2px;
 
   --shadow-resting: none;
-  --shadow-raised: 0 0 0 1px #0b3d4a1f;
-  --shadow-floating: 0 0 0 1px #0b3d4a29, 0 14px 32px #062a3324;
+  --shadow-raised: none;
+  --shadow-floating: none;
 
   --radius-control: 0;
   --radius-panel: 0;
   --radius-surface: 0;
 
-  --font-display: "Public Sans Variable", sans-serif;
-  --font-body: "Public Sans Variable", sans-serif;
+  --font-display: "Hanken Grotesk Variable", "Hanken Grotesk", sans-serif;
+  --font-body: "Hanken Grotesk Variable", "Hanken Grotesk", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
 
-  --series-1: #0b3d4a;
-  --series-2: #4f8582;          /* the cast; danger red stays off ordinary data */
-  --series-3: #7d8b3a;
-  --series-4: #0f7a6c;
-
-  /* One per SegClass (architecture §4.2), tuned for the light ground */
-  --reef-live: #0f7a6c;
-  --reef-bleached: #f4eedf;   /* bone white, always drawn with an outline */
-  --reef-algae: #7d8b3a;
-  --reef-rubble: #8a7b6e;
-  --reef-sand: #c7b98e;
-  --reef-other: #a9c4c0;      /* rock, turf, unclassified: reads as water, not data */
+  /* One per SegClass, tuned for Specimen Proof */
+  --reef-live: #56b884;
+  --reef-bleached: #efeee6;
+  --reef-algae: #7c8a52;
+  --reef-rubble: #9b8e74;
+  --reef-sand: #d6d2c0;
+  --reef-other: #6b716e;
 
   /* Coral Reef Watch stress levels 0–4 */
-  --heat-0: #9db8b4;
+  --heat-0: #9a9e96;
   --heat-1: #e3c15c;
   --heat-2: #dd8f36;
   --heat-3: #cc5a2a;
-  --heat-4: #b3321f;
+  --heat-4: #b3261e;
   --vessel: #4b3f8f;
 }
 
@@ -84,29 +100,45 @@
   --color-surface: var(--surface);
   --color-raised: var(--surface-raised);
   --color-sunken: var(--surface-muted);
-  --color-deep: var(--deep);
-  --color-deep-ink: var(--deep-ink);
-  --color-strobe: var(--strobe);
-  --color-cast: var(--cast);
+
   --color-fg: var(--foreground);
+  --color-ink: var(--ink);
+  --color-mute: var(--mute);
+  --color-muted: var(--mute);
   --color-secondary: var(--text-secondary);
-  --color-muted: var(--text-muted);
-  --color-hairline: var(--border-subtle);
+
+  --color-rule: var(--rule);
+  --color-hairline: var(--rule);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
+
+  --color-stage: var(--stage);
+  --color-stage-bg: var(--stage-bg);
+  --color-stage-fg: var(--stage-fg);
+  --color-stage-fg-bright: var(--stage-fg-bright);
+  --color-stage-mute: var(--stage-mute);
+  --color-stage-rule: var(--stage-rule);
+
+  --color-label-cream: var(--label-cream);
+  --color-label-ink: var(--label-ink);
+
+  --color-key-red: var(--key-red);
+  --color-danger: var(--danger);
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
   --color-accent-subtle: var(--accent-subtle);
   --color-on-accent: var(--accent-foreground);
-  --color-danger: var(--danger);
+
   --color-warning: var(--warning);
   --color-success: var(--success);
+
   --color-reef-live: var(--reef-live);
   --color-reef-bleached: var(--reef-bleached);
   --color-reef-algae: var(--reef-algae);
   --color-reef-rubble: var(--reef-rubble);
   --color-reef-sand: var(--reef-sand);
   --color-reef-other: var(--reef-other);
+
   --color-heat-0: var(--heat-0);
   --color-heat-1: var(--heat-1);
   --color-heat-2: var(--heat-2);
@@ -114,23 +146,37 @@
   --color-heat-4: var(--heat-4);
   --color-vessel: var(--vessel);
 
-  --font-sans: "Public Sans Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", monospace;
+  /* Deep aliases for backwards-compatibility during migration */
+  --color-deep: var(--foreground);
+  --color-deep-ink: var(--mute);
 
-  --text-label: 13px;   --text-label--line-height: 18px;
+  --font-sans: "Hanken Grotesk Variable", "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
+
+  /* Typography scale */
+  --text-label: 12px;   --text-label--line-height: 16px;
   --text-body: 15px;    --text-body--line-height: 22px;
-  --text-ui: 15px;      --text-ui--line-height: 22px;
-  --text-title: 22px;   --text-title--line-height: 28px;  --text-title--letter-spacing: -0.015em;
+  --text-ui: 14px;      --text-ui--line-height: 20px;
+  --text-title: 20px;   --text-title--line-height: 26px;  --text-title--letter-spacing: -0.015em;
   --text-display: 30px; --text-display--line-height: 34px; --text-display--letter-spacing: -0.02em;
   --text-figure: 36px;  --text-figure--line-height: 40px; --text-figure--letter-spacing: -0.03em;
-  --text-site: 56px;    --text-site--line-height: 56px;   --text-site--letter-spacing: -0.04em;
-  --text-hero: 72px;    --text-hero--line-height: 72px;   --text-hero--letter-spacing: -0.04em;
+  --text-figure-lg: 60px; --text-figure-lg--line-height: 1; --text-figure-lg--letter-spacing: -0.04em;
+  --text-verdict: 36px; --text-verdict--line-height: 1.08; --text-verdict--letter-spacing: -0.03em;
+  --text-hyp-1: 46px;   --text-hyp-1--line-height: 1;    --text-hyp-1--letter-spacing: -0.03em;
+  --text-hyp-2: 30px;   --text-hyp-2--line-height: 1;    --text-hyp-2--letter-spacing: -0.03em;
+  --text-hyp-3: 20px;   --text-hyp-3--line-height: 1.2;  --text-hyp-3--letter-spacing: -0.01em;
+  --text-site: 48px;    --text-site--line-height: 52px;   --text-site--letter-spacing: -0.03em;
+  --text-hero: 60px;    --text-hero--line-height: 64px;   --text-hero--letter-spacing: -0.04em;
+  --text-mono-eyebrow: 12px; --text-mono-eyebrow--line-height: 16px; --text-mono-eyebrow--letter-spacing: 0.04em;
+  --text-mono-num: 11px; --text-mono-num--line-height: 14px;
+  --text-mono-sm: 12px;  --text-mono-sm--line-height: 16px;
+  --text-mono-base: 13px; --text-mono-base--line-height: 18px;
 }
 
 html {
   background-color: var(--background);
   color: var(--foreground);
-  scrollbar-color: #0b3d4a59 transparent;
+  scrollbar-color: var(--rule) transparent;
   scrollbar-width: thin;
 }
 
@@ -145,69 +191,13 @@ body {
 }
 
 ::selection {
-  background: var(--strobe);
+  background: var(--label-cream);
   color: var(--foreground);
 }
 
 a {
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
-}
-
-/*
- * The signature. A frame sits in the water's cast until it is hovered, focused or opened; then the
- * cast lifts, a single strobe flash fires, and the frame shows in true colour.
- */
-.water-cast {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  background: var(--cast);
-}
-
-.water-cast::before,
-.water-cast::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.water-cast::before {
-  background: var(--cast);
-  mix-blend-mode: color;
-  transition: opacity 180ms var(--ease-standard);
-}
-
-.water-cast::after {
-  background: var(--strobe);
-  opacity: 0;
-}
-
-.water-cast :is(img, video) {
-  filter: brightness(0.82) contrast(0.92);
-  transition: filter 180ms var(--ease-standard);
-}
-
-.water-cast:is(:hover, :focus-visible, :focus-within, [data-lit="true"])::before {
-  opacity: 0;
-}
-
-.water-cast:is(:hover, :focus-visible, :focus-within, [data-lit="true"]) :is(img, video) {
-  filter: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .water-cast:is(:hover, :focus-visible, [data-lit="true"])::after {
-    animation: strobe-flash 300ms var(--ease-exit) 1;
-  }
-}
-
-@keyframes strobe-flash {
-  0% { opacity: 0; }
-  12% { opacity: 0.7; }
-  100% { opacity: 0; }
 }
 
 .maplibregl-popup-content {
@@ -221,15 +211,11 @@ a {
 }
 
 .maplibregl-ctrl-attrib {
-  font-family: var(--font-body);
+  font-family: var(--font-mono);
   font-size: 11px;
 }
 
-/*
- * Strobe is square and never blurs the page. Arc's drawer and json-viewer hardcode rounded corners
- * and a frosted overlay, so the evidence drawer squares everything inside it and flattens the
- * overlay (always the drawer's previous sibling) to a deep tint.
- */
+/* Evidence drawer flat border */
 .evidence-drawer.evidence-drawer,
 .evidence-drawer *,
 .evidence-drawer *::before {
@@ -237,7 +223,7 @@ a {
 }
 
 :has(+ .evidence-drawer) {
-  background: color-mix(in oklab, var(--deep) 45%, transparent) !important;
+  background: color-mix(in oklab, var(--foreground) 30%, transparent) !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
