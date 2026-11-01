@@ -14,7 +14,7 @@
 # Priority: P0 by Sat Oct 31, P1 by Mon Nov 2, P2 by Tue Nov 3; freeze Wed Nov 4
 
 generated: 2026-10-26
-last_updated: 2026-10-31
+last_updated: 2026-11-01
 project: met
 project_key: NOKEY
 tracking_system: file-system
@@ -90,5 +90,5 @@ development_status:
   8-5-readme-and-submission: review # B P0
   8-6-ask-this-case: done # D P1
   8-7-slim-site-page: review # D P1
-  8-8-specimen-proof-redesign: ready-for-dev # D P1
+  8-8-specimen-proof-redesign: review # D P1
   epic-8-retrospective: optional
