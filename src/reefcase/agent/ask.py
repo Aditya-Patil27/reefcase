@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -40,6 +41,16 @@ ASK_PROMPT = (Path(__file__).parent / "prompts" / "ask.md").read_text(encoding="
 #: Seconds one question may take. A hung Baseten request would otherwise wait out the OpenAI
 #: client's 600 s timeout while the reader watches "Reading the case…".
 ASK_TIMEOUT_S = 90
+
+#: One evidence ID as the context writes it, optionally kind-prefixed: ``frame:frm_01…``.
+_REF = r"(?:(?:frame|tool_result)\s*:\s*)?(?:frm|tr)_[A-Za-z0-9_]+"
+#: A bracketed or parenthesised group of IDs in the prose, with the space before it.
+_INLINE_REFS = re.compile(rf"\s*[\[(]\s*{_REF}(?:\s*[,;]\s*{_REF})*\s*[\])]")
+
+
+def _strip_inline_refs(text: str) -> str:
+    """Drop ID groups the model wrote into the prose; ``citations`` carries them as chips."""
+    return _INLINE_REFS.sub("", text).strip()
 
 
 class AskRequest(BaseModel):
@@ -174,4 +185,5 @@ async def ask(
             model_settings=OpenAIChatModelSettings(openai_reasoning_effort="low", max_tokens=1500),
             usage_limits=UsageLimits(request_limit=3),
         )
-    return result.output
+    output = result.output
+    return output.model_copy(update={"answer": _strip_inline_refs(output.answer)})

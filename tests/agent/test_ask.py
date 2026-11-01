@@ -167,6 +167,36 @@ async def test_ask_valid_citations_pass_through() -> None:
 
 
 @pytest.mark.asyncio
+async def test_ask_strips_inline_citation_ids_from_the_prose() -> None:
+    # The live model copies the prompt's "[evidence: frame:frm_...]" notation into its prose; the
+    # IDs belong in ``citations`` only, which the page renders as chips.
+    def respond(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+        draft = {
+            "answer": (
+                f"Heat stress was ruled out [tool_result:{TR_ID}], which does not explain the "
+                f"paling [frame:{FRAME_ID}, tool_result:{TR_ID}]. Algae dominate ({FRAME_ID})."
+            ),
+            "citations": [{"kind": "tool_result", "id": TR_ID}],
+        }
+        return ModelResponse(parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=draft)])
+
+    ans = await ask(
+        "Why not heat stress?",
+        _investigation(),
+        [_frame()],
+        [_seg()],
+        [_assessment()],
+        [_tool_result()],
+        model=FunctionModel(respond, model_name="fake-ask"),
+    )
+
+    assert ans.answer == (
+        "Heat stress was ruled out, which does not explain the paling. Algae dominate."
+    )
+    assert ans.citations == [EvidenceRef(kind="tool_result", id=TR_ID)]
+
+
+@pytest.mark.asyncio
 async def test_ask_bad_citation_triggers_retry_then_succeeds() -> None:
     calls: list[tuple[list[ModelMessage], AgentInfo]] = []
 
