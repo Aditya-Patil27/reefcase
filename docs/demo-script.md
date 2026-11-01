@@ -26,12 +26,12 @@ calm and documentary.
 
 | # | Window | On screen | Line |
 |---|---|---|---|
-| 1 | 0:04.5–0:09.5 | Map of Hawaiʻi, pin on HAW-41, North Kohala | "This is HAW-41, a NOAA survey site off North Kohala, Hawaiʻi." |
+| 1 | 0:04.5–0:09.5 | Map of Hawaiʻi, pin on HAW-41, North Kohala | "This is HAW-41, a NOAA site off North Kohala, Hawaiʻi." |
 | 2 | 0:10–0:19.5 | Live coral cover: 4.9, 8.5, 40.2 (2019), then 5 (2024 dive), "−35 pts" | "In 2019, NOAA divers measured forty percent live coral here. Our July 2024 dive reads five. What happened?" |
-| 3 | 0:20.5–0:35.5 | Upload: clip, pin, date. Caption: footage stitched from NCRMP 2024 photos | "A diver uploads the clip, pins the site and sets the dive date. This clip is stitched from NOAA's own 2024 survey photos of HAW-41." |
+| 3 | 0:20.5–0:35.5 | Upload: clip, pin, date. Caption: footage stitched from NCRMP 2024 photos | "A diver uploads the clip, pins the site and sets the dive date. This clip is stitched from NOAA's own 2024 survey photos of the site." |
 | 4 | 0:37–0:48 | Segment, 6× speed badge, masks arriving per frame | "SAM 3 masks every sampled frame into live coral, bleaching, algae, rubble and sand, shown here at six times speed." |
 | 5 | 0:49–0:55 | Assess, 24× speed badge | "Muse Spark Open then grades every frame for bleaching." |
-| 6 | 0:56–1:05 | Investigate: tool calls land in the trace | "An agent investigates: heat stress from NOAA Coral Reef Watch, vessel activity from Global Fishing Watch, the reef map, protected areas and the site's history." |
+| 6 | 0:56–1:05 | Investigate: tool calls land in the trace | "Then an agent investigates. Heat stress, vessel activity, the reef map, protected areas and site history." |
 | 7 | 1:05–1:16.5 | Case file ready (04:21): verdict, hypotheses 78 / 18 / 12 / 5% | "Four minutes later, a case file. The reef has collapsed to turf algae, with no sign of heat stress or physical damage. Each competing cause gets its own score." |
 | 8 | 1:17–1:23.5 | Citations, a tool result opens | "Every claim cites a frame or a tool result. Open one to check it." |
 | 9 | 1:24.5–1:29.5 | Evidence drawer: Source, Query, Result boxes | "This is the exact record the agent got back: source, query, result." |
@@ -39,18 +39,19 @@ calm and documentary.
 | 11 | 1:34.5–1:39 | "Every claim cited.", ringed citations | "Claims without a citation are rejected and repaired before you see them." |
 | 12 | 1:40–1:46.5 | "What to do first.": 01 Resurvey, 02 Report the shift | "Then, what to do first: resurvey, and report the shift to the sanctuary." |
 | 13 | 1:47–1:53.5 | Model 01, ReefStudent masks scanning over reef photos | "Everything under the hood is open-weight. ReefStudent is a small segmenter trained on Coralscapes." |
-| 14 | 1:54–1:59.5 | mIoU bars: 0.683 vs SAM 3's 0.300 | "On the Coralscapes test set it scores 0.68. SAM 3 scores 0.30." |
-| 15 | 2:00–2:05.5 | Per-frame race, "≈ 8× faster" | "It's about eight times faster. It segmented this site's survey history; live uploads run SAM 3." |
-| 16 | 2:06–2:12.5 | Muse Spark Open teacher line, 3,366, Glimmer-Reef, ≈ $8.59 of GPU | "Muse Spark Open labelled 3,366 frames to train Glimmer-Reef, for under nine dollars of GPU." |
-| 17 | 2:13–2:19 | Waffles: 70% vs 80% exact agreement, 354 held-out frames | "It matches its teacher on eighty percent of held-out frames, up from seventy for the base model." |
+| 14 | 1:54–1:59.5 | mIoU bars: 0.683 vs SAM 3's 0.300 | "On Coralscapes, it scores 0.68. SAM 3: 0.3." |
+| 15 | 2:00–2:05.5 | Per-frame race, "≈ 8× faster" | "And it's about eight times faster. Live uploads still run SAM 3." |
+| 16 | 2:06–2:12.5 | Muse Spark Open teacher line, 3,366, Glimmer-Reef, ≈ $8.59 of GPU | "Muse Spark Open labelled 3,366 frames to train Glimmer-Reef." |
+| 17 | 2:13–2:19 | Waffles: 70% vs 80% exact agreement, 354 held-out frames | "It agrees with its teacher on eighty percent of held-out frames. The base model: seventy." |
 | 18 | 2:20–2:24.5 | Seconds per frame, "1.9×", "Built with Muse Spark Open" | "And it runs nearly twice as fast. Built with Muse Spark Open." |
 | 19 | 2:26–2:32.5 | "A cited case in minutes. Not a field season." | "For a park manager, that's a cited case in minutes. Not a field season." |
 | 20 | 2:34–2:36.8 | ReefCase lockup, URL, team | "ReefCase. By Team Yours Truly." |
 
 Say "3,366" as "three thousand, three hundred sixty-six". Hawaiʻi: ha-VAI-ee. Kohala: ko-HAH-la.
 
-Levels: voice integrated about −16 LUFS, peaks no higher than −6 dBFS. The music bed in
-0:06–2:35 already sits at about −22 LUFS (−20 from 1:47), so it needs no extra ducking under the voice.
+Voice: Sarvam Bulbul v4 Flash, `shubh_en_audiobook`, pace 1.15, temperature 0.45, best of three takes
+per line. Lines 1, 14 and 18 start up to 0.4 s early to fit. Voice stem about −15 LUFS; the music bed sits
+about −22 LUFS under 0:06–1:45 and −23 under 1:47–2:35, and lifts in the 1:45–1:47 breath.
 
 ## Rules for the recording
 
